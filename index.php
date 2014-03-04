@@ -1,6 +1,7 @@
 <?php
-	Header( 'Content-Type: text/plain' );
+	Header( 'Content-Type: text/plain; charset=utf-8' );
 	
+	// Don't do this in production!
 	ini_set( 'error_reporting', -1 );
 	ini_set( 'display_errors', 1 );
 	
