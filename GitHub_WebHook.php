@@ -56,7 +56,7 @@
 				throw new Exception( 'Unknown content type.' );
 			}
 			
-			$this->Payload = json_decode( $this->Payload, true );
+			$this->Payload = json_decode( $this->Payload );
 			
 			if( $this->Payload === null )
 			{
