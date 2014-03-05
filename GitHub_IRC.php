@@ -3,11 +3,13 @@
 	{
 		private $EventType;
 		private $Payload;
+		private $URLShortener;
 		
-		public function __construct( $EventType, $Payload )
+		public function __construct( $EventType, $Payload, $URLShortener = null )
 		{
 			$this->EventType = $EventType;
 			$this->Payload = $Payload;
+			$this->URLShortener = $URLShortener;
 		}
 		
 		/**
@@ -99,7 +101,10 @@
 		
 		private function FormatURL( $URL )
 		{
-			// TODO: Add support for git.io
+			if( $this->URLShortener !== null )
+			{
+				$URL = call_user_func( $this->URLShortener, $URL );
+			}
 			
 			return "\00302\037" . $URL . "\017";
 		}

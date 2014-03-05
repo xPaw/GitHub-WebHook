@@ -38,7 +38,7 @@
 	
 	try
 	{
-		$IRC = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload() );
+		$IRC = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload(), 'shorten_url' );
 		
 		var_dump( $IRC->GetMessage() ); // Optional
 		
@@ -48,4 +48,36 @@
 		echo PHP_EOL . PHP_EOL . 'Exception: ' . $e->getMessage();
 		
 		http_response_code( 500 );
+	}
+	
+	// Taken from @meklu's gitmek-rcv
+	function shorten_url($url) {
+		static $cache = array();
+		if (isset($cache[$url])) {
+			return $cache[$url];
+		}
+		$opts = array(
+			"http" => array(
+				"header" => "Content-type: application/x-www-form-urlencoded\r\n",
+				"method" => "POST",
+				"content" => http_build_query(array("url" => $url)),
+			),
+		);
+		$ctx = stream_context_create($opts);
+		$stream = @fopen("http://git.io", "r", false, $ctx);
+		if ($stream === false) {
+			/* damn it */
+			return $url;
+		}
+		$md = stream_get_meta_data($stream);
+		fclose($stream);
+		$headers = $md["wrapper_data"];
+		foreach($headers as $header) {
+			$key = "Location: ";
+			if (strpos($header, $key) === 0) {
+				return substr($header, strlen($key));
+			}
+		}
+		/* when all else fails, be stupid */
+		return $url;
 	}
