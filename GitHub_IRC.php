@@ -61,7 +61,7 @@
 		
 		private function FormatRepoName( )
 		{
-			return "\00313" . $this->Payload->repository->name . "\017";
+			return "\00310" . $this->Payload->repository->name . "\017";
 		}
 		
 		private function FormatBranch( $Branch )
@@ -71,7 +71,7 @@
 		
 		private function FormatName( $Name )
 		{
-			return "\00315" . $Name . "\017";
+			return "\00312" . $Name . "\017";
 		}
 		
 		private function FormatAction( )
@@ -206,8 +206,50 @@
 			
 			$Message .= sprintf( ': %s', $this->FormatURL( $this->Payload->compare ) );
 			
-			// TODO: foreach $DistinctCommits
-			// https://github.com/github/github-services/blob/master/lib/services/irc.rb#L262-L273
+			if( $Num > 0 )
+			{
+				$Message .= $this->FormatCommits( $DistinctCommits );
+			}
+			
+			return $Message;
+		}
+		
+		/**
+		 * Formats commits
+		 */
+		private function FormatCommits( $Commits )
+		{
+			$Message = '';
+			
+			$Branch = $this->BranchName( );
+			
+			// Only display branch name if it's not master branch
+			if( $Branch !== $this->Payload->repository->master_branch )
+			{
+				$Prefix = sprintf( "\n[%s/%s]", $this->FormatRepoName( ), $this->FormatBranch( $Branch ) );
+			}
+			else
+			{
+				$Prefix = sprintf( "\n[%s]", $this->FormatRepoName( ) );
+			}
+			
+			foreach( $Commits as $Commit )
+			{
+				$CommitMessage = Explode( "\n", $Commit->message, 2 );
+				$CommitMessage = $CommitMessage[ 0 ];
+				
+				if( $CommitMessage !== $Commit->message )
+				{
+					$CommitMessage .= '...';
+				}
+				
+				$Message .= sprintf( '%s %s %s: %s',
+					$Prefix,
+					$this->FormatHash( substr( $Commit->id, 0, 6 ) ),
+					$this->FormatName( $Commit->author->username ),
+					$CommitMessage
+				);
+			}
 			
 			return $Message;
 		}
