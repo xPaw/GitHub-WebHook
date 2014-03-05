@@ -168,6 +168,7 @@
 				$this->Payload->action = 'force-pushed'; // Don't tell anyone!
 				
 				$Message .= sprintf( '%s %s from %s to %s',
+					$this->FormatAction( ),
 					$this->FormatBranch( $this->BranchName( ) ),
 					$this->FormatHash( $this->BeforeSHA( ) ),
 					$this->FormatHash( $this->AfterSHA( ) )
