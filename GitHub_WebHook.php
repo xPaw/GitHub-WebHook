@@ -106,4 +106,19 @@
 		{
 			return $this->Payload;
 		}
+		
+		/**
+		 * Returns full name of the repository
+		 *
+		 * @return string
+		 */
+		public function GetFullRepositoryName( )
+		{
+			if( isset( $this->Payload->repository->fullname ) )
+			{
+				return $this->Payload->repository->fullname;
+			}
+			
+			return sprintf( '%s/%s', $this->Payload->repository->owner->name, $this->Payload->repository->name );
+		}
 	}

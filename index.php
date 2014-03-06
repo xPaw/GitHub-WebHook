@@ -22,14 +22,14 @@
 			exit;
 		}
 		
-		echo 'Received event: ' . $Hook->GetEventType() . PHP_EOL;
+		echo 'Received ' . $Hook->GetEventType() . ' in repository ' . $Hook->GetFullRepositoryName() . PHP_EOL;
 		//var_dump( $Hook->GetPayload() );
 		
 		http_response_code( 202 );
 	}
 	catch( Exception $e )
 	{
-		echo PHP_EOL . PHP_EOL . 'Exception: ' . $e->getMessage();
+		echo 'Exception: ' . $e->getMessage() . PHP_EOL;
 		
 		http_response_code( 500 );
 		
@@ -45,7 +45,7 @@
 	}
 	catch( Exception $e )
 	{
-		echo PHP_EOL . PHP_EOL . 'Exception: ' . $e->getMessage();
+		echo 'Exception: ' . $e->getMessage() . PHP_EOL;
 		
 		http_response_code( 500 );
 	}
