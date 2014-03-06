@@ -21,15 +21,23 @@
 		{
 			switch( $this->EventType )
 			{
-				case 'ping'        : return $this->FormatPingEvent( );
-				case 'push'        : return $this->FormatPushEvent( );
-				case 'release'     : return $this->FormatReleaseEvent( );
-				case 'issues'      : return $this->FormatIssuesEvent( );
-				case 'pull_request': return $this->FormatPullRequestEvent( );
-				default            : throw new Exception( 'Unsupported event type.' );
+				case 'ping'          : return $this->FormatPingEvent( );
+				case 'push'          : return $this->FormatPushEvent( );
+				case 'release'       : return $this->FormatReleaseEvent( );
+				case 'issues'        : return $this->FormatIssuesEvent( );
+				case 'pull_request'  : return $this->FormatPullRequestEvent( );
+				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
+				case 'commit_comment': return $this->FormatCommitCommentEvent( );
+				case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
+				default              : throw new Exception( 'Unsupported event type "' . $this->EventType . '".' );
 			}
 		}
 		
+		/**
+		 * Returns distinct commits which have non-empty commit messages
+		 *
+		 * @return array
+		 */
 		private function GetDistinctCommits( )
 		{
 			$Commits = Array( );
@@ -110,8 +118,22 @@
 			return "\00302\037" . $URL . "\017";
 		}
 		
+		private function ShortMessage( $Message )
+		{
+			$NewMessage = Explode( "\n", $Message, 2 );
+			$NewMessage = $NewMessage[ 0 ];
+			
+			if( $NewMessage !== $Message )
+			{
+				$NewMessage .= '...';
+			}
+			
+			return $NewMessage;
+		}
+		
 		/**
 		 * Formats a push event
+		 * See http://developer.github.com/v3/activity/events/types/#pushevent
 		 */
 		private function FormatPushEvent( )
 		{
@@ -241,19 +263,11 @@
 			
 			foreach( $Commits as $Commit )
 			{
-				$CommitMessage = Explode( "\n", $Commit->message, 2 );
-				$CommitMessage = $CommitMessage[ 0 ];
-				
-				if( $CommitMessage !== $Commit->message )
-				{
-					$CommitMessage .= '...';
-				}
-				
 				$Message .= sprintf( '%s %s %s: %s',
 					$Prefix,
 					$this->FormatHash( substr( $Commit->id, 0, 6 ) ),
 					$this->FormatName( $Commit->author->username ),
-					$CommitMessage
+					$this->ShortMessage( $Commit->message )
 				);
 			}
 			
@@ -262,6 +276,7 @@
 		
 		/**
 		 * Formats an issue event
+		 * See http://developer.github.com/v3/activity/events/types/#issuesevent
 		 */
 		private function FormatIssuesEvent( )
 		{
@@ -277,6 +292,7 @@
 		
 		/**
 		 * Formats a pull request event
+		 * See http://developer.github.com/v3/activity/events/types/#pullrequestevent
 		 */
 		private function FormatPullRequestEvent( )
 		{
@@ -298,7 +314,8 @@
 		}
 		
 		/**
-		 * Formats a pull request event
+		 * Formats a release event
+		 * See http://developer.github.com/v3/activity/events/types/#releaseevent
 		 */
 		private function FormatReleaseEvent( )
 		{
@@ -313,7 +330,60 @@
 		}
 		
 		/**
+		 * Formats a commit comment event
+		 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
+		 */
+		private function FormatCommitCommentEvent( )
+		{
+			return sprintf( '[%s] %s comment on commit %s: %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
+							$this->FormatURL( $this->Payload->comment->html_url )
+			);
+		}
+		
+		/**
+		 * Formats a commit comment event
+		 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
+		 */
+		private function FormatIssueCommentEvent( )
+		{
+			return sprintf( '[%s] %s comment on issue %s: %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatNumber( '#' . $this->Payload->issue->number ),
+							$this->FormatURL( $this->Payload->comment->html_url )
+			);
+		}
+		
+		/**
+		 * Formats a commit comment event
+		 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
+		 */
+		private function FormatPullRequestReviewCommentEvent( )
+		{
+			if( preg_match( '/\/(\d+)$/', $this->Payload->comment->pull_request_url, $Number ) === 1 )
+			{
+				$Number = $Number[ 1 ];
+			}
+			else
+			{
+				$Number = -1;
+			}
+			
+			return sprintf( '[%s] %s comment on pull request %s %s: %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatNumber( '#' . $Number ),
+							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
+							$this->FormatURL( $this->Payload->comment->html_url )
+			);
+		}
+		
+		/**
 		 * Formats a ping event
+		 * See http://developer.github.com/webhooks/#ping-event
 		 */
 		private function FormatPingEvent( )
 		{
