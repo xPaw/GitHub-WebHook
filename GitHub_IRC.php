@@ -23,6 +23,7 @@
 			{
 				case 'ping'        : return $this->FormatPingEvent( );
 				case 'push'        : return $this->FormatPushEvent( );
+				case 'release'     : return $this->FormatReleaseEvent( );
 				case 'issues'      : return $this->FormatIssuesEvent( );
 				case 'pull_request': return $this->FormatPullRequestEvent( );
 				default            : throw new Exception( 'Unsupported event type.' );
@@ -293,6 +294,21 @@
 							$this->FormatBranch( $BaseRef ),
 							$this->FormatBranch( $HeadRef ),
 							$this->FormatURL( $this->Payload->pull->html_url )
+			);
+		}
+		
+		/**
+		 * Formats a pull request event
+		 */
+		private function FormatReleaseEvent( )
+		{
+			return sprintf( '[%s] %s %s a %srelease %s: %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( ),
+							$this->Payload->release->prerelease ? 'pre' : '',
+							$this->Payload->release->name,
+							$this->FormatURL( $this->Payload->release->html_url )
 			);
 		}
 		
