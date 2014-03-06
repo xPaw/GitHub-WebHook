@@ -52,10 +52,6 @@
 	
 	// Taken from @meklu's gitmek-rcv
 	function shorten_url($url) {
-		static $cache = array();
-		if (isset($cache[$url])) {
-			return $cache[$url];
-		}
 		$opts = array(
 			"http" => array(
 				"header" => "Content-type: application/x-www-form-urlencoded\r\n",
