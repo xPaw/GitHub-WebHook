@@ -114,9 +114,9 @@
 		 */
 		public function GetFullRepositoryName( )
 		{
-			if( isset( $this->Payload->repository->fullname ) )
+			if( isset( $this->Payload->repository->full_name ) )
 			{
-				return $this->Payload->repository->fullname;
+				return $this->Payload->repository->full_name;
 			}
 			
 			return sprintf( '%s/%s', $this->Payload->repository->owner->name, $this->Payload->repository->name );
