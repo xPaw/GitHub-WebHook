@@ -23,8 +23,9 @@
 			{
 				case 'ping'          : return $this->FormatPingEvent( );
 				case 'push'          : return $this->FormatPushEvent( );
-				case 'release'       : return $this->FormatReleaseEvent( );
 				case 'issues'        : return $this->FormatIssuesEvent( );
+				case 'member':       : return $this->FormatMemberEvent( );
+				case 'release'       : return $this->FormatReleaseEvent( );
 				case 'pull_request'  : return $this->FormatPullRequestEvent( );
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
@@ -378,6 +379,20 @@
 							$this->FormatNumber( '#' . $Number ),
 							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
 							$this->FormatURL( $this->Payload->comment->html_url )
+			);
+		}
+		
+		/**
+		 * Formats a release event
+		 * See http://developer.github.com/v3/activity/events/types/#releaseevent
+		 */
+		private function FormatMemberEvent( )
+		{
+			return sprintf( '[%s] %s %s %s as a collaborator',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( ),
+							$this->FormatName( $this->Payload->member->login )
 			);
 		}
 		
