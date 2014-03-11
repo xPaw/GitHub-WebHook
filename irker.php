@@ -18,8 +18,6 @@
 	
 	try
 	{
-		$Hook->ProcessRequest( );
-		
 		// This check is optional, you can implement some secret GET param for example
 		if( !$Hook->ValidateIPAddress() )
 		{
@@ -27,6 +25,8 @@
 			
 			exit;
 		}
+		
+		$Hook->ProcessRequest( );
 		
 		$RepositoryName = $Hook->GetFullRepositoryName();
 		
