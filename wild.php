@@ -4,7 +4,7 @@ function wild($str, $expr) {
 	$ret = true;
 	for (
 		$si = 0, $ei = 0;
-		$si < strlen($str) && $ei < strlen($expr);
+		$si < strlen($str) || $ei < strlen($expr);
 		$ei += 1
 	) {
 		if ($expr[$ei] === '*') {
@@ -19,7 +19,7 @@ function wild($str, $expr) {
 				$si += 1;
 			}
 		} else {
-			if ($str[$si] !== $expr[$ei]) {
+			if (substr($str, $si, 1) !== substr($expr, $ei, 1)) {
 				$ret = false;
 				break;
 			}
