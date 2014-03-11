@@ -7,15 +7,8 @@
 	
 	http_response_code( 500 );
 	
-	/* types */
-	define("GITHUB_T", 1 << 0);
-
-	/* you ain't gon' configure this, foo' */
-	define("IRKER_HOST", "127.0.0.1");
-	define("IRKER_PORT", 6659);
-
 	/* load the config */
-	require __DIR__ . '/gitmek-rcv_config.php';
+	require __DIR__ . '/config.php';
 	
 	require __DIR__ . '/GitHub_WebHook.php';
 	require __DIR__ . '/GitHub_IRC.php';
@@ -37,12 +30,6 @@
 		
 		$RepositoryName = $Hook->GetFullRepositoryName();
 		
-		// Check if we have a send target
-		if( !isset( $sendto[ GITHUB_T ][ $RepositoryName ] ) )
-		{
-			throw new Exception( 'No send target for this repository.' );
-		}
-		
 		echo 'Received ' . $Hook->GetEventType() . ' in repository ' . $RepositoryName . PHP_EOL;
 		//print_r( $Hook->GetPayload() );
 		
@@ -53,12 +40,20 @@
 		// Format irker payload
 		$IrkerPayload = '';
 		
-		foreach( $sendto[ GITHUB_T ][ $RepositoryName ] as $Target )
+		foreach( $Channels as $Channel )
 		{
-			$IrkerPayload .= json_encode( Array(
-				'to'      => $Target,
-				'privmsg' => $Message
-			) ) . "\n";
+			if( !wild( $RepositoryName, $Channel ) )
+			{
+				continue;
+			}
+			
+			foreach( $Channel as $Target )
+			{
+				$IrkerPayload .= json_encode( Array(
+					'to'      => $Target,
+					'privmsg' => $Message
+				) ) . "\n";
+			}
 		}
 		
 		// Send to irker
@@ -84,6 +79,19 @@
 	if( $Socket !== false )
 	{
 		socket_close( $Socket );
+	}
+	
+	function wild( $string, $expression )
+	{
+		if( strpos( $expression, '*' ) === false )
+		{
+			return strcmp( $expression, $string ) === 0;
+		}
+		
+		$expression = preg_quote( $expression, '/' );
+		$expression = str_replace( '\*', '.*', $expression );
+		
+		return preg_match( '/^' . $expression . '$/', $string ) === 1;
 	}
 	
 	// Taken from @meklu's gitmek-rcv
