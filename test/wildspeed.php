@@ -12,12 +12,12 @@ function wildspeed($str, $expr, $res) {
 	$s = microtime(true);
 	$ret = wild($str, $expr);
 	$e = microtime(true);
-	printf("%.3fus wild\n", 1000000 * ($e - $s));
+	printf("%.3fµs wild\n", 1000000 * ($e - $s));
 	assert($ret === $res);
 	$s = microtime(true);
 	$ret = wild_regex($str, $expr);
 	$e = microtime(true);
-	printf("%.3fus wild_regex\n", 1000000 * ($e - $s));
+	printf("%.3fµs wild_regex\n", 1000000 * ($e - $s));
 	assert($ret === $res);
 }
 
