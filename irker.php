@@ -47,6 +47,8 @@
 				continue;
 			}
 			
+			echo 'Matched "' . $RepositoryName . '" as "' . $Channel . '"' . PHP_EOL; 
+			
 			foreach( $Channel as $Target )
 			{
 				$IrkerPayload .= json_encode( Array(
