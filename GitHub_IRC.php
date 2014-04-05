@@ -24,7 +24,7 @@
 				case 'ping'          : return $this->FormatPingEvent( );
 				case 'push'          : return $this->FormatPushEvent( );
 				case 'issues'        : return $this->FormatIssuesEvent( );
-				case 'member':       : return $this->FormatMemberEvent( );
+				case 'member'        : return $this->FormatMemberEvent( );
 				case 'release'       : return $this->FormatReleaseEvent( );
 				case 'pull_request'  : return $this->FormatPullRequestEvent( );
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
