@@ -40,7 +40,7 @@
 		// Format irker payload
 		$IrkerPayload = '';
 		
-		foreach( $Channels as $Channel )
+		foreach( $Channels as $Channel => $SendTargets )
 		{
 			if( !wild( $RepositoryName, $Channel ) )
 			{
@@ -49,7 +49,7 @@
 			
 			echo 'Matched "' . $RepositoryName . '" as "' . $Channel . '"' . PHP_EOL; 
 			
-			foreach( $Channel as $Target )
+			foreach( $SendTargets as $Target )
 			{
 				$IrkerPayload .= json_encode( Array(
 					'to'      => $Target,
