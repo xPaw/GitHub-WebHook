@@ -297,8 +297,8 @@
 		 */
 		private function FormatPullRequestEvent( )
 		{
-			$BaseRef = explode( ':', $this->Payload->pull->base->label );
-			$HeadRef = explode( ':', $this->Payload->pull->head->label );
+			$BaseRef = explode( ':', $this->Payload->pull_request->base->label );
+			$HeadRef = explode( ':', $this->Payload->pull_request->head->label );
 			$BaseRef = end( $BaseRef );
 			$HeadRef = end( $HeadRef );
 			
@@ -306,11 +306,11 @@
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
-							$this->FormatNumber( '#' . $this->Payload->pull->number ),
-							$this->Payload->pull->title,
+							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
+							$this->Payload->pull_request->title,
 							$this->FormatBranch( $BaseRef ),
 							$this->FormatBranch( $HeadRef ),
-							$this->FormatURL( $this->Payload->pull->html_url )
+							$this->FormatURL( $this->Payload->pull_request->html_url )
 			);
 		}
 		
