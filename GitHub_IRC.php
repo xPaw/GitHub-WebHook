@@ -21,7 +21,8 @@
 		{
 			switch( $this->EventType )
 			{
-				case 'ping'          : return $this->FormatPingEvent( );
+				// Ping event has no repository information
+				//case 'ping'          : return $this->FormatPingEvent( );
 				case 'push'          : return $this->FormatPushEvent( );
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
