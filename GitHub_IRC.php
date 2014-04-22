@@ -351,10 +351,11 @@
 		 */
 		private function FormatIssueCommentEvent( )
 		{
-			return sprintf( '[%s] %s commented on issue %s: %s',
+			return sprintf( '[%s] %s commented on issue %s: %s. See %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatNumber( '#' . $this->Payload->issue->number ),
+							$this->Payload->issue->title,
 							$this->FormatURL( $this->Payload->comment->html_url )
 			);
 		}
