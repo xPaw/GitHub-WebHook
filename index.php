@@ -22,6 +22,14 @@
 			exit;
 		}
 		
+		// This check is optional, checks if your hook secret matches
+		if( !$Hook->ValidateHubSignature( 'My secret key' ) )
+		{
+			http_response_code( 401 );
+			
+			exit;
+		}
+		
 		echo 'Received ' . $Hook->GetEventType() . ' in repository ' . $Hook->GetFullRepositoryName() . PHP_EOL;
 		//var_dump( $Hook->GetPayload() );
 		

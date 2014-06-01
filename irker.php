@@ -7,9 +7,7 @@
 	
 	http_response_code( 500 );
 	
-	/* load the config */
 	require __DIR__ . '/config.php';
-	
 	require __DIR__ . '/GitHub_WebHook.php';
 	require __DIR__ . '/GitHub_IRC.php';
 	
