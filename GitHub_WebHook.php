@@ -66,7 +66,7 @@
 				);
 			}
 			
-			if( !isset( $this->Payload->repository ) )
+			if( !isset( $this->Payload->repository ) && $this->EventType !== 'ping' ) // Ping event only has 'hook' info
 			{
 				throw new Exception( 'Missing repository information.' );
 			}
@@ -151,11 +151,6 @@
 			if( isset( $this->Payload->repository->full_name ) )
 			{
 				return $this->Payload->repository->full_name;
-			}
-			
-			if( !isset( $this->Payload->repository ) )
-			{
-				throw new Exception( 'Unable to get repository info' );
 			}
 			
 			return sprintf( '%s/%s', $this->Payload->repository->owner->name, $this->Payload->repository->name );
