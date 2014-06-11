@@ -21,8 +21,7 @@
 		{
 			switch( $this->EventType )
 			{
-				// Ping event has no repository information
-				//case 'ping'          : return $this->FormatPingEvent( );
+				case 'ping'          : return $this->FormatPingEvent( );
 				case 'push'          : return $this->FormatPushEvent( );
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
@@ -404,6 +403,9 @@
 		 */
 		private function FormatPingEvent( )
 		{
-			return "GitHub's Zen: \00312" . $this->Payload->zen . "\017 (hook worked!)";
+			return sprintf( 'Hook %s worked! Zen: %s',
+							$this->FormatHash( $this->Payload->hook->id ),
+							$this->FormatName( $this->Payload->zen )
+			);
 		}
 	}
