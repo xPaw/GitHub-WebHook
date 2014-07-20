@@ -144,7 +144,7 @@
 				
 				if( preg_match( '/\/repos\/([^\/]*)\/([^\/]*)\/hooks/', $this->Payload->hook->url, $Matches ) === 1 )
 				{
-					return sprintf( '%s/%s', $Matches[ 0 ], $Matches[ 1 ] );
+					return sprintf( '%s/%s', $Matches[ 1 ], $Matches[ 2 ] );
 				}
 			}
 			
