@@ -237,6 +237,10 @@
 			
 			if( $Num > 0 )
 			{
+				// Only print one commit
+				$Commit = reset( $DistinctCommits );
+				$DistinctCommits = Array( $Commit );
+				
 				$Message .= $this->FormatCommits( $DistinctCommits );
 			}
 			
