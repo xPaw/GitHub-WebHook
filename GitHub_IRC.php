@@ -101,7 +101,7 @@
 		
 		private function FormatNumber( $Number )
 		{
-			return "\00309\002" . $Number . "\017";
+			return "\00312\002" . $Number . "\017";
 		}
 		
 		private function FormatHash( $Hash )
@@ -242,6 +242,16 @@
 				$DistinctCommits = Array( $Commit );
 				
 				$Message .= $this->FormatCommits( $DistinctCommits );
+				
+				if( $Num > 1 )
+				{
+					$Num--;
+					
+					$Message .= sprintf( ' (and %s more commit%s)',
+						$this->FormatNumber( $Num ),
+						$Num === 1 ? '' : 's'
+					);
+				}
 			}
 			
 			return $Message;
