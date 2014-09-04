@@ -237,8 +237,8 @@
 			
 			if( $Num > 0 )
 			{
-				// Only print one commit
-				$Commit = reset( $DistinctCommits );
+				// Only print last commit
+				$Commit = array_pop( $DistinctCommits );
 				$DistinctCommits = Array( $Commit );
 				
 				$Message .= $this->FormatCommits( $DistinctCommits );
