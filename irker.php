@@ -19,9 +19,7 @@
 		// This check is optional, you can implement some secret GET param for example
 		if( !$Hook->ValidateIPAddress() )
 		{
-			http_response_code( 401 );
-			
-			exit;
+			throw new Exception( 'Unauthorized.' );
 		}
 		
 		$Hook->ProcessRequest( );
@@ -54,6 +52,11 @@
 					'privmsg' => $Message
 				) ) . "\n";
 			}
+		}
+		
+		if( empty( $IrkerPayload ) )
+		{
+			throw new Exception( 'Empty payload, not sending.' );
 		}
 		
 		// Send to irker
