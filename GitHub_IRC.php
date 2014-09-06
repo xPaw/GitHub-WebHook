@@ -311,19 +311,19 @@
 		 */
 		private function FormatPullRequestEvent( )
 		{
-			$BaseRef = explode( ':', $this->Payload->pull_request->base->label );
+			/*$BaseRef = explode( ':', $this->Payload->pull_request->base->label );
 			$HeadRef = explode( ':', $this->Payload->pull_request->head->label );
 			$BaseRef = end( $BaseRef );
-			$HeadRef = end( $HeadRef );
+			$HeadRef = end( $HeadRef );*/
 			
-			return sprintf( '[%s] %s %s pull request %s: %s (%s...%s). See %s',
+			return sprintf( '[%s] %s %s pull request %s: %s. See %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
 							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 							$this->Payload->pull_request->title,
-							$this->FormatBranch( $BaseRef ),
-							$this->FormatBranch( $HeadRef ),
+							//$this->FormatBranch( $BaseRef ), // (%s...%s)
+							//$this->FormatBranch( $HeadRef ),
 							$this->FormatURL( $this->Payload->pull_request->html_url )
 			);
 		}
