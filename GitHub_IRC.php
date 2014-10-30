@@ -233,6 +233,13 @@
 				);
 			}
 			
+			$URL = $this->Payload->compare;
+			
+			if( $Num === 1 )
+			{
+				$URL = $this->Payload->commits[ 0 ]->url;
+			}
+			
 			$Message .= sprintf( ': %s', $this->FormatURL( $this->Payload->compare ) );
 			
 			if( $Num > 0 )
