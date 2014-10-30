@@ -240,7 +240,7 @@
 				$URL = $this->Payload->commits[ 0 ]->url;
 			}
 			
-			$Message .= sprintf( ': %s', $this->FormatURL( $this->Payload->compare ) );
+			$Message .= sprintf( ': %s', $this->FormatURL( $URL ) );
 			
 			if( $Num > 0 )
 			{
