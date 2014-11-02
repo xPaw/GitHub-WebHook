@@ -302,11 +302,12 @@
 		 */
 		private function FormatIssuesEvent( )
 		{
-			return sprintf( '[%s] %s %s issue %s: %s. See %s',
+			return sprintf( '[%s] %s %s issue %s%s: %s. See %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
 							$this->FormatNumber( sprintf( '#%d', $this->Payload->issue->number ) ),
+							( $this->Payload->action === 'labeled' ? ( ' as ' . $this->FormatName( $this->Payload->label->name ) ) : '' ),
 							$this->Payload->issue->title,
 							$this->FormatURL( $this->Payload->issue->html_url )
 			);
