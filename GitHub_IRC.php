@@ -10,6 +10,21 @@
 			$this->EventType = $EventType;
 			$this->Payload = $Payload;
 			$this->URLShortener = $URLShortener;
+			
+			// ref_name is not always available, apparently, we make sure it is
+			if( !isset( $this->Payload->ref_name ) && isset( $this->Payload->ref ) )
+			{
+				$Ref = explode( '/', $this->Payload->ref );
+				
+				$this->Payload->ref_name = $Ref[ 2 ];
+			}
+			
+			if( !isset( $this->Payload->base_ref_name ) && isset( $this->Payload->base_ref ) )
+			{
+				$Ref = explode( '/', $this->Payload->base_ref );
+				
+				$this->Payload->base_ref_name = $Ref[ 2 ];
+			}
 		}
 		
 		/**
@@ -261,8 +276,8 @@
 			
 			$Branch = $this->Payload->ref_name;
 			
-			// Only display branch name if it's not master branch
-			if( $Branch !== $this->Payload->repository->master_branch )
+			// Only display branch name if it's not default branch
+			if( $Branch !== $this->Payload->repository->default_branch )
 			{
 				$Prefix = sprintf( "\n[%s/%s]", $this->FormatRepoName( ), $this->FormatBranch( $Branch ) );
 			}
