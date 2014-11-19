@@ -38,6 +38,7 @@
 			{
 				case 'ping'          : return $this->FormatPingEvent( );
 				case 'push'          : return $this->FormatPushEvent( );
+				case 'public'        : return $this->FormatPublicEvent( );
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
 				case 'release'       : return $this->FormatReleaseEvent( );
@@ -118,9 +119,9 @@
 			return "\00314" . $Hash . "\017";
 		}
 		
-		private function FormatURL( $URL )
+		private function FormatURL( $URL, $IgnoreURLShortener = false )
 		{
-			if( $this->URLShortener !== null )
+			if( $this->URLShortener !== null && !$IgnoreURLShortener )
 			{
 				$URL = call_user_func( $this->URLShortener, $URL );
 			}
@@ -439,6 +440,19 @@
 			return sprintf( 'Hook %s worked! Zen: %s',
 							$this->FormatHash( $this->Payload->hook->id ),
 							$this->FormatName( $this->Payload->zen )
+			);
+		}
+		
+		/**
+		 * Format a public event. Without a doubt: the best GitHub event
+		 * See https://developer.github.com/v3/activity/events/types/#publicevent
+		 */
+		private static FormatPublicEvent( )
+		{
+			return sprintf( '[%s] is now open source and available to everyone at %s (You\'re the best %s!)',
+							$this->FormatRepoName( ),
+							$this->FormatURL( $this->Payload->repository->html_url, true ),
+							$this->FormatName( $this->Payload->sender->login )
 			);
 		}
 	}
