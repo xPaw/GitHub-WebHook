@@ -54,13 +54,6 @@
 			return $Commits;
 		}
 		
-		private function BranchName( )
-		{
-			$Ref = explode( '/', $this->Payload->ref );
-			
-			return $Ref[ 2 ];
-		}
-		
 		private function BeforeSHA( )
 		{
 			return substr( $this->Payload->before, 0, 6 );
@@ -151,22 +144,19 @@
 				if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
 				{
 					$Message .= sprintf( 'tagged %s at %s',
-						$this->FormatBranch( $this->BranchName( ) ),
+						$this->FormatBranch( $this->Payload->ref_name ),
 						isset( $this->Payload->base_ref ) ?
-							$this->FormatBranch( $this->BranchName( ) ) :
+							$this->FormatBranch( $this->Payload->base_ref_name ) :
 							$this->FormatHash( $this->BeforeSHA( ) )
 					);
 				}
 				else
 				{
-					$Message .= sprintf( 'created %s ', $this->FormatBranch( $this->BranchName( ) ) );
+					$Message .= sprintf( 'created %s ', $this->FormatBranch( $this->Payload->ref_name ) );
 					
 					if( isset( $this->Payload->base_ref ) )
 					{
-						$Ref = explode( '/', $this->Payload->base_ref );
-						$Ref = $Ref[ 2 ];
-						
-						$Message .= sprintf( 'from %s', $this->FormatBranch( $Ref ) );
+						$Message .= sprintf( 'from %s', $this->FormatBranch( $this->Payload->base_ref_name ) );
 					}
 					else if( $Num > 0 )
 					{
@@ -188,7 +178,7 @@
 				
 				$Message .= sprintf( '%s %s at %s',
 					$this->FormatAction( ),
-					$this->FormatBranch( $this->BranchName( ) ),
+					$this->FormatBranch( $this->Payload->ref_name ),
 					$this->FormatHash( $this->BeforeSHA( ) )
 				);
 			}
@@ -198,7 +188,7 @@
 				
 				$Message .= sprintf( '%s %s from %s to %s',
 					$this->FormatAction( ),
-					$this->FormatBranch( $this->BranchName( ) ),
+					$this->FormatBranch( $this->Payload->ref_name ),
 					$this->FormatHash( $this->BeforeSHA( ) ),
 					$this->FormatHash( $this->AfterSHA( ) )
 				);
@@ -207,18 +197,15 @@
 			{
 				if( isset( $this->Payload->base_ref ) )
 				{
-					$Ref = explode( '/', $this->Payload->base_ref );
-					$Ref = $Ref[ 2 ];
-					
 					$Message .= sprintf( 'merged %s into %s',
-						$this->FormatBranch( $Ref ),
-						$this->FormatBranch( $this->BranchName( ) )
+						$this->FormatBranch( $this->Payload->base_ref_name ),
+						$this->FormatBranch( $this->Payload->ref_name )
 					);
 				}
 				else
 				{
 					$Message .= sprintf( 'fast-forwarded %s from %s to %s',
-						$this->FormatBranch( $this->BranchName( ) ),
+						$this->FormatBranch( $this->Payload->ref_name ),
 						$this->FormatHash( $this->BeforeSHA( ) ),
 						$this->FormatHash( $this->AfterSHA( ) )
 					);
@@ -229,7 +216,7 @@
 				$Message .= sprintf( 'pushed %s new commit%s to %s',
 					$this->FormatNumber( $Num ),
 					$Num === 1 ? '' : 's',
-					$this->FormatBranch( $this->BranchName( ) )
+					$this->FormatBranch( $this->Payload->ref_name )
 				);
 			}
 			
@@ -271,7 +258,7 @@
 		{
 			$Message = '';
 			
-			$Branch = $this->BranchName( );
+			$Branch = $this->Payload->ref_name;
 			
 			// Only display branch name if it's not master branch
 			if( $Branch !== $this->Payload->repository->master_branch )
