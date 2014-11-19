@@ -84,7 +84,6 @@
 			switch( $this->Payload->action )
 			{
 				case 'synchronize': return "\00311synchronized\017";
-				case 'merged'     :
 				case 'reopened'   : return "\00307" . $this->Payload->action . "\017";
 				case 'force-pushed':
 				case 'deleted'    :
@@ -320,17 +319,15 @@
 				}
 			}
 			
-			return sprintf( '[%s] %s %s%s pull request %s: %s. See %s',
+			return sprintf( '[%s] %s %s pull request %s%s: %s. See %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
-							$this->Payload->action === 'merged' ?
-								( ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
-								'',
 							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
+							$this->Payload->action === 'merged' ?
+								( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
+								'',
 							$this->Payload->pull_request->title,
-							//$this->FormatBranch( $BaseRef ), // (%s...%s)
-							//$this->FormatBranch( $HeadRef ),
 							$this->FormatURL( $this->Payload->pull_request->html_url )
 			);
 		}
