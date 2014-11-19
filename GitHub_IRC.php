@@ -447,7 +447,7 @@
 		 * Format a public event. Without a doubt: the best GitHub event
 		 * See https://developer.github.com/v3/activity/events/types/#publicevent
 		 */
-		private static FormatPublicEvent( )
+		private static function FormatPublicEvent( )
 		{
 			return sprintf( '[%s] is now open source and available to everyone at %s (You\'re the best %s!)',
 							$this->FormatRepoName( ),
