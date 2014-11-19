@@ -33,6 +33,11 @@
 		$IRC = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload(), 'shorten_url' );
 		$Message = $IRC->GetMessage();
 		
+		if( isset( $_GET[ 'strip_colors' ] ) )
+		{
+			$Message = strip_colors( $Message );
+		}
+		
 		// Format irker payload
 		$IrkerPayload = '';
 		
@@ -95,6 +100,11 @@
 		$expression = str_replace( '\*', '.*', $expression );
 		
 		return preg_match( '/^' . $expression . '$/', $string ) === 1;
+	}
+	
+	function strip_colors( $message )
+	{
+		return preg_replace( "/\x03(\d\d)?/", '', $message );
 	}
 	
 	// Taken from @meklu's gitmek-rcv
