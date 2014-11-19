@@ -193,7 +193,7 @@
 					$this->FormatHash( $this->AfterSHA( ) )
 				);
 			}
-			else if( count( $this->Payload->commits ) > 0 && $Num === 0 )
+			else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
 			{
 				if( isset( $this->Payload->base_ref ) )
 				{
