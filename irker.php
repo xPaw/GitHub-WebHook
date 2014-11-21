@@ -38,6 +38,11 @@
 			$Message = strip_colors( $Message );
 		}
 		
+		if( empty( $Message ) )
+		{
+			throw new Exception( 'Empty message, not sending.' );
+		}
+		
 		// Format irker payload
 		$IrkerPayload = '';
 		
