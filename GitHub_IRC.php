@@ -306,6 +306,11 @@
 		 */
 		private function FormatIssuesEvent( )
 		{
+			if( $this->Payload->action === 'labeled' || $this->Payload->action === 'unlabeled' )
+			{
+				return '';
+			}
+			
 			return sprintf( '[%s] %s %s issue %s%s: %s. See %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
