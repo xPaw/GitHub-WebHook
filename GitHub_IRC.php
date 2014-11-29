@@ -16,14 +16,20 @@
 			{
 				$Ref = explode( '/', $this->Payload->ref );
 				
-				$this->Payload->ref_name = $Ref[ 2 ];
+				if( isset( $Ref[ 2 ] ) )
+				{
+					$this->Payload->ref_name = $Ref[ 2 ];
+				}
 			}
 			
 			if( !isset( $this->Payload->base_ref_name ) && isset( $this->Payload->base_ref ) )
 			{
 				$Ref = explode( '/', $this->Payload->base_ref );
 				
-				$this->Payload->base_ref_name = $Ref[ 2 ];
+				if( isset( $Ref[ 2 ] ) )
+				{
+					$this->Payload->base_ref_name = $Ref[ 2 ];
+				}
 			}
 		}
 		
@@ -164,7 +170,7 @@
 						$this->FormatBranch( $this->Payload->ref_name ),
 						isset( $this->Payload->base_ref ) ?
 							$this->FormatBranch( $this->Payload->base_ref_name ) :
-							$this->FormatHash( $this->BeforeSHA( ) )
+							$this->FormatHash( $this->AfterSHA( ) )
 					);
 				}
 				else
@@ -364,7 +370,7 @@
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
 							$this->Payload->release->prerelease ? 'pre' : '',
-							$this->Payload->release->name,
+							$this->FormatBranch( $this->Payload->release->name ),
 							$this->FormatURL( $this->Payload->release->html_url )
 			);
 		}
