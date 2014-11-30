@@ -1,4 +1,16 @@
 <?php
+	class GitHubNotImplementedException extends Exception
+	{
+		public $EventName = '';
+		
+		public function __construct( $Event )
+		{
+			$this->EventName = $Event;
+			
+			parent :: __construct( 'Unsupported event type "' . $Event . '".' );
+		}
+	}
+	
 	class GitHub_IRC
 	{
 		private $EventType;
@@ -52,8 +64,9 @@
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
 				case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
-				default              : throw new Exception( 'Unsupported event type "' . $this->EventType . '".' );
 			}
+			
+			throw new GitHubNotImplementedException( $this->EventType );
 		}
 		
 		/**

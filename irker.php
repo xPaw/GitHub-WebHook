@@ -83,6 +83,12 @@
 		
 		http_response_code( 202 );
 	}
+	catch( GitHubNotImplementedException $e )
+	{
+		http_response_code( 501 );
+		
+		echo 'Unsupported GitHub event: ' . $e->EventName;
+	}
 	catch( Exception $e )
 	{
 		echo 'Exception: ' . $e->getMessage() . PHP_EOL;
