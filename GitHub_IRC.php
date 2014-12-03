@@ -60,6 +60,7 @@
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
 				case 'release'       : return $this->FormatReleaseEvent( );
+				case 'repository'    : return $this->FormatRepositoryEvent( );
 				case 'pull_request'  : return $this->FormatPullRequestEvent( );
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
@@ -119,6 +120,7 @@
 			switch( $this->Payload->action )
 			{
 				case 'synchronize': return "\00311synchronized\017";
+				case 'created'    :
 				case 'reopened'   : return "\00307" . $this->Payload->action . "\017";
 				case 'force-pushed':
 				case 'deleted'    :
@@ -477,6 +479,20 @@
 							$this->FormatRepoName( ),
 							$this->FormatURL( $this->Payload->repository->html_url, true ),
 							$this->FormatName( $this->Payload->sender->login )
+			);
+		}
+		
+		/**
+		 * Triggered when a repository is created.
+		 * See https://developer.github.com/v3/activity/events/types/#repositoryevent
+		 */
+		private static function FormatRepositoryEvent( )
+		{
+			return sprintf( '[%s] %s %s this repository. See %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( ),
+							$this->FormatURL( $this->Payload->repository->html_url )
 			);
 		}
 	}
