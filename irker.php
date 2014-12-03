@@ -83,6 +83,12 @@
 		
 		http_response_code( 202 );
 	}
+	catch( GitHubIgnoredEventException $e )
+	{
+		http_response_code( 200 );
+		
+		echo 'This GitHub event is ignored.';
+	}
 	catch( GitHubNotImplementedException $e )
 	{
 		http_response_code( 501 );

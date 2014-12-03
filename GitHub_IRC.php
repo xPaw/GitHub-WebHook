@@ -11,6 +11,11 @@
 		}
 	}
 	
+	class GitHubIgnoredEventException extends Exception
+	{
+		//
+	}
+	
 	class GitHub_IRC
 	{
 		private $EventType;
@@ -65,6 +70,8 @@
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
 				case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
+				case 'watch'         : throw new GitHubIgnoredEventException( );
+				
 			}
 			
 			throw new GitHubNotImplementedException( $this->EventType );
