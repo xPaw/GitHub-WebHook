@@ -71,7 +71,7 @@
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
 				case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
 				case 'watch'         : throw new GitHubIgnoredEventException( );
-				
+				case 'status'        : throw new GitHubIgnoredEventException( );
 			}
 			
 			throw new GitHubNotImplementedException( $this->EventType );
