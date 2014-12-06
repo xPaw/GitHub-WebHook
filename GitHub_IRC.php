@@ -367,6 +367,10 @@
 					$this->Payload->action = 'closed without merging';
 				}
 			}
+			else if( $this->Payload->action === 'labeled' || $this->Payload->action === 'unlabeled' )
+			{
+				return '';
+			}
 			
 			return sprintf( '[%s] %s %s pull request %s%s: %s. See %s',
 							$this->FormatRepoName( ),
