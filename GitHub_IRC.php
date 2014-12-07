@@ -367,7 +367,7 @@
 					$this->Payload->action = 'closed without merging';
 				}
 			}
-			else if( $this->Payload->action === 'labeled' || $this->Payload->action === 'unlabeled' )
+			else if( $this->Payload->action === 'labeled' || $this->Payload->action === 'unlabeled' || $this->Payload->action === 'assigned' )
 			{
 				return '';
 			}
