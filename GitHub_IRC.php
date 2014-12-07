@@ -172,7 +172,7 @@
 		
 		/**
 		 * Formats a push event
-		 * See http://developer.github.com/v3/activity/events/types/#pushevent
+		 * See https://developer.github.com/v3/activity/events/types/#pushevent
 		 */
 		private function FormatPushEvent( )
 		{
@@ -330,7 +330,7 @@
 		
 		/**
 		 * Formats an issue event
-		 * See http://developer.github.com/v3/activity/events/types/#issuesevent
+		 * See https://developer.github.com/v3/activity/events/types/#issuesevent
 		 */
 		private function FormatIssuesEvent( )
 		{
@@ -352,7 +352,7 @@
 		
 		/**
 		 * Formats a pull request event
-		 * See http://developer.github.com/v3/activity/events/types/#pullrequestevent
+		 * See https://developer.github.com/v3/activity/events/types/#pullrequestevent
 		 */
 		private function FormatPullRequestEvent( )
 		{
@@ -387,7 +387,7 @@
 		
 		/**
 		 * Formats a release event
-		 * See http://developer.github.com/v3/activity/events/types/#releaseevent
+		 * See https://developer.github.com/v3/activity/events/types/#releaseevent
 		 */
 		private function FormatReleaseEvent( )
 		{
@@ -456,7 +456,7 @@
 		
 		/**
 		 * Formats a release event
-		 * See http://developer.github.com/v3/activity/events/types/#releaseevent
+		 * See https://developer.github.com/v3/activity/events/types/#releaseevent
 		 */
 		private function FormatMemberEvent( )
 		{
@@ -470,7 +470,7 @@
 		
 		/**
 		 * Formats a ping event
-		 * See http://developer.github.com/webhooks/#ping-event
+		 * See https://developer.github.com/webhooks/#ping-event
 		 */
 		private function FormatPingEvent( )
 		{
