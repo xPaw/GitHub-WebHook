@@ -70,7 +70,10 @@
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
 				case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
-				case 'watch'         : throw new GitHubIgnoredEventException( );
+				
+				// Spammy events that we do not care about
+				case 'fork'          :
+				case 'watch'         :
 				case 'status'        : throw new GitHubIgnoredEventException( );
 			}
 			
