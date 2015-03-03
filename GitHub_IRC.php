@@ -486,7 +486,7 @@
 		 * Format a public event. Without a doubt: the best GitHub event
 		 * See https://developer.github.com/v3/activity/events/types/#publicevent
 		 */
-		private static function FormatPublicEvent( )
+		private function FormatPublicEvent( )
 		{
 			return sprintf( '[%s] is now open source and available to everyone at %s (You\'re the best %s!)',
 							$this->FormatRepoName( ),
@@ -499,7 +499,7 @@
 		 * Triggered when a repository is created.
 		 * See https://developer.github.com/v3/activity/events/types/#repositoryevent
 		 */
-		private static function FormatRepositoryEvent( )
+		private function FormatRepositoryEvent( )
 		{
 			return sprintf( '[%s] %s %s this repository. See %s',
 							$this->FormatRepoName( ),
