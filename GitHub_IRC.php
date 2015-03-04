@@ -165,6 +165,11 @@
 			$NewMessage = Explode( "\n", $Message, 2 );
 			$NewMessage = $NewMessage[ 0 ];
 			
+			if( strlen( $NewMessage ) > 100 )
+			{
+				$NewMessage = substr( $Message, 0, 100 );
+			}
+			
 			if( $NewMessage !== $Message )
 			{
 				$NewMessage .= '...';
