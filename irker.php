@@ -124,30 +124,39 @@
 		return preg_replace( "/\x03(\d\d)?/", '', $message );
 	}
 	
-	// Taken from @meklu's gitmek-rcv
-	function shorten_url($url) {
-		$opts = array(
-			"http" => array(
-				"header" => "Content-type: application/x-www-form-urlencoded\r\n",
-				"method" => "POST",
-				"content" => http_build_query(array("url" => $url)),
-			),
-		);
-		$ctx = stream_context_create($opts);
-		$stream = @fopen("http://git.io", "r", false, $ctx);
-		if ($stream === false) {
-			/* damn it */
-			return $url;
-		}
-		$md = stream_get_meta_data($stream);
-		fclose($stream);
-		$headers = $md["wrapper_data"];
-		foreach($headers as $header) {
-			$key = "Location: ";
-			if (strpos($header, $key) === 0) {
-				return substr($header, strlen($key));
+	function shorten_url( $url )
+	{
+		$c = curl_init( );
+		
+		curl_setopt_array( $c, [
+			CURLOPT_USERAGENT      => 'https://github.com/xPaw/GitHub-WebHook',
+			CURLOPT_HEADER         => true,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_FOLLOWLOCATION => false,
+			CURLOPT_URL            => 'https://git.io',
+			CURLOPT_CONNECTTIMEOUT => 5,
+			CURLOPT_TIMEOUT        => 5,
+			CURLOPT_POST           => 1,
+			CURLOPT_POSTFIELDS     => http_build_query( [ 'url' => $url ] )
+		] );
+		
+		$response = curl_exec( $c );
+		
+		curl_close( $c );
+		
+		if( $response !== false )
+		{
+			$response = explode( "\r\n", $response );
+			$key = 'Location: ';
+			
+			foreach( $response as $header )
+			{
+				if( strpos( $header, $key ) === 0 )
+				{
+					return substr( $header, strlen( $key ) );
+				}
 			}
 		}
-		/* when all else fails, be stupid */
+		
 		return $url;
 	}
