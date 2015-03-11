@@ -172,7 +172,15 @@
 			
 			if( $NewMessage !== $Message )
 			{
-				$NewMessage .= '...';
+				// Tidy ellipsis
+				if( substr( $NewMessage, -3 ) === '...' )
+				{
+					$NewMessage = substr( $NewMessage, 0, -3 ) . '…';
+				}
+				else if( substr( $NewMessage, -1 ) !== '…' )
+				{
+					$NewMessage .= '…';
+				}
 			}
 			
 			return $NewMessage;
