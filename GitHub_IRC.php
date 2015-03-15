@@ -489,7 +489,8 @@
 		 */
 		private function FormatPingEvent( )
 		{
-			return sprintf( 'Hook %s worked! Zen: %s',
+			return sprintf( '[%s] Hook %s worked! Zen: %s',
+							$this->FormatRepoName( ),
 							$this->FormatHash( $this->Payload->hook->id ),
 							$this->FormatName( $this->Payload->zen )
 			);
