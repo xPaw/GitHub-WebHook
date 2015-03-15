@@ -28,4 +28,4 @@ Returns full name of the repository for which an event was sent for.
 
 ## GitHub_IRC
 `GitHub_IRC.php` accepts input from previous script and outputs
-a colored string which can be sent to an IRC channel.
+a colored string which can be sent to IRC.
