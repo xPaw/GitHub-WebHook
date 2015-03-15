@@ -135,19 +135,6 @@
 		 */
 		public function GetFullRepositoryName( )
 		{
-			if( $this->EventType === 'ping' )
-			{
-				if( !isset( $this->Payload->hook->url ) )
-				{
-					throw new Exception( 'Unable to get hook url from ping event payload' );
-				}
-				
-				if( preg_match( '/\/repos\/([^\/]*)\/([^\/]*)\/hooks/', $this->Payload->hook->url, $Matches ) === 1 )
-				{
-					return sprintf( '%s/%s', $Matches[ 1 ], $Matches[ 2 ] );
-				}
-			}
-			
 			if( isset( $this->Payload->repository->full_name ) )
 			{
 				return $this->Payload->repository->full_name;
