@@ -91,7 +91,12 @@
 			
 			foreach( $this->Payload->commits as $Commit )
 			{
-				if( $Commit->distinct && !empty( $Commit->message ) )
+				if( isset( $Commit->distinct ) && $Commit->distinct )
+				{
+					continue;
+				}
+				
+				if( !empty( $Commit->message ) )
 				{
 					$Commits[ ] = $Commit;
 				}
@@ -162,7 +167,8 @@
 		
 		private function ShortMessage( $Message )
 		{
-			$NewMessage = Explode( "\n", $Message, 2 );
+			$NewMessage = trim( $Message );
+			$NewMessage = Explode( "\n", $NewMessage, 2 );
 			$NewMessage = $NewMessage[ 0 ];
 			
 			if( strlen( $NewMessage ) > 100 )
@@ -200,7 +206,7 @@
 				$this->FormatName( $this->Payload->pusher->name )
 			);
 			
-			if( $this->Payload->created )
+			if( isset( $this->Payload->created ) && $this->Payload->created )
 			{
 				if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
 				{
@@ -233,7 +239,7 @@
 					}
 				}
 			}
-			else if( $this->Payload->deleted )
+			else if( isset( $this->Payload->deleted ) && $this->Payload->deleted )
 			{
 				$this->Payload->action = 'deleted'; // Ssshhhh...
 				
@@ -243,7 +249,7 @@
 					$this->FormatHash( $this->BeforeSHA( ) )
 				);
 			}
-			else if( $this->Payload->forced )
+			else if( isset( $this->Payload->forced ) && $this->Payload->forced )
 			{
 				$this->Payload->action = 'force-pushed'; // Don't tell anyone!
 				
@@ -281,7 +287,7 @@
 				);
 			}
 			
-			$URL = $this->Payload->compare;
+			$URL = isset( $this->Payload->compare_url ) ? $this->Payload->compare_url : $this->Payload->compare;
 			
 			if( $Num === 1 )
 			{
