@@ -10,19 +10,19 @@
 		//const GITHUB_IP_BITS = 22;
 		const GITHUB_IP_MASK = -1024; // ( pow( 2, self :: GITHUB_IP_BITS ) - 1 ) << ( 32 - self :: GITHUB_IP_BITS )
 		
+		private $Gogs = false;
 		private $EventType;
 		private $Payload;
 		private $RawPayload;
 		
 		/**
 		 * Validates and processes current request
-		 *
 		 */
 		public function ProcessRequest( )
 		{
-			if( !array_key_exists( 'HTTP_X_GITHUB_EVENT', $_SERVER ) )
+			if( !array_key_exists( $this->GetEventHeaderName(), $_SERVER ) )
 			{
-				throw new Exception( 'Missing X-GitHub-Event header.' );
+				throw new Exception( 'Missing event header.' );
 			}
 			
 			if( !array_key_exists( 'REQUEST_METHOD', $_SERVER ) || $_SERVER[ 'REQUEST_METHOD' ] !== 'POST' )
@@ -35,7 +35,7 @@
 				throw new Exception( 'Missing content type.' );
 			}
 			
-			$this->EventType = filter_input( INPUT_SERVER, 'HTTP_X_GITHUB_EVENT', FILTER_SANITIZE_STRING );
+			$this->EventType = filter_input( INPUT_SERVER, $this->GetEventHeaderName(), FILTER_SANITIZE_STRING );
 			
 			$ContentType = $_SERVER[ 'CONTENT_TYPE' ];
 			
@@ -66,12 +66,20 @@
 				);
 			}
 			
-			if( !isset( $this->Payload->repository ) && $this->EventType !== 'ping' ) // Ping event only has 'hook' info
+			if( !isset( $this->Payload->repository ) )
 			{
 				throw new Exception( 'Missing repository information.' );
 			}
 			
 			return true;
+		}
+		
+		/**
+		 * Set this to true to process webhook from Gogs (http://gogs.io/)
+		 */
+		public function SetGogsFormat( $Value )
+		{
+			$this->Gogs = $Value == true;
 		}
 		
 		/**
@@ -141,5 +149,15 @@
 			}
 			
 			return sprintf( '%s/%s', $this->Payload->repository->owner->name, $this->Payload->repository->name );
+		}
+		
+		private function GetEventHeaderName( )
+		{
+			if( $this->Gogs )
+			{
+				return 'HTTP_X_GOGS_EVENT';
+			}
+			
+			return 'HTTP_X_GITHUB_EVENT';
 		}
 	}
