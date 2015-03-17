@@ -91,7 +91,7 @@
 			
 			foreach( $this->Payload->commits as $Commit )
 			{
-				if( isset( $Commit->distinct ) && $Commit->distinct )
+				if( isset( $Commit->distinct ) && !$Commit->distinct )
 				{
 					continue;
 				}
