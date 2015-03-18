@@ -167,8 +167,8 @@
 		
 		private function ShortMessage( $Message )
 		{
-			$NewMessage = trim( $Message );
-			$NewMessage = Explode( "\n", $NewMessage, 2 );
+			$Message = trim( $Message );
+			$NewMessage = Explode( "\n", $Message, 2 );
 			$NewMessage = $NewMessage[ 0 ];
 			
 			if( strlen( $NewMessage ) > 100 )
