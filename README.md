@@ -29,3 +29,24 @@ Returns full name of the repository for which an event was sent for.
 ## GitHub_IRC
 `GitHub_IRC.php` accepts input from previous script and outputs
 a colored string which can be sent to IRC.
+
+#### __construct( $EventType, $Payload, $URLShortener = null )
+`GitHub_IRC` constructor takes 3 paramaters (last one is optional).
+All you need to do is pass data after parsing the message with `GitHub_WebHook`
+like so: `new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload() );`
+
+URL shortener paramater takes a function, and that function should accept
+a single string argument containing an url. If your function fails to
+shorten an url or do anything with it, your function must return the
+original url back.
+
+#### GetMessage()
+After calling the constructor, using this function will return
+a string which can be sent to an IRC server.
+
+Throws `GitHubNotImplementedException` when you pass an event that
+is not parsed anyhow, and throws `GitHubIgnoredEventException` for
+`fork`, `watch` and `status` events which are ignored by design.
+
+## License
+[MIT](LICENSE)
