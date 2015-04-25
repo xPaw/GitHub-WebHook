@@ -24,6 +24,13 @@
 			{
 				throw new Exception( 'Missing event header.' );
 			}
+
+			$this->EventType = $this->GetEventHeaderName();
+
+			if ( preg_match( '/^[a-z_]+$/', $this->EventType ) !== 1 )
+			{
+				throw new Exception( 'Invalid event header.' );
+			}
 			
 			if( !array_key_exists( 'REQUEST_METHOD', $_SERVER ) || $_SERVER[ 'REQUEST_METHOD' ] !== 'POST' )
 			{
@@ -34,9 +41,7 @@
 			{
 				throw new Exception( 'Missing content type.' );
 			}
-			
-			$this->EventType = filter_input( INPUT_SERVER, $this->GetEventHeaderName(), FILTER_SANITIZE_STRING );
-			
+
 			$ContentType = $_SERVER[ 'CONTENT_TYPE' ];
 			
 			if( $ContentType === 'application/x-www-form-urlencoded' )
