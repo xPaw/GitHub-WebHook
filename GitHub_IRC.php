@@ -356,7 +356,10 @@
 		 */
 		private function FormatIssuesEvent( )
 		{
-			if( $this->Payload->action === 'labeled' || $this->Payload->action === 'unlabeled' || $this->Payload->action === 'assigned' )
+			if( $this->Payload->action === 'labeled'
+			||  $this->Payload->action === 'unlabeled'
+			||  $this->Payload->action === 'assigned'
+			||  $this->Payload->action === 'unassigned' )
 			{
 				return '';
 			}
@@ -388,7 +391,10 @@
 					$this->Payload->action = 'closed without merging';
 				}
 			}
-			else if( $this->Payload->action === 'labeled' || $this->Payload->action === 'unlabeled' || $this->Payload->action === 'assigned' )
+			else if( $this->Payload->action === 'labeled'
+			|| $this->Payload->action === 'unlabeled'
+			|| $this->Payload->action === 'assigned'
+			|| $this->Payload->action === 'unassigned' )
 			{
 				return '';
 			}
