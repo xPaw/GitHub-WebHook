@@ -31,7 +31,7 @@
 			// ref_name is not always available, apparently, we make sure it is
 			if( !isset( $this->Payload->ref_name ) && isset( $this->Payload->ref ) )
 			{
-				$Ref = explode( '/', $this->Payload->ref );
+				$Ref = explode( '/', $this->Payload->ref, 3 );
 				
 				if( isset( $Ref[ 2 ] ) )
 				{
@@ -41,7 +41,7 @@
 			
 			if( !isset( $this->Payload->base_ref_name ) && isset( $this->Payload->base_ref ) )
 			{
-				$Ref = explode( '/', $this->Payload->base_ref );
+				$Ref = explode( '/', $this->Payload->base_ref, 3 );
 				
 				if( isset( $Ref[ 2 ] ) )
 				{
