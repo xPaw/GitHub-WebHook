@@ -142,12 +142,12 @@
 			{
 				case 'synchronize': return "\00311synchronized\017";
 				case 'created'    :
-				case 'reopened'   : return "\00307" . $this->Payload->action . "\017";
+				case 'reopened'   : return "\00307" . $Action . "\017";
 				case 'force-pushed':
 				case 'deleted'    :
 				case 'closed without merging':
-				case 'closed'     : return "\00304" . $this->Payload->action . "\017";
-				default           : return "\00309" . $this->Payload->action . "\017";
+				case 'closed'     : return "\00304" . $Action . "\017";
+				default           : return "\00309" . $Action . "\017";
 			}
 		}
 		
