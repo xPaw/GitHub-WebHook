@@ -131,9 +131,14 @@
 			return "\00312" . $Name . "\017";
 		}
 		
-		private function FormatAction( )
+		private function FormatAction( $Action = false )
 		{
-			switch( $this->Payload->action )
+			if( $Action === false )
+			{
+				$Action = $this->Payload->action;
+			}
+			
+			switch( $Action )
 			{
 				case 'synchronize': return "\00311synchronized\017";
 				case 'created'    :
@@ -514,7 +519,7 @@
 				return sprintf( '[%s] %s %s %s: %s%s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
-							$this->FormatAction( ),
+							$this->FormatAction( $Page->action ),
 							$this->FormatName( $Page->title ),
 							empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
 							$this->FormatURL( $Page->html_url )
