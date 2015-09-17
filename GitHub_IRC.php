@@ -64,6 +64,7 @@
 				case 'public'        : return $this->FormatPublicEvent( );
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
+				case 'gollum'        : return $this->FormatGollumEvent( );
 				case 'release'       : return $this->FormatReleaseEvent( );
 				case 'repository'    : return $this->FormatRepositoryEvent( );
 				case 'pull_request'  : return $this->FormatPullRequestEvent( );
@@ -498,6 +499,29 @@
 							$this->FormatAction( ),
 							$this->FormatName( $this->Payload->member->login )
 			);
+		}
+		
+		/**
+		 * Formats a gollum event (wiki)
+		 * See https://developer.github.com/v3/activity/events/types/#gollumevent
+		 */
+		private function FormatGollumEvent( )
+		{
+			$Message = '';
+			
+			foreach( $this->Payload->pages as $Page )
+			{
+				return sprintf( '[%s] %s %s %s: %s%s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( ),
+							$this->FormatName( $Page->title ),
+							empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
+							$this->FormatURL( $Page->html_url )
+				);
+			}
+			
+			return $Message;
 		}
 		
 		/**
