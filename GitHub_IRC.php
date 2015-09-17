@@ -520,7 +520,7 @@
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( $Page->action ),
-							$this->FormatName( $Page->title ),
+							$Page->title,
 							empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
 							$this->FormatURL( $Page->html_url )
 				);
