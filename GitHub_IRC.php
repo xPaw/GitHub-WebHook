@@ -516,7 +516,7 @@
 			
 			foreach( $this->Payload->pages as $Page )
 			{
-				return sprintf( '[%s] %s %s %s: %s%s',
+				$Message .= sprintf( "\n[%s] %s %s %s: %s%s",
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( $Page->action ),
