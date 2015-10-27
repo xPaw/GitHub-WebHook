@@ -433,8 +433,8 @@
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
-							$this->Payload->release->prerelease ? 'pre' : '',
-							$this->FormatBranch( $this->Payload->release->name ),
+							$this->Payload->release->prerelease ? 'pre-' : '',
+							$this->FormatBranch( empty( $this->Payload->release->name ) ? $this->Payload->release->tag_name : $this->Payload->release->name ),
 							$this->FormatURL( $this->Payload->release->html_url )
 			);
 		}
