@@ -353,7 +353,7 @@
 				$Message .= sprintf( '%s %s %s: %s',
 					$Prefix,
 					$this->FormatHash( substr( $Commit->id, 0, 6 ) ),
-					$this->FormatName( $Commit->author->username ),
+					$this->FormatName( isset( $Commit->author->username ) ? $Commit->author->username : $Commit->author->name ),
 					$this->ShortMessage( $Commit->message )
 				);
 			}
