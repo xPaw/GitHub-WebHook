@@ -7,7 +7,7 @@
 		{
 			$this->EventName = $Event;
 			
-			parent :: __construct( 'Unsupported event type "' . $Event . '".' );
+			parent::__construct( 'Unsupported event type "' . $Event . '".' );
 		}
 	}
 	
@@ -375,7 +375,7 @@
 				return '';
 			}
 			
-			return sprintf( '[%s] %s %s issue %s: %s. See %s',
+			return sprintf( '[%s] %s %s issue %s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
@@ -410,7 +410,7 @@
 				return '';
 			}
 			
-			return sprintf( '[%s] %s %s pull request %s%s: %s. See %s',
+			return sprintf( '[%s] %s %s pull request %s%s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
@@ -445,7 +445,7 @@
 		 */
 		private function FormatCommitCommentEvent( )
 		{
-			return sprintf( '[%s] %s commented on commit %s: %s',
+			return sprintf( '[%s] %s commented on commit %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
@@ -459,7 +459,7 @@
 		 */
 		private function FormatIssueCommentEvent( )
 		{
-			return sprintf( '[%s] %s commented on issue %s: %s. See %s',
+			return sprintf( '[%s] %s commented on issue %s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatNumber( '#' . $this->Payload->issue->number ),
@@ -483,7 +483,7 @@
 				$Number = -1;
 			}
 			
-			return sprintf( '[%s] %s commented on pull request %s %s: %s',
+			return sprintf( '[%s] %s commented on pull request %s %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatNumber( '#' . $Number ),
@@ -561,7 +561,7 @@
 		 */
 		private function FormatRepositoryEvent( )
 		{
-			return sprintf( '[%s] %s %s this repository. See %s',
+			return sprintf( '[%s] %s %s this repository. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
