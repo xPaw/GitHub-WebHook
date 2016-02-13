@@ -1,5 +1,5 @@
 [![Build Status](https://img.shields.io/travis/xPaw/GitHub-WebHook.svg?style=flat-square)](https://travis-ci.org/xPaw/GitHub-WebHook)
-[![Test Coverage](https://img.shields.io/codeclimate/coverage/github/xPaw/GitHub-WebHook.svg?style=flat-square)](https://codeclimate.com/github/xPaw/GitHub-WebHook)
+[![Test Coverage](https://img.shields.io/codeclimate/coverage/github/xPaw/GitHub-WebHook.svg?style=flat-square)](https://codeclimate.com/github/xPaw/GitHub-WebHook/coverage)
 
 This script acts as a web hook for GitHub events, processes them,
 and returns messages which can be sent out to an IRC channel.
