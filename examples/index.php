@@ -5,8 +5,8 @@
 	ini_set( 'error_reporting', -1 );
 	ini_set( 'display_errors', 1 );
 	
-	require __DIR__ . '/GitHub_WebHook.php';
-	require __DIR__ . '/GitHub_IRC.php';
+	require __DIR__ . '/../GitHub_WebHook.php';
+	require __DIR__ . '/../GitHub_IRC.php';
 	
 	$Hook = new GitHub_WebHook( );
 	
