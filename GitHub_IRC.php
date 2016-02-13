@@ -521,7 +521,12 @@
 			
 			foreach( $this->Payload->pages as $Page )
 			{
-				$Message .= sprintf( "\n[%s] %s %s %s: %s%s",
+				if( !empty( $Message ) )
+				{
+					$Message .= "\n";
+				}
+				
+				$Message .= sprintf( "[%s] %s %s %s: %s%s",
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( $Page->action ),
