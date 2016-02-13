@@ -1,7 +1,4 @@
 <?php
-require __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'GitHub_IRC.php';
-require __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'GitHub_WebHook.php';
-
 class EventTest extends PHPUnit_Framework_TestCase
 {
 	/**
