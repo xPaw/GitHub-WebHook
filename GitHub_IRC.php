@@ -161,13 +161,18 @@
 			return "\00314" . $Hash . "\017";
 		}
 		
-		private function FormatURL( $URL, $IgnoreURLShortener = false )
+		private function ShortenAndFormatURL( $URL )
 		{
-			if( $this->URLShortener !== null && !$IgnoreURLShortener )
+			if( $this->URLShortener !== null )
 			{
 				$URL = call_user_func( $this->URLShortener, $URL );
 			}
 			
+			return $this->FormatURL( $URL );
+		}
+		
+		private function FormatURL( $URL )
+		{
 			return "\00302\037" . $URL . "\017";
 		}
 		
@@ -300,7 +305,7 @@
 				$URL = $this->Payload->commits[ 0 ]->url;
 			}
 			
-			$Message .= sprintf( ': %s', $this->FormatURL( $URL ) );
+			$Message .= sprintf( ': %s', $this->ShortenAndFormatURL( $URL ) );
 			
 			if( $Num > 0 )
 			{
@@ -381,7 +386,7 @@
 							$this->FormatAction( ),
 							$this->FormatNumber( sprintf( '#%d', $this->Payload->issue->number ) ),
 							$this->Payload->issue->title,
-							$this->FormatURL( $this->Payload->issue->html_url )
+							$this->ShortenAndFormatURL( $this->Payload->issue->html_url )
 			);
 		}
 		
@@ -419,7 +424,7 @@
 								( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
 								'',
 							$this->Payload->pull_request->title,
-							$this->FormatURL( $this->Payload->pull_request->html_url )
+							$this->ShortenAndFormatURL( $this->Payload->pull_request->html_url )
 			);
 		}
 		
@@ -435,7 +440,7 @@
 							$this->FormatAction( ),
 							$this->Payload->release->prerelease ? 'pre-' : '',
 							$this->FormatBranch( empty( $this->Payload->release->name ) ? $this->Payload->release->tag_name : $this->Payload->release->name ),
-							$this->FormatURL( $this->Payload->release->html_url )
+							$this->ShortenAndFormatURL( $this->Payload->release->html_url )
 			);
 		}
 		
@@ -449,7 +454,7 @@
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
-							$this->FormatURL( $this->Payload->comment->html_url )
+							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
 			);
 		}
 		
@@ -464,7 +469,7 @@
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatNumber( '#' . $this->Payload->issue->number ),
 							$this->Payload->issue->title,
-							$this->FormatURL( $this->Payload->comment->html_url )
+							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
 			);
 		}
 		
@@ -488,7 +493,7 @@
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatNumber( '#' . $Number ),
 							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
-							$this->FormatURL( $this->Payload->comment->html_url )
+							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
 			);
 		}
 		
@@ -522,7 +527,7 @@
 							$this->FormatAction( $Page->action ),
 							$Page->title,
 							empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
-							$this->FormatURL( $Page->html_url )
+							$this->ShortenAndFormatURL( $Page->html_url )
 				);
 			}
 			
@@ -550,7 +555,7 @@
 		{
 			return sprintf( '[%s] is now open source and available to everyone at %s (You\'re the best %s!)',
 							$this->FormatRepoName( ),
-							$this->FormatURL( $this->Payload->repository->html_url, true ),
+							$this->FormatURL( $this->Payload->repository->html_url ),
 							$this->FormatName( $this->Payload->sender->login )
 			);
 		}
