@@ -51,7 +51,7 @@
 					throw new Exception( 'Missing payload.' );
 				}
 				
-				$this->RawPayload = filter_input( INPUT_POST, 'payload' );
+				$this->RawPayload = $_POST[ 'payload' ];
 			}
 			else if( $ContentType === 'application/json' )
 			{

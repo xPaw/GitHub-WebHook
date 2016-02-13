@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit colors="true" verbose="true">
+	<testsuites>
+		<testsuite name="Tests">
+			<directory>.</directory>
+		</testsuite>
+	</testsuites>
+	<filter>
+		<whitelist processUncoveredFilesFromWhitelist="true">
+			<file>../GitHub_IRC.php</file>
+			<file>../GitHub_WebHook.php</file>
+		</whitelist>
+	</filter>
+</phpunit>
