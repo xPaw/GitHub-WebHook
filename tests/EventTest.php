@@ -7,7 +7,7 @@ class EventTest extends PHPUnit_Framework_TestCase
 	/**
 	 * @dataProvider eventProvider
 	 */
-	public function testEvent( $EventType, $Payload, $ExpectedMessage )
+	public function testEvent( $EventType, $ExpectedMessage, $Payload )
 	{
 		// Setup env for processor
 		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = $EventType;
@@ -43,9 +43,9 @@ class EventTest extends PHPUnit_Framework_TestCase
 			
 			$ProvidedData[] =
 			[
-				$File->getFilename(),
-				file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
+				trim( file_get_contents( $Path . DIRECTORY_SEPARATOR . 'type.txt' ) ),
 				trim( file_get_contents( $Path . DIRECTORY_SEPARATOR . 'expected.bin' ) ),
+				file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
 			];
 		}
 		
