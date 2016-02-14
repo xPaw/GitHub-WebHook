@@ -403,21 +403,10 @@
 		 */
 		private function FormatPullRequestEvent( )
 		{
-			if( $this->Payload->action === 'closed' )
-			{
-				if( $this->Payload->pull_request->merged === true )
-				{
-					$this->Payload->action = 'merged';
-				}
-				else
-				{
-					$this->Payload->action = 'closed without merging';
-				}
-			}
-			else if( $this->Payload->action === 'labeled'
-			|| $this->Payload->action === 'unlabeled'
-			|| $this->Payload->action === 'assigned'
-			|| $this->Payload->action === 'unassigned' )
+			if( $this->Payload->action === 'labeled'
+			||  $this->Payload->action === 'unlabeled'
+			||  $this->Payload->action === 'assigned'
+			||  $this->Payload->action === 'unassigned' )
 			{
 				return '';
 			}
