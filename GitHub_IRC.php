@@ -466,8 +466,8 @@
 		}
 		
 		/**
-		 * Formats a commit comment event
-		 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
+		 * Formats a issue comment event
+		 * See https://developer.github.com/v3/activity/events/types/#issuecommentevent
 		 */
 		private function FormatIssueCommentEvent( )
 		{
@@ -481,24 +481,15 @@
 		}
 		
 		/**
-		 * Formats a commit comment event
-		 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
+		 * Formats a pull request review comment event
+		 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewcommentevent
 		 */
 		private function FormatPullRequestReviewCommentEvent( )
 		{
-			if( preg_match( '/\/(\d+)$/', $this->Payload->comment->pull_request_url, $Number ) === 1 )
-			{
-				$Number = $Number[ 1 ];
-			}
-			else
-			{
-				$Number = -1;
-			}
-			
-			return sprintf( '[%s] %s commented on pull request %s %s. %s',
+			return sprintf( '[%s] %s reviewed pull request %s at %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
-							$this->FormatNumber( '#' . $Number ),
+							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
 							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
 			);
