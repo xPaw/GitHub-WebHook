@@ -138,9 +138,9 @@
 			return "\00312" . $Name . "\017";
 		}
 		
-		private function FormatAction( $Action = false )
+		private function FormatAction( $Action = null )
 		{
-			if( $Action === false )
+			if( $Action === null )
 			{
 				$Action = $this->Payload->action;
 			}
