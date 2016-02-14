@@ -384,7 +384,8 @@
 			||  $this->Payload->action === 'assigned'
 			||  $this->Payload->action === 'unassigned' )
 			{
-				return '';
+				
+				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 			}
 			
 			return sprintf( '[%s] %s %s issue %s: %s. %s',
@@ -408,7 +409,7 @@
 			||  $this->Payload->action === 'assigned'
 			||  $this->Payload->action === 'unassigned' )
 			{
-				return '';
+				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 			}
 			
 			return sprintf( '[%s] %s %s pull request %s%s: %s. %s',
