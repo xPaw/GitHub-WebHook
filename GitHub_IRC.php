@@ -13,7 +13,14 @@
 	
 	class GitHubIgnoredEventException extends Exception
 	{
-		//
+		public $EventName = '';
+		
+		public function __construct( $Event )
+		{
+			$this->EventName = $Event;
+			
+			parent::__construct( 'Event type "' . $Event . '" is ignored by design due to spammy nature of the event.' );
+		}
 	}
 	
 	class GitHub_IRC
@@ -75,7 +82,7 @@
 				// Spammy events that we do not care about
 				case 'fork'          :
 				case 'watch'         :
-				case 'status'        : throw new GitHubIgnoredEventException( );
+				case 'status'        : throw new GitHubIgnoredEventException( $this->EventType );
 			}
 			
 			throw new GitHubNotImplementedException( $this->EventType );
