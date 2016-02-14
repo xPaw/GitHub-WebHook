@@ -384,7 +384,6 @@
 			||  $this->Payload->action === 'assigned'
 			||  $this->Payload->action === 'unassigned' )
 			{
-				
 				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 			}
 			
