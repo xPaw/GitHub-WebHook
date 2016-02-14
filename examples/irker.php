@@ -126,9 +126,9 @@
 	
 	function shorten_url( $url )
 	{
-		$c = curl_init( );
+		$curl = curl_init( );
 		
-		curl_setopt_array( $c, [
+		curl_setopt_array( $curl, [
 			CURLOPT_USERAGENT      => 'https://github.com/xPaw/GitHub-WebHook',
 			CURLOPT_HEADER         => true,
 			CURLOPT_RETURNTRANSFER => true,
@@ -140,9 +140,9 @@
 			CURLOPT_POSTFIELDS     => http_build_query( [ 'url' => $url ] )
 		] );
 		
-		$response = curl_exec( $c );
+		$response = curl_exec( $curl );
 		
-		curl_close( $c );
+		curl_close( $curl );
 		
 		if( $response !== false )
 		{
