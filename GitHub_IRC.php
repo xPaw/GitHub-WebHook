@@ -343,17 +343,10 @@
 		{
 			$Message = '';
 			
-			$Branch = $this->Payload->ref_name;
-			
-			if( !isset( $this->Payload->repository->default_branch ) )
-			{
-				$this->Payload->repository->default_branch = 'master';
-			}
-			
 			// Only display branch name if it's not default branch
-			if( $Branch !== $this->Payload->repository->default_branch )
+			if( $this->Payload->ref_name !== $this->Payload->repository->default_branch )
 			{
-				$Prefix = sprintf( "\n[%s/%s]", $this->FormatRepoName( ), $this->FormatBranch( $Branch ) );
+				$Prefix = sprintf( "\n[%s/%s]", $this->FormatRepoName( ), $this->FormatBranch( $this->Payload->ref_name ) );
 			}
 			else
 			{
