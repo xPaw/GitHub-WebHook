@@ -80,7 +80,8 @@
 				
 				// This is a silly hack to handle org-only events
 				$this->Payload->repository = (object)array(
-					'full_name' => $this->Payload->organization->login,
+					// Add "/repositories" because repo matching code would expect a "<org>/<repo>" format
+					'full_name' => $this->Payload->organization->login . '/repositories',
 					'name' => 'org: ' . $this->Payload->organization->login,
 				);
 			}
