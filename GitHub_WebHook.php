@@ -73,7 +73,16 @@
 			
 			if( !isset( $this->Payload->repository ) )
 			{
-				throw new Exception( 'Missing repository information.' );
+				if( !isset( $this->Payload->organization ) )
+				{
+					throw new Exception( 'Missing repository information.' );
+				}
+				
+				// This is a silly hack to handle org-only events
+				$this->Payload->repository = (object)array(
+					'full_name' => $this->Payload->organization->login,
+					'name' => 'org: ' . $this->Payload->organization->login,
+				);
 			}
 			
 			return true;
