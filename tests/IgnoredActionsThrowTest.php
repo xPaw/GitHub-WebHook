@@ -2,7 +2,7 @@
 class IgnoredActionsThrowTest extends PHPUnit_Framework_TestCase
 {
 	/**
-	 * @dataProvider      ignoredActionProvider
+	 * @dataProvider      ignoredIssueActionProvider
      * @expectedException GitHubIgnoredEventException
      */
 	public function testIssueThrow( $Action )
@@ -12,7 +12,7 @@ class IgnoredActionsThrowTest extends PHPUnit_Framework_TestCase
 	}
 	
 	/**
-	 * @dataProvider      ignoredActionProvider
+	 * @dataProvider      ignoredPullRequestActionProvider
      * @expectedException GitHubIgnoredEventException
      */
 	public function testPullRequestThrow( $Action )
@@ -21,9 +21,20 @@ class IgnoredActionsThrowTest extends PHPUnit_Framework_TestCase
 		$Parser->GetMessage();
 	}
 	
-	public function ignoredActionProvider( )
+	public function ignoredIssueActionProvider( )
 	{
 		return [
+			[ 'labeled' ],
+			[ 'unlabeled' ],
+			[ 'assigned' ],
+			[ 'unassigned' ],
+		];
+	}
+	
+	public function ignoredPullRequestActionProvider( )
+	{
+		return [
+			[ 'synchronize' ],
 			[ 'labeled' ],
 			[ 'unlabeled' ],
 			[ 'assigned' ],

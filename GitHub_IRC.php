@@ -147,7 +147,6 @@
 			
 			switch( $Action )
 			{
-				case 'synchronize': return "\00311synchronized\017";
 				case 'created'    :
 				case 'reopened'   : return "\00307" . $Action . "\017";
 				case 'force-pushed':
@@ -396,7 +395,8 @@
 		 */
 		private function FormatPullRequestEvent( )
 		{
-			if( $this->Payload->action === 'labeled'
+			if( $this->Payload->action === 'synchronize'
+			||  $this->Payload->action === 'labeled'
 			||  $this->Payload->action === 'unlabeled'
 			||  $this->Payload->action === 'assigned'
 			||  $this->Payload->action === 'unassigned' )
