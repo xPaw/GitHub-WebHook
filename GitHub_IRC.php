@@ -490,8 +490,8 @@
 		}
 		
 		/**
-		 * Formats a release event
-		 * See https://developer.github.com/v3/activity/events/types/#releaseevent
+		 * Formats a member event
+		 * See https://developer.github.com/v3/activity/events/types/#memberevent
 		 */
 		private function FormatMemberEvent( )
 		{

@@ -54,5 +54,36 @@ Throws `GitHubNotImplementedException` when you pass an event that
 is not parsed anyhow, and throws `GitHubIgnoredEventException` for
 `fork`, `watch` and `status` events which are ignored by design.
 
+## Events
+
+Event                         | Status | Notes
+----------------------------- | ------ | -----
+CommitCommentEvent            | :+1: |
+CreateEvent                   | :x: |
+DeleteEvent                   | :x: |
+DeploymentEvent               | :x: |
+DeploymentStatusEvent         | :x: |
+DownloadEvent                 | :exclamation: | Events of this type are no longer created
+FollowEvent                   | :exclamation: | Events of this type are no longer created
+ForkApplyEvent                | :exclamation: | Events of this type are no longer created
+ForkEvent                     | :droplet: | Ignored by design
+GistEvent                     | :exclamation: | Events of this type are no longer created
+GollumEvent                   | :+1: | Webhooks don't provide an url to changes
+IssueCommentEvent             | :+1: |
+IssuesEvent                   | :+1: | `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
+MemberEvent                   | :+1: |
+MembershipEvent               | :x: |
+PageBuildEvent                | :x: |
+PingEvent                     | :+1: | Not documented by GitHub, sent out when a new hook is created
+PublicEvent                   | :+1: |
+PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
+PullRequestReviewCommentEvent | :+1: |
+PushEvent                     | :+1: | Only distinct commits are counted and printed
+ReleaseEvent                  | :+1: |
+RepositoryEvent               | :+1: |
+StatusEvent                   | :droplet: | Ignored by design
+TeamAddEvent                  | :x: |
+WatchEvent                    | :droplet: | Ignored by design
+
 ## License
 [MIT](LICENSE)
