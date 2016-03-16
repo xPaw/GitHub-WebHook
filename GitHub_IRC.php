@@ -3,11 +3,20 @@
 	{
 		public $EventName = '';
 		
-		public function __construct( $Event )
+		public function __construct( $Event, $Action = null )
 		{
 			$this->EventName = $Event;
 			
-			parent::__construct( 'Unsupported event type "' . $Event . '".' );
+			if( $Action !== null )
+			{
+				$Message = 'Unsupported action type "' . $Action . '" in event type';
+			}
+			else
+			{
+				$Message = 'Unsupported event type';
+			}
+			
+			parent::__construct( $Message . ' "' . $Event . '".' );
 		}
 	}
 	
@@ -379,6 +388,13 @@
 				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 			}
 			
+			if( $this->Payload->action !== 'opened'
+			&&  $this->Payload->action !== 'closed'
+			&&  $this->Payload->action !== 'reopened' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s %s issue %s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
@@ -416,6 +432,14 @@
 				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 			}
 			
+			if( $this->Payload->action !== 'opened'
+			&&  $this->Payload->action !== 'reopened'
+			&&  $this->Payload->action !== 'merged'
+			&&  $this->Payload->action !== 'closed without merging' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s %s pull request %s%s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
@@ -435,6 +459,11 @@
 		 */
 		private function FormatReleaseEvent( )
 		{
+			if( $this->Payload->action !== 'published' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s %s a %srelease %s: %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
@@ -451,6 +480,11 @@
 		 */
 		private function FormatCommitCommentEvent( )
 		{
+			if( $this->Payload->action !== 'created' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s commented on commit %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
@@ -465,6 +499,11 @@
 		 */
 		private function FormatIssueCommentEvent( )
 		{
+			if( $this->Payload->action !== 'created' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s commented on issue %s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
@@ -480,6 +519,11 @@
 		 */
 		private function FormatPullRequestReviewCommentEvent( )
 		{
+			if( $this->Payload->action !== 'created' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s reviewed pull request %s at %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
@@ -495,6 +539,11 @@
 		 */
 		private function FormatMemberEvent( )
 		{
+			if( $this->Payload->action !== 'added' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s %s %s as a collaborator',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
@@ -563,6 +612,11 @@
 		 */
 		private function FormatRepositoryEvent( )
 		{
+			if( $this->Payload->action !== 'created' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
 			return sprintf( '[%s] %s %s this repository. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
