@@ -245,15 +245,15 @@
 				}
 				else
 				{
-					$Message .= sprintf( 'created %s ', $this->FormatBranch( $this->Payload->ref_name ) );
+					$Message .= sprintf( 'created %s', $this->FormatBranch( $this->Payload->ref_name ) );
 					
 					if( isset( $this->Payload->base_ref ) )
 					{
-						$Message .= sprintf( 'from %s', $this->FormatBranch( $this->Payload->base_ref_name ) );
+						$Message .= sprintf( ' from %s', $this->FormatBranch( $this->Payload->base_ref_name ) );
 					}
 					else if( $Num > 0 )
 					{
-						$Message .= sprintf( 'at %s', $this->FormatHash( $this->AfterSHA( ) ) );
+						$Message .= sprintf( ' at %s', $this->FormatHash( $this->AfterSHA( ) ) );
 					}
 					
 					if( $Num > 0 )
