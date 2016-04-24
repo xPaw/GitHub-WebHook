@@ -612,7 +612,10 @@
 		 */
 		private function FormatRepositoryEvent( )
 		{
-			if( $this->Payload->action !== 'created' )
+			if( $this->Payload->action !== 'created'
+			&&  $this->Payload->action !== 'deleted'
+			&&  $this->Payload->action !== 'publicized'
+			&&  $this->Payload->action !== 'privatized' )
 			{
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
