@@ -269,8 +269,9 @@
 			{
 				$this->Payload->action = 'deleted'; // Ssshhhh...
 				
-				$Message .= sprintf( '%s %s at %s',
+				$Message .= sprintf( '%s%s %s at %s',
 					$this->FormatAction( ),
+					substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' ? 'tag ' : '',
 					$this->FormatBranch( $this->Payload->ref_name ),
 					$this->FormatHash( $this->BeforeSHA( ) )
 				);
