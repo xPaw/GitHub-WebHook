@@ -77,6 +77,7 @@ PageBuildEvent                | :x: |
 PingEvent                     | :+1: | Not documented by GitHub, sent out when a new hook is created
 PublicEvent                   | :+1: |
 PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
+PullRequestReviewEvent        | :+1: |
 PullRequestReviewCommentEvent | :+1: |
 PushEvent                     | :+1: | Only distinct commits are counted and printed
 ReleaseEvent                  | :+1: |

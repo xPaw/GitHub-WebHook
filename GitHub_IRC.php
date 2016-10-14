@@ -86,6 +86,7 @@
 				case 'pull_request'  : return $this->FormatPullRequestEvent( );
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
+				case 'pull_request_review': return $this->FormatPullRequestReviewEvent( );
 				case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
 				
 				// Spammy events that we do not care about
@@ -156,9 +157,11 @@
 			
 			switch( $Action )
 			{
+				case 'approved'   :
 				case 'created'    :
 				case 'reopened'   : return "\00307" . $Action . "\017";
 				case 'force-pushed':
+				case 'rejected'   :
 				case 'deleted'    :
 				case 'closed without merging':
 				case 'closed'     : return "\00304" . $Action . "\017";
@@ -511,6 +514,26 @@
 							$this->FormatNumber( '#' . $this->Payload->issue->number ),
 							$this->Payload->issue->title,
 							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
+			);
+		}
+		
+		/**
+		 * Formats a pull request review event
+		 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewevent
+		 */
+		private function FormatPullRequestReviewEvent( )
+		{
+			if( $this->Payload->action !== 'submitted' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
+			return sprintf( '[%s] %s %s pull request %s. %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( $this->Payload->review->state ),
+							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
+							$this->ShortenAndFormatURL( $this->Payload->review->html_url )
 			);
 		}
 		
