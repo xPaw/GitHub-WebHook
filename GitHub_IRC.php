@@ -160,9 +160,9 @@
 				case 'approved'   :
 				case 'created'    :
 				case 'reopened'   : return "\00307" . $Action . "\017";
-				case 'force-pushed':
-				case 'rejected'   :
 				case 'deleted'    :
+				case 'force-pushed':
+				case 'requested changes':
 				case 'closed without merging':
 				case 'closed'     : return "\00304" . $Action . "\017";
 				default           : return "\00309" . $Action . "\017";
@@ -528,10 +528,16 @@
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
 			
-			return sprintf( '[%s] %s %s pull request %s. %s',
+			if( $this->Payload->review->state === 'changes_requested' )
+			{
+				$this->Payload->review->state = 'requested changes';
+			}
+			
+			return sprintf( '[%s] %s %s%s pull request %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( $this->Payload->review->state ),
+							$this->Payload->review->state === 'requested changes' ? ' in' : '',
 							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 							$this->ShortenAndFormatURL( $this->Payload->review->html_url )
 			);
