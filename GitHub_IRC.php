@@ -157,7 +157,6 @@
 			
 			switch( $Action )
 			{
-				case 'approved'   :
 				case 'created'    :
 				case 'reopened'   : return "\00307" . $Action . "\017";
 				case 'deleted'    :
@@ -528,17 +527,23 @@
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
 			
+			if( $this->Payload->review->state === 'commented' )
+			{
+				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->review->state );
+			}
+			
 			if( $this->Payload->review->state === 'changes_requested' )
 			{
 				$this->Payload->review->state = 'requested changes';
 			}
 			
-			return sprintf( '[%s] %s %s%s pull request %s. %s',
+			return sprintf( '[%s] %s %s%s pull request %s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( $this->Payload->review->state ),
 							$this->Payload->review->state === 'requested changes' ? ' in' : '',
 							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
+							$this->Payload->pull_request->title,
 							$this->ShortenAndFormatURL( $this->Payload->review->html_url )
 			);
 		}
