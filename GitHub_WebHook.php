@@ -86,6 +86,12 @@
 				);
 			}
 			
+			// Reverse commit order for gogs
+			if( $this->Gogs && $this->EventType === 'push' )
+			{
+				$this->Payload->commits = array_reverse( $this->Payload->commits );
+			}
+			
 			return true;
 		}
 		
