@@ -77,6 +77,7 @@
 			{
 				case 'ping'          : return $this->FormatPingEvent( );
 				case 'push'          : return $this->FormatPushEvent( );
+				case 'delete'        : return $this->FormatDeleteEvent( );
 				case 'public'        : return $this->FormatPublicEvent( );
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
@@ -269,14 +270,7 @@
 			}
 			else if( isset( $this->Payload->deleted ) && $this->Payload->deleted )
 			{
-				$this->Payload->action = 'deleted'; // Ssshhhh...
-				
-				$Message .= sprintf( '%s%s %s at %s',
-					$this->FormatAction( ),
-					substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' ? ' tag' : '',
-					$this->FormatBranch( $this->Payload->ref_name ),
-					$this->FormatHash( $this->BeforeSHA( ) )
-				);
+				throw new GitHubNotImplementedException( $this->EventType, 'deleted (use DeleteEvent if needed)' );
 			}
 			else if( isset( $this->Payload->forced ) && $this->Payload->forced )
 			{
@@ -375,6 +369,29 @@
 			}
 			
 			return $Message;
+		}
+		
+		/**
+		 * Formats a deletion event
+		 * See https://developer.github.com/v3/activity/events/types/#deleteevent
+		 */
+		private function FormatDeleteEvent( )
+		{
+			if( $this->Payload->ref_type !== 'tag'
+			&&  $this->Payload->ref_type !== 'branch' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->ref_type );
+			}
+			
+			$this->Payload->action = 'deleted';
+			
+			return sprintf( '[%s] %s %s %s %s',
+				$this->FormatRepoName( ),
+				$this->FormatName( $this->Payload->sender->login ),
+				$this->FormatAction( ),
+				$this->Payload->ref_type,
+				$this->FormatBranch( $this->Payload->ref )
+			);
 		}
 		
 		/**

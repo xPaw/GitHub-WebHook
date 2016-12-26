@@ -54,13 +54,13 @@ Throws `GitHubNotImplementedException` when you pass an event that
 is not parsed anyhow, and throws `GitHubIgnoredEventException` for
 `fork`, `watch` and `status` events which are ignored by design.
 
-## Events
+## Events [\[ref\]](https://developer.github.com/v3/activity/events/types/)
 
 Event                         | Status | Notes
 ----------------------------- | ------ | -----
 CommitCommentEvent            | :+1: |
 CreateEvent                   | :x: |
-DeleteEvent                   | :x: |
+DeleteEvent                   | :+1: |
 DeploymentEvent               | :x: |
 DeploymentStatusEvent         | :x: |
 DownloadEvent                 | :exclamation: | Events of this type are no longer created
@@ -79,7 +79,7 @@ PublicEvent                   | :+1: |
 PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
 PullRequestReviewEvent        | :+1: |
 PullRequestReviewCommentEvent | :+1: |
-PushEvent                     | :+1: | Only distinct commits are counted and printed
+PushEvent                     | :+1: | Only distinct commits are counted and printed. Ignores branch deletions (use `delete` event instead)
 ReleaseEvent                  | :+1: |
 RepositoryEvent               | :+1: |
 StatusEvent                   | :droplet: | Ignored by design
