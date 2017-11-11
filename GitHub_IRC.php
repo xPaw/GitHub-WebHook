@@ -666,6 +666,8 @@
 		{
 			if( $this->Payload->action !== 'created'
 			&&  $this->Payload->action !== 'deleted'
+			&&  $this->Payload->action !== 'archived'
+			&&  $this->Payload->action !== 'unarchived'
 			&&  $this->Payload->action !== 'publicized'
 			&&  $this->Payload->action !== 'privatized' )
 			{
