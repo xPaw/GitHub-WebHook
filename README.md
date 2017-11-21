@@ -76,7 +76,7 @@ IssuesEvent                   | :+1: | `assigned`, `unassigned`, `labeled`, `unl
 LabelEvent                    | :x: |
 MarketplacePurchaseEvent      | :x: |
 MemberEvent                   | :+1: |
-MembershipEvent               | :x: |
+MembershipEvent               | :+1: | `edited` events are ignored by design
 MilestoneEvent                | :x: |
 OrganizationEvent             | :x: |
 OrgBlockEvent                 | :x: |
@@ -86,7 +86,7 @@ ProjectCardEvent              | :x: |
 ProjectColumnEvent            | :x: |
 ProjectEvent                  | :x: |
 PublicEvent                   | :+1: |
-PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
+PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled`, `review_requested`, `review_request_removed` events are ignored by design
 PullRequestReviewEvent        | :+1: |
 PullRequestReviewCommentEvent | :+1: |
 PushEvent                     | :+1: | Only distinct commits are counted and printed. Ignores branch deletions (use `delete` event instead)
@@ -96,7 +96,6 @@ StatusEvent                   | :droplet: | Ignored by design
 TeamEvent                     | :x: |
 TeamAddEvent                  | :x: |
 WatchEvent                    | :droplet: | Ignored by design
-
 
 ## License
 [MIT](LICENSE)
