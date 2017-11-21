@@ -69,12 +69,22 @@ ForkApplyEvent                | :exclamation: | Events of this type are no longe
 ForkEvent                     | :droplet: | Ignored by design
 GistEvent                     | :exclamation: | Events of this type are no longer created
 GollumEvent                   | :+1: | Webhooks don't provide an url to changes
+InstallationEvent             | :x: |
+InstallationRepositoriesEvent | :x: |
 IssueCommentEvent             | :+1: |
 IssuesEvent                   | :+1: | `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
+LabelEvent                    | :x: |
+MarketplacePurchaseEvent      | :x: |
 MemberEvent                   | :+1: |
 MembershipEvent               | :x: |
+MilestoneEvent                | :x: |
+OrganizationEvent             | :x: |
+OrgBlockEvent                 | :x: |
 PageBuildEvent                | :x: |
 PingEvent                     | :+1: | Not documented by GitHub, sent out when a new hook is created
+ProjectCardEvent              | :x: |
+ProjectColumnEvent            | :x: |
+ProjectEvent                  | :x: |
 PublicEvent                   | :+1: |
 PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
 PullRequestReviewEvent        | :+1: |
@@ -83,8 +93,10 @@ PushEvent                     | :+1: | Only distinct commits are counted and pri
 ReleaseEvent                  | :+1: |
 RepositoryEvent               | :+1: |
 StatusEvent                   | :droplet: | Ignored by design
+TeamEvent                     | :x: |
 TeamAddEvent                  | :x: |
 WatchEvent                    | :droplet: | Ignored by design
+
 
 ## License
 [MIT](LICENSE)
