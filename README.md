@@ -4,9 +4,6 @@
 This script acts as a web hook for [GitHub](https://github.com/) events, processes them,
 and returns messages which can be sent out to an IRC channel.
 
-This script is also able to handle push events for [Gogs](https://gogs.io/).
-To support Gogs, call `SetGogsFormat` with param set to `true` in `GitHub_WebHook`
-
 ## GitHub_WebHook
 `GitHub_WebHook.php` accepts, processes and validates an event,
 it also can make sure that the event came from a GitHub server.

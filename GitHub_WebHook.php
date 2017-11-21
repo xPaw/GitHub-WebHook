@@ -10,7 +10,6 @@
 		//const GITHUB_IP_BITS = 22;
 		const GITHUB_IP_MASK = -1024; // ( pow( 2, self :: GITHUB_IP_BITS ) - 1 ) << ( 32 - self :: GITHUB_IP_BITS )
 		
-		private $Gogs = false;
 		private $EventType;
 		private $Payload;
 		private $RawPayload;
@@ -20,13 +19,13 @@
 		 */
 		public function ProcessRequest( )
 		{
-			if( !array_key_exists( $this->GetEventHeaderName(), $_SERVER ) )
+			if( !array_key_exists( 'HTTP_X_GITHUB_EVENT', $_SERVER ) )
 			{
 				throw new Exception( 'Missing event header.' );
 			}
-
-			$this->EventType = $_SERVER[ $this->GetEventHeaderName() ];
-
+			
+			$this->EventType = $_SERVER[ 'HTTP_X_GITHUB_EVENT' ];
+			
 			if ( preg_match( '/^[a-z_]+$/', $this->EventType ) !== 1 )
 			{
 				throw new Exception( 'Invalid event header.' );
@@ -41,7 +40,7 @@
 			{
 				throw new Exception( 'Missing content type.' );
 			}
-
+			
 			$ContentType = $_SERVER[ 'CONTENT_TYPE' ];
 			
 			if( $ContentType === 'application/x-www-form-urlencoded' )
@@ -86,21 +85,7 @@
 				);
 			}
 			
-			// Reverse commit order for gogs
-			if( $this->Gogs && $this->EventType === 'push' )
-			{
-				$this->Payload->commits = array_reverse( $this->Payload->commits );
-			}
-			
 			return true;
-		}
-		
-		/**
-		 * Set this to true to process webhook from Gogs (http://gogs.io/)
-		 */
-		public function SetGogsFormat( $Value )
-		{
-			$this->Gogs = $Value == true;
 		}
 		
 		/**
@@ -170,15 +155,5 @@
 			}
 			
 			return sprintf( '%s/%s', $this->Payload->repository->owner->name, $this->Payload->repository->name );
-		}
-		
-		private function GetEventHeaderName( )
-		{
-			if( $this->Gogs )
-			{
-				return 'HTTP_X_GOGS_EVENT';
-			}
-			
-			return 'HTTP_X_GITHUB_EVENT';
 		}
 	}
