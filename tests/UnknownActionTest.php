@@ -3,9 +3,9 @@ class UnknownActionTest extends PHPUnit_Framework_TestCase
 {
 	/**
 	 * @dataProvider             eventProvider
-     * @expectedException        GitHubNotImplementedException
-     * @expectedExceptionMessage Unsupported action type "surely_this_action_does_not_exist"
-     */
+	 * @expectedException        GitHubNotImplementedException
+	 * @expectedExceptionMessage Unsupported action type "surely_this_action_does_not_exist"
+	 */
 	public function testUnknownAction( $Event )
 	{
 		$Parser = new GitHub_IRC( $Event, (object)[ 'action' => 'surely_this_action_does_not_exist' ] );

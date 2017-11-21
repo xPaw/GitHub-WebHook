@@ -3,8 +3,8 @@ class IgnoredActionsThrowTest extends PHPUnit_Framework_TestCase
 {
 	/**
 	 * @dataProvider      ignoredIssueActionProvider
-     * @expectedException GitHubIgnoredEventException
-     */
+	 * @expectedException GitHubIgnoredEventException
+	 */
 	public function testIssueThrow( $Action )
 	{
 		$Parser = new GitHub_IRC( 'issues', (object)[ 'action' => $Action ] );
@@ -13,11 +13,21 @@ class IgnoredActionsThrowTest extends PHPUnit_Framework_TestCase
 	
 	/**
 	 * @dataProvider      ignoredPullRequestActionProvider
-     * @expectedException GitHubIgnoredEventException
-     */
+	 * @expectedException GitHubIgnoredEventException
+	 */
 	public function testPullRequestThrow( $Action )
 	{
 		$Parser = new GitHub_IRC( 'pull_request', (object)[ 'action' => $Action ] );
+		$Parser->GetMessage();
+	}
+	
+	/**
+	 * @dataProvider      ignoredMilestoneActionProvider
+	 * @expectedException GitHubIgnoredEventException
+	 */
+	public function testMilestoneThrow( $Action )
+	{
+		$Parser = new GitHub_IRC( 'milestone', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
 	
@@ -39,6 +49,15 @@ class IgnoredActionsThrowTest extends PHPUnit_Framework_TestCase
 			[ 'unlabeled' ],
 			[ 'assigned' ],
 			[ 'unassigned' ],
+			[ 'review_requested' ],
+			[ 'review_request_removed' ],
+		];
+	}
+	
+	public function ignoredMilestoneActionProvider( )
+	{
+		return [
+			[ 'edited' ],
 		];
 	}
 }
