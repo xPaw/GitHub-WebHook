@@ -448,6 +448,7 @@
 			||  $this->Payload->action === 'labeled'
 			||  $this->Payload->action === 'unlabeled'
 			||  $this->Payload->action === 'assigned'
+			||  $this->Payload->action === 'unassigned'
 			||  $this->Payload->action === 'review_requested'
 			||  $this->Payload->action === 'review_request_removed' )
 			{
