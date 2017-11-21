@@ -83,6 +83,7 @@
 				case 'member'        : return $this->FormatMemberEvent( );
 				case 'gollum'        : return $this->FormatGollumEvent( );
 				case 'release'       : return $this->FormatReleaseEvent( );
+				case 'milestone'     : return $this->FormatMilestoneEvent( );
 				case 'repository'    : return $this->FormatRepositoryEvent( );
 				case 'pull_request'  : return $this->FormatPullRequestEvent( );
 				case 'issue_comment' : return $this->FormatIssueCommentEvent( );
@@ -470,6 +471,35 @@
 								'',
 							$this->Payload->pull_request->title,
 							$this->ShortenAndFormatURL( $this->Payload->pull_request->html_url )
+			);
+		}
+		
+		/**
+		 * Formats a milestone event
+		 * See https://developer.github.com/v3/activity/events/types/#milestoneevent
+		 */
+		private function FormatMilestoneEvent( )
+		{
+			if( $this->Payload->action === 'edited' )
+			{
+				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			}
+			
+			if( $this->Payload->action !== 'opened'
+			&&  $this->Payload->action !== 'closed'
+			&&  $this->Payload->action !== 'created'
+			&&  $this->Payload->action !== 'deleted' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
+			return sprintf( '[%s] %s %s milestone %s: %s. %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( ),
+							$this->FormatNumber( sprintf( '#%d', $this->Payload->milestone->number ) ),
+							$this->Payload->milestone->title,
+							$this->ShortenAndFormatURL( $this->Payload->milestone->html_url )
 			);
 		}
 		
