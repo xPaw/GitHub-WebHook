@@ -192,7 +192,7 @@
 		
 		private function FormatURL( $URL )
 		{
-			return "\00302\037" . $URL . "\017";
+			return "\00302" . $URL . "\017";
 		}
 		
 		private function ShortMessage( $Message )
