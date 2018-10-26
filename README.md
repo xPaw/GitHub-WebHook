@@ -1,4 +1,4 @@
-[![Build Status](https://img.shields.io/travis/xPaw/GitHub-WebHook.svg?style=flat-square)](https://travis-ci.com/xPaw/GitHub-WebHook)
+[![Build Status](https://img.shields.io/travis/com/xPaw/GitHub-WebHook.svg?style=flat-square)](https://travis-ci.com/xPaw/GitHub-WebHook)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/cb8ee1256a2a74830db2/test_coverage)](https://codeclimate.com/github/xPaw/GitHub-WebHook/test_coverage)
 
 This script acts as a web hook for [GitHub](https://github.com/) events, processes them,
