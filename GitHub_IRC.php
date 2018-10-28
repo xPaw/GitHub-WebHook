@@ -651,6 +651,12 @@
 					$Message .= "\n";
 				}
 				
+				// Append compare url since github doesn't provide one
+				if( $Page->action === 'edited' )
+				{
+					$Page->html_url .= '/_compare/' . $Page->sha;
+				}
+				
 				$Message .= sprintf( "[%s] %s %s %s: %s%s",
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
