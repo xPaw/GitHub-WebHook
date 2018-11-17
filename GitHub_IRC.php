@@ -402,6 +402,8 @@
 		private function FormatIssuesEvent( )
 		{
 			if( $this->Payload->action === 'edited'
+			||  $this->Payload->action === 'milestoned'
+			||  $this->Payload->action === 'demilestoned'
 			||  $this->Payload->action === 'labeled'
 			||  $this->Payload->action === 'unlabeled'
 			||  $this->Payload->action === 'assigned'
@@ -413,6 +415,7 @@
 			if( $this->Payload->action !== 'opened'
 			&&  $this->Payload->action !== 'closed'
 			&&  $this->Payload->action !== 'reopened'
+			&&  $this->Payload->action !== 'deleted'
 			&&  $this->Payload->action !== 'transferred' )
 			{
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
@@ -460,6 +463,7 @@
 			
 			if( $this->Payload->action !== 'opened'
 			&&  $this->Payload->action !== 'reopened'
+			&&  $this->Payload->action !== 'deleted'
 			&&  $this->Payload->action !== 'merged'
 			&&  $this->Payload->action !== 'closed without merging' )
 			{
