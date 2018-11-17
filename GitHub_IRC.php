@@ -401,7 +401,8 @@
 		 */
 		private function FormatIssuesEvent( )
 		{
-			if( $this->Payload->action === 'labeled'
+			if( $this->Payload->action === 'edited'
+			||  $this->Payload->action === 'labeled'
 			||  $this->Payload->action === 'unlabeled'
 			||  $this->Payload->action === 'assigned'
 			||  $this->Payload->action === 'unassigned' )
@@ -445,7 +446,8 @@
 				}
 			}
 			
-			if( $this->Payload->action === 'synchronize'
+			if( $this->Payload->action === 'edited'
+			||  $this->Payload->action === 'synchronize'
 			||  $this->Payload->action === 'labeled'
 			||  $this->Payload->action === 'unlabeled'
 			||  $this->Payload->action === 'assigned'
