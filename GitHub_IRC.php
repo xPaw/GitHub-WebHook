@@ -411,7 +411,8 @@
 			
 			if( $this->Payload->action !== 'opened'
 			&&  $this->Payload->action !== 'closed'
-			&&  $this->Payload->action !== 'reopened' )
+			&&  $this->Payload->action !== 'reopened'
+			&&  $this->Payload->action !== 'transferred' )
 			{
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
