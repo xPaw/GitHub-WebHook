@@ -313,11 +313,6 @@
 			
 			$URL = isset( $this->Payload->compare_url ) ? $this->Payload->compare_url : $this->Payload->compare;
 			
-			if( $Num === 1 )
-			{
-				$URL = $this->Payload->commits[ 0 ]->url;
-			}
-			
 			$Message .= sprintf( ': %s', $this->ShortenAndFormatURL( $URL ) );
 			
 			if( $Num > 0 )
