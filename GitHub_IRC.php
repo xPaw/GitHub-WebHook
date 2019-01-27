@@ -316,13 +316,7 @@
 				// GitHub supports displaying proper diffs for force pushes
 				// but it only appears to work if the diff url has full hashes
 				// so we construct the url ourselves, instead of using the url in the payload
-				$URL = str_replace( [
-					'{base}',
-					'{head}'
-				], [
-					$this->Payload->before,
-					$this->Payload->after
-				], $this->Payload->repository->compare_url );
+				$URL = "{$this->Payload->repository->url}/compare/{$this->Payload->before}...{$this->Payload->after}";
 			}
 			else if( $Num === 1 )
 			{
