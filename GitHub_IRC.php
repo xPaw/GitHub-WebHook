@@ -311,7 +311,28 @@
 				);
 			}
 			
-			$URL = isset( $this->Payload->compare_url ) ? $this->Payload->compare_url : $this->Payload->compare;
+			if( $this->Payload->forced )
+			{
+				// GitHub supports displaying proper diffs for force pushes
+				// but it only appears to work if the diff url has full hashes
+				// so we construct the url ourselves, instead of using the url in the payload
+				$URL = str_replace( [
+					'{base}',
+					'{head}'
+				], [
+					$this->Payload->before,
+					$this->Payload->after
+				], $this->Payload->repository->compare_url );
+			}
+			else if( $Num === 1 )
+			{
+				// If there's only one distinct commit, link to it directly
+				$URL = $this->Payload->commits[ 0 ]->url;
+			}
+			else
+			{
+				$URL = $this->Payload->compare;
+			}
 			
 			$Message .= sprintf( ': %s', $this->ShortenAndFormatURL( $URL ) );
 			
