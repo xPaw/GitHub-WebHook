@@ -323,7 +323,7 @@
 			else if( $Num === 1 )
 			{
 				// If there's only one distinct commit, link to it directly
-				$URL = $this->Payload->commits[ 0 ]->url;
+				$URL = $this->Payload->head_commit->url;
 			}
 			else
 			{
