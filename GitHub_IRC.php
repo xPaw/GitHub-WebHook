@@ -91,6 +91,7 @@
 				case 'commit_comment': return $this->FormatCommitCommentEvent( );
 				case 'pull_request_review': return $this->FormatPullRequestReviewEvent( );
 				case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
+				case 'repository_vulnerability_alert': return $this->FormatRepositoryVulnerabilityAlertEvent( );
 				
 				// Spammy events that we do not care about
 				case 'fork'          :
@@ -161,8 +162,10 @@
 			switch( $Action )
 			{
 				case 'created'    :
+				case 'resolved'   :
 				case 'reopened'   : return "\00307" . $Action . "\017";
 				case 'deleted'    :
+				case 'dismissed'  :
 				case 'force-pushed':
 				case 'requested changes':
 				case 'closed without merging':
@@ -665,6 +668,43 @@
 			);
 		}
 		
+		/**
+		 * Formats a repository vulnerability alert event
+		 * See https://developer.github.com/v3/activity/events/types/#repositoryvulnerabilityalertevent
+		 */
+		private function FormatRepositoryVulnerabilityAlertEvent( )
+		{
+			if( $this->Payload->action === 'create' )
+			{
+				return sprintf( '[%s] ⚠ New vulnerability for %s: %s %s',
+								$this->FormatRepoName( ),
+								$this->FormatName( $this->Payload->alert->affected_package_name ),
+								$this->FormatNumber( $this->Payload->alert->external_identifier ),
+								$this->FormatURL( $this->Payload->alert->external_reference )
+				);
+			}
+			else if( $this->Payload->action === 'resolve' )
+			{
+				$this->Payload->action = 'resolved';
+			}
+			else if( $this->Payload->action !== 'dismiss' )
+			{
+				$this->Payload->action = 'dismissed';
+			}
+			else
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
+			return sprintf( '[%s] Vulnerability %s for %s: %s %s',
+							$this->FormatRepoName( ),
+							$this->FormatAction( ),
+							$this->FormatName( $this->Payload->alert->affected_package_name ),
+							$this->FormatNumber( $this->Payload->alert->external_identifier ),
+							$this->FormatURL( $this->Payload->alert->external_reference )
+			);
+		}
+
 		/**
 		 * Formats a member event
 		 * See https://developer.github.com/v3/activity/events/types/#memberevent

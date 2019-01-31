@@ -60,12 +60,8 @@ CreateEvent                   | :x: |
 DeleteEvent                   | :+1: |
 DeploymentEvent               | :x: |
 DeploymentStatusEvent         | :x: |
-DownloadEvent                 | :exclamation: | Events of this type are no longer created
-FollowEvent                   | :exclamation: | Events of this type are no longer created
-ForkApplyEvent                | :exclamation: | Events of this type are no longer created
 ForkEvent                     | :droplet: | Ignored by design
-GistEvent                     | :exclamation: | Events of this type are no longer created
-GollumEvent                   | :+1: | Webhooks don't provide an url to changes
+GollumEvent                   | :+1: |
 InstallationEvent             | :x: |
 InstallationRepositoriesEvent | :x: |
 IssueCommentEvent             | :+1: |
@@ -73,7 +69,7 @@ IssuesEvent                   | :+1: | `assigned`, `unassigned`, `labeled`, `unl
 LabelEvent                    | :x: |
 MarketplacePurchaseEvent      | :x: |
 MemberEvent                   | :+1: | `edited` events are ignored by design
-MembershipEvent               | :+1: |
+MembershipEvent               | :x: |
 MilestoneEvent                | :+1: | `edited` events are ignored by design
 OrganizationEvent             | :x: |
 OrgBlockEvent                 | :x: |
@@ -83,7 +79,7 @@ ProjectCardEvent              | :x: |
 ProjectColumnEvent            | :x: |
 ProjectEvent                  | :+1: | `edited` events are ignored by design
 PublicEvent                   | :+1: |
-PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled`, `review_requested`, `review_request_removed` events are ignored by design
+PullRequestEvent              | :+1: | `synchronize`, `assigned`, `unassigned`, `labeled`, `unlabeled`, `review_requested`, `review_request_removed` events are ignored by design
 PullRequestReviewEvent        | :+1: |
 PullRequestReviewCommentEvent | :+1: |
 PushEvent                     | :+1: | Only distinct commits are counted and printed. Ignores branch deletions (use `delete` event instead)
@@ -93,6 +89,7 @@ StatusEvent                   | :droplet: | Ignored by design
 TeamEvent                     | :x: |
 TeamAddEvent                  | :x: |
 WatchEvent                    | :droplet: | Ignored by design
+RepositoryVulnerabilityAlertEvent | :+1: |
 
 ## License
 [MIT](LICENSE)
