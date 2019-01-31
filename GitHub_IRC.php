@@ -82,6 +82,7 @@
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
 				case 'gollum'        : return $this->FormatGollumEvent( );
+				case 'project'       : return $this->FormatProjectEvent( );
 				case 'release'       : return $this->FormatReleaseEvent( );
 				case 'milestone'     : return $this->FormatMilestoneEvent( );
 				case 'repository'    : return $this->FormatRepositoryEvent( );
@@ -524,6 +525,34 @@
 			);
 		}
 		
+		/**
+		 * Formats a project event
+		 * See https://developer.github.com/v3/activity/events/types/#projectevent
+		 */
+		private function FormatProjectEvent( )
+		{
+			if( $this->Payload->action === 'edited' )
+			{
+				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			}
+
+			if( $this->Payload->action !== 'created'
+			&&  $this->Payload->action !== 'closed'
+			&&  $this->Payload->action !== 'reopened'
+			&&  $this->Payload->action !== 'deleted' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
+			return sprintf( '[%s] %s %s project: %s. %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( ),
+							$this->Payload->project->name,
+							$this->ShortenAndFormatURL( $this->Payload->project->html_url )
+			);
+		}
+
 		/**
 		 * Formats a release event
 		 * See https://developer.github.com/v3/activity/events/types/#releaseevent

@@ -74,14 +74,14 @@ LabelEvent                    | :x: |
 MarketplacePurchaseEvent      | :x: |
 MemberEvent                   | :+1: | `edited` events are ignored by design
 MembershipEvent               | :+1: |
-MilestoneEvent                | :x: |
+MilestoneEvent                | :+1: | `edited` events are ignored by design
 OrganizationEvent             | :x: |
 OrgBlockEvent                 | :x: |
 PageBuildEvent                | :x: |
 PingEvent                     | :+1: | Not documented by GitHub, sent out when a new hook is created
 ProjectCardEvent              | :x: |
 ProjectColumnEvent            | :x: |
-ProjectEvent                  | :x: |
+ProjectEvent                  | :+1: | `edited` events are ignored by design
 PublicEvent                   | :+1: |
 PullRequestEvent              | :+1: | `synchornize`, `assigned`, `unassigned`, `labeled`, `unlabeled`, `review_requested`, `review_request_removed` events are ignored by design
 PullRequestReviewEvent        | :+1: |
