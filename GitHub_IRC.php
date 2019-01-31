@@ -642,7 +642,7 @@
 		 */
 		private function FormatMemberEvent( )
 		{
-			if( $this->Payload->action !== 'added' )
+			if( $this->Payload->action !== 'added' && $this->Payload->action !== 'deleted' )
 			{
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}

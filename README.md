@@ -72,8 +72,8 @@ IssueCommentEvent             | :+1: |
 IssuesEvent                   | :+1: | `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
 LabelEvent                    | :x: |
 MarketplacePurchaseEvent      | :x: |
-MemberEvent                   | :+1: |
-MembershipEvent               | :+1: | `edited` events are ignored by design
+MemberEvent                   | :+1: | `edited` events are ignored by design
+MembershipEvent               | :+1: |
 MilestoneEvent                | :x: |
 OrganizationEvent             | :x: |
 OrgBlockEvent                 | :x: |
