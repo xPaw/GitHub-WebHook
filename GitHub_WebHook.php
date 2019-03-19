@@ -82,6 +82,10 @@
 					// Add "/repositories" because repo matching code would expect a "<org>/<repo>" format
 					'full_name' => $this->Payload->organization->login . '/repositories',
 					'name' => 'org: ' . $this->Payload->organization->login,
+					'owner' => (object)array(
+						'name' => $this->Payload->organization->login,
+						'login' => $this->Payload->organization->login,
+					),
 				);
 			}
 			
