@@ -1,15 +1,6 @@
 <?php
 	class GitHub_WebHook
 	{
-		/**
-		 * GitHub's IP mask
-		 *
-		 * Get it from https://api.github.com/meta
-		 */
-		const GITHUB_IP_BASE = '192.30.252.0';
-		//const GITHUB_IP_BITS = 22;
-		const GITHUB_IP_MASK = -1024; // ( pow( 2, self :: GITHUB_IP_BITS ) - 1 ) << ( 32 - self :: GITHUB_IP_BITS )
-		
 		private $EventType;
 		private $Payload;
 		private $RawPayload;
@@ -105,9 +96,27 @@
 			}
 			
 			$Remote = ip2long( $_SERVER[ 'REMOTE_ADDR' ] );
-			$Base   = ip2long( self :: GITHUB_IP_BASE );
 			
-			return ( $Base & self :: GITHUB_IP_MASK ) === ( $Remote & self :: GITHUB_IP_MASK );
+			// https://api.github.com/meta
+			$Addresses =
+			[
+				[ '192.30.252.0',    22 ],
+				[ '185.199.108.0',   22 ],
+				[ '140.82.112.0',    20 ],
+			];
+			
+			foreach( $Addresses as $CIDR )
+			{
+				$Base = ip2long( $CIDR[ 0 ] );
+				$Mask = pow( 2, ( 32 - $CIDR[ 1 ] ) ) - 1;
+				
+				if( $Base === ( $Remote & ~$Mask ) )
+				{
+					return true;
+				}
+			}
+			
+			return false;
 		}
 		
 		/**
