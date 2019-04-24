@@ -131,7 +131,10 @@
 				throw new Exception( 'Missing X-Hub-Signature header. Did you configure secret token in hook settings?' );
 			}
 			
-			return 'sha1=' . hash_hmac( 'sha1', $this->RawPayload, $SecretKey, false ) === $_SERVER[ 'HTTP_X_HUB_SIGNATURE' ];
+			$KnownAlgo = 'sha1';
+			$CalculatedHash = $KnownAlgo . '=' . hash_hmac( $KnownAlgo, $this->RawPayload, $SecretKey, false );
+			
+			return hash_equals( $CalculatedHash, $_SERVER[ 'HTTP_X_HUB_SIGNATURE' ] );
 		}
 		
 		/**
