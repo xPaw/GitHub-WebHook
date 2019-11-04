@@ -2,41 +2,45 @@
 class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 {
 	/**
-	 * @dataProvider      ignoredIssueActionProvider
-	 * @expectedException GitHubIgnoredEventException
+	 * @dataProvider ignoredIssueActionProvider
 	 */
 	public function testIssueThrow( $Action )
 	{
+		$this->expectException( GitHubIgnoredEventException::class );
+
 		$Parser = new GitHub_IRC( 'issues', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
 	
 	/**
-	 * @dataProvider      ignoredPullRequestActionProvider
-	 * @expectedException GitHubIgnoredEventException
+	 * @dataProvider ignoredPullRequestActionProvider
 	 */
 	public function testPullRequestThrow( $Action )
 	{
+		$this->expectException( GitHubIgnoredEventException::class );
+
 		$Parser = new GitHub_IRC( 'pull_request', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
 	
 	/**
-	 * @dataProvider      ignoredPullRequestReviewActionProvider
-	 * @expectedException GitHubIgnoredEventException
+	 * @dataProvider ignoredPullRequestReviewActionProvider
 	 */
 	public function testPullRequestReviewThrow( $Action )
 	{
+		$this->expectException( GitHubIgnoredEventException::class );
+
 		$Parser = new GitHub_IRC( 'pull_request_review', (object)[ 'action' => 'submitted', 'review' => (object)[ 'state' => $Action ] ] );
 		$Parser->GetMessage();
 	}
 	
 	/**
-	 * @dataProvider      ignoredMilestoneActionProvider
-	 * @expectedException GitHubIgnoredEventException
+	 * @dataProvider ignoredMilestoneActionProvider
 	 */
 	public function testMilestoneThrow( $Action )
 	{
+		$this->expectException( GitHubIgnoredEventException::class );
+
 		$Parser = new GitHub_IRC( 'milestone', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
