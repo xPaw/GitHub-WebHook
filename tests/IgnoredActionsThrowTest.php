@@ -1,5 +1,5 @@
 <?php
-class IgnoredActionsThrowTest extends PHPUnit_Framework_TestCase
+class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider      ignoredIssueActionProvider

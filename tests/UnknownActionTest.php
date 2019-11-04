@@ -1,5 +1,5 @@
 <?php
-class UnknownActionTest extends PHPUnit_Framework_TestCase
+class UnknownActionTest extends PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider             eventProvider

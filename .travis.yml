@@ -1,13 +1,9 @@
 language: php
 php:
-  - 5.6
+  - 7.3
 
 notifications:
   email: false
 
-install:
-  - composer require --no-interaction --dev codeclimate/php-test-reporter
 script:
-  - phpunit --configuration tests/phpunit.xml --verbose --coverage-clover build/logs/clover.xml
-after_script:
-  - php vendor/bin/test-reporter
+  - vendor/bin/phpunit --configuration tests/phpunit.xml --verbose --coverage-clover build/logs/clover.xml

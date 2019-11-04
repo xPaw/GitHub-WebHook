@@ -1,5 +1,5 @@
 <?php
-class UnknownEventTest extends PHPUnit_Framework_TestCase
+class UnknownEventTest extends PHPUnit\Framework\TestCase
 {
 	/**
 	 * @expectedException        GitHubNotImplementedException

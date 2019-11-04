@@ -1,5 +1,5 @@
 <?php
-class IgnoredEventTest extends PHPUnit_Framework_TestCase
+class IgnoredEventTest extends PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider      ignoredEventProvider
