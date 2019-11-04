@@ -1,9 +1,0 @@
-language: php
-php:
-  - 7.3
-
-notifications:
-  email: false
-
-script:
-  - vendor/bin/phpunit --configuration tests/phpunit.xml --verbose --coverage-clover build/logs/clover.xml
