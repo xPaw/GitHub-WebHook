@@ -486,10 +486,11 @@
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
 			
-			return sprintf( '[%s] %s %s pull request %s%s: %s. %s',
+			return sprintf( '[%s] %s %s %spull request %s%s: %s. %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatAction( ),
+							$this->Payload->pull_request->draft ? 'draft ' : '',
 							$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 							$this->Payload->action === 'merged' ?
 								( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
