@@ -57,7 +57,7 @@
 			if( $this->Payload === null )
 			{
 				throw new Exception( 'Failed to decode JSON: ' .
-					function_exists( 'json_last_error_msg' ) ? json_last_error_msg() : json_last_error()
+					( function_exists( 'json_last_error_msg' ) ? json_last_error_msg() : json_last_error() )
 				);
 			}
 			
