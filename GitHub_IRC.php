@@ -149,7 +149,7 @@
 		
 		private function FormatName( $Name )
 		{
-			return "\00312" . $Name . "\017";
+			return "\00312" . substr( $Name, 0, 1 ) . "\u{200d}" . substr( $Name, 1 ) . "\017";
 		}
 		
 		private function FormatAction( $Action = null )
