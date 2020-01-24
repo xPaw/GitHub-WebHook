@@ -144,14 +144,19 @@
 		
 		private function FormatBranch( $Branch )
 		{
-			return "\00306" . $Branch . "\017";
+			return "\00306" . $this->InsertZWJ( $Branch ) . "\017";
 		}
 		
 		private function FormatName( $Name )
 		{
-			return "\00312" . substr( $Name, 0, 1 ) . "\u{200d}" . substr( $Name, 1 ) . "\017";
+			return "\00312" . $this->InsertZWJ( $Name ) . "\017";
 		}
 		
+		private function InsertZWJ( $String )
+		{
+			return substr( $String, 0, 1 ) . "\u{200d}" . substr( $String, 1 );
+		}
+
 		private function FormatAction( $Action = null )
 		{
 			if( $Action === null )
