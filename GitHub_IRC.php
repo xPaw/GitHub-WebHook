@@ -339,15 +339,18 @@
 				$URL = $this->Payload->compare;
 			}
 			
-			$Message .= sprintf( ': %s', $this->ShortenAndFormatURL( $URL ) );
-			
 			if( $Num > 0 )
 			{
-				// Only print last commit
-				$Commit = array_pop( $DistinctCommits );
-				$DistinctCommits = Array( $Commit );
+				$CommitMessages = [];
+
+				for( $i = $Num - 1; $i > 0; $i-- )
+				{
+					$CommitMessages[] = $this->ShortMessage( $Commit->message );
+				}
+
+				$CommitMessages = $this->ShortMessage( implode( ' | ', $CommitMessages ) );
 				
-				$Message .= $this->FormatCommits( $DistinctCommits );
+				$Message .= sprintf( ': %s', $CommitMessages );
 				
 				if( $Num > 1 )
 				{
@@ -359,37 +362,9 @@
 					);
 				}
 			}
-			
-			return $Message;
-		}
-		
-		/**
-		 * Formats commits
-		 */
-		private function FormatCommits( $Commits )
-		{
-			$Message = '';
-			
-			// Only display branch name if it's not default branch
-			if( $this->Payload->ref_name !== $this->Payload->repository->default_branch )
-			{
-				$Prefix = sprintf( "\n[%s/%s]", $this->FormatRepoName( ), $this->FormatBranch( $this->Payload->ref_name ) );
-			}
-			else
-			{
-				$Prefix = sprintf( "\n[%s]", $this->FormatRepoName( ) );
-			}
-			
-			foreach( $Commits as $Commit )
-			{
-				$Message .= sprintf( '%s %s %s: %s',
-					$Prefix,
-					$this->FormatHash( substr( $Commit->id, 0, 6 ) ),
-					$this->FormatName( isset( $Commit->author->username ) ? $Commit->author->username : $Commit->author->name ),
-					$this->ShortMessage( $Commit->message )
-				);
-			}
-			
+
+			$Message .= ' ' . $this->ShortenAndFormatURL( $URL );
+
 			return $Message;
 		}
 		
