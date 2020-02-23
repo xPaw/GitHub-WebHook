@@ -204,15 +204,15 @@
 			return "\00302" . $URL . "\017";
 		}
 		
-		private function ShortMessage( $Message )
+		private function ShortMessage( $Message, $Limit )
 		{
 			$Message = trim( $Message );
 			$NewMessage = Explode( "\n", $Message, 2 );
 			$NewMessage = $NewMessage[ 0 ];
 			
-			if( strlen( $NewMessage ) > 100 )
+			if( strlen( $NewMessage ) > $Limit )
 			{
-				$NewMessage = substr( $Message, 0, 100 );
+				$NewMessage = substr( $Message, 0, $Limit );
 			}
 			
 			if( $NewMessage !== $Message )
@@ -343,24 +343,14 @@
 			{
 				$CommitMessages = [];
 
-				for( $i = $Num - 1; $i > 0; $i-- )
+				while( $Num-- >= 0 )
 				{
-					$CommitMessages[] = $this->ShortMessage( $DistinctCommits[ $i ]->message );
+					$CommitMessages[] = $this->ShortMessage( $DistinctCommits[ $Num ]->message, 50 );
 				}
 
-				$CommitMessages = $this->ShortMessage( implode( ' | ', $CommitMessages ) );
+				$CommitMessages = $this->ShortMessage( implode( ' | ', $CommitMessages ), 200 );
 				
 				$Message .= sprintf( ': %s', $CommitMessages );
-				
-				if( $Num > 1 )
-				{
-					$Num--;
-					
-					$Message .= sprintf( ' (and %s more commit%s)',
-						$this->FormatNumber( $Num ),
-						$Num === 1 ? '' : 's'
-					);
-				}
 			}
 
 			$Message .= ' ' . $this->ShortenAndFormatURL( $URL );
