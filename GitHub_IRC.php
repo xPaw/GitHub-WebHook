@@ -345,7 +345,7 @@
 
 				for( $i = $Num - 1; $i > 0; $i-- )
 				{
-					$CommitMessages[] = $this->ShortMessage( $Commit->message );
+					$CommitMessages[] = $this->ShortMessage( $DistinctCommits[ i ]->message );
 				}
 
 				$CommitMessages = $this->ShortMessage( implode( ' | ', $CommitMessages ) );
