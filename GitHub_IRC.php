@@ -343,7 +343,7 @@
 			{
 				$CommitMessages = [];
 
-				while( $Num-- >= 0 )
+				while( --$Num >= 0 )
 				{
 					$CommitMessages[] = $this->ShortMessage( $DistinctCommits[ $Num ]->message, 50 );
 				}
