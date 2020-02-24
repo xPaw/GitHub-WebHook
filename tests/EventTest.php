@@ -1,10 +1,10 @@
 <?php
-class EventTest extends PHPUnit\Framework\TestCase
+class EventTest extends \PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider eventProvider
 	 */
-	public function testEvent( $EventType, $ExpectedMessage, $Payload )
+	public function testEvent( string $EventType, string $ExpectedMessage, string $Payload ) : void
 	{
 		// Setup env for processor
 		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = $EventType;
@@ -22,11 +22,10 @@ class EventTest extends PHPUnit\Framework\TestCase
 		$Parser = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload() );
 		$Message = $Parser->GetMessage();
 		
-		// Disabled because irc messages changed
-		//$this->assertEquals( $ExpectedMessage, $Message );
+		$this->assertEquals( $ExpectedMessage, $Message );
 	}
 	
-	public function eventProvider()
+	public function eventProvider() : array
 	{
 		$ProvidedData = [];
 		
@@ -46,7 +45,7 @@ class EventTest extends PHPUnit\Framework\TestCase
 				file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
 			];
 		}
-		
+
 		return $ProvidedData;
 	}
 }

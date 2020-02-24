@@ -1,18 +1,18 @@
 <?php
-class IgnoredEventTest extends PHPUnit\Framework\TestCase
+class IgnoredEventTest extends \PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider ignoredEventProvider
      */
-	public function testForkEvent( $Event )
+	public function testForkEvent( string $Event ) : void
 	{
 		$this->expectException( GitHubIgnoredEventException::class );
 		
-		$Parser = new GitHub_IRC( $Event, null );
+		$Parser = new GitHub_IRC( $Event, (object)[] );
 		$Parser->GetMessage();
 	}
 	
-	public function ignoredEventProvider( )
+	public function ignoredEventProvider( ) : array
 	{
 		return [
 			[ 'fork' ],

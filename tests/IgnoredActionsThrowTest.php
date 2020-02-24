@@ -1,10 +1,10 @@
 <?php
-class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
+class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider ignoredIssueActionProvider
 	 */
-	public function testIssueThrow( $Action )
+	public function testIssueThrow( string $Action ) : void
 	{
 		$this->expectException( GitHubIgnoredEventException::class );
 
@@ -15,7 +15,7 @@ class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 	/**
 	 * @dataProvider ignoredPullRequestActionProvider
 	 */
-	public function testPullRequestThrow( $Action )
+	public function testPullRequestThrow( string $Action ) : void
 	{
 		$this->expectException( GitHubIgnoredEventException::class );
 
@@ -26,7 +26,7 @@ class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 	/**
 	 * @dataProvider ignoredPullRequestReviewActionProvider
 	 */
-	public function testPullRequestReviewThrow( $Action )
+	public function testPullRequestReviewThrow( string $Action ) : void
 	{
 		$this->expectException( GitHubIgnoredEventException::class );
 
@@ -37,7 +37,7 @@ class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 	/**
 	 * @dataProvider ignoredMilestoneActionProvider
 	 */
-	public function testMilestoneThrow( $Action )
+	public function testMilestoneThrow( string $Action ) : void
 	{
 		$this->expectException( GitHubIgnoredEventException::class );
 
@@ -45,7 +45,7 @@ class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 	
-	public function ignoredIssueActionProvider( )
+	public function ignoredIssueActionProvider( ) : array
 	{
 		return [
 			[ 'labeled' ],
@@ -55,7 +55,7 @@ class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 		];
 	}
 	
-	public function ignoredPullRequestActionProvider( )
+	public function ignoredPullRequestActionProvider( ) : array
 	{
 		return [
 			[ 'synchronize' ],
@@ -68,14 +68,14 @@ class IgnoredActionsThrowTest extends PHPUnit\Framework\TestCase
 		];
 	}
 	
-	public function ignoredPullRequestReviewActionProvider( )
+	public function ignoredPullRequestReviewActionProvider( ) : array
 	{
 		return [
 			[ 'commented' ],
 		];
 	}
 	
-	public function ignoredMilestoneActionProvider( )
+	public function ignoredMilestoneActionProvider( ) : array
 	{
 		return [
 			[ 'edited' ],

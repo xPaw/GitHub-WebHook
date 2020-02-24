@@ -1,10 +1,10 @@
 <?php
-class UnknownActionTest extends PHPUnit\Framework\TestCase
+class UnknownActionTest extends \PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider eventProvider
 	 */
-	public function testUnknownAction( $Event )
+	public function testUnknownAction( string $Event ) : void
 	{
 		$this->expectException( GitHubNotImplementedException::class );
 		$this->expectExceptionMessage( 'Unsupported action type "surely_this_action_does_not_exist"' );
@@ -13,7 +13,7 @@ class UnknownActionTest extends PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 	
-	public function eventProvider( )
+	public function eventProvider( ) : array
 	{
 		return [
 			//[ 'ping' ], // no action
