@@ -169,6 +169,7 @@
 				case 'created'    :
 				case 'resolved'   :
 				case 'reopened'   : return "\00307" . $Action . "\017";
+				case 'locked'     :
 				case 'deleted'    :
 				case 'dismissed'  :
 				case 'force-pushed':
@@ -388,6 +389,7 @@
 		private function FormatIssuesEvent( )
 		{
 			if( $this->Payload->action === 'edited'
+			||  $this->Payload->action === 'unpinned'
 			||  $this->Payload->action === 'milestoned'
 			||  $this->Payload->action === 'demilestoned'
 			||  $this->Payload->action === 'labeled'
@@ -402,6 +404,9 @@
 			&&  $this->Payload->action !== 'closed'
 			&&  $this->Payload->action !== 'reopened'
 			&&  $this->Payload->action !== 'deleted'
+			&&  $this->Payload->action !== 'pinned'
+			&&  $this->Payload->action !== 'locked'
+			&&  $this->Payload->action !== 'unlocked'
 			&&  $this->Payload->action !== 'transferred' )
 			{
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
@@ -434,6 +439,10 @@
 					$this->Payload->action = 'closed without merging';
 				}
 			}
+			else if( $this->Payload->action === 'ready_for_review' )
+			{
+				$this->Payload->action = 'readied';
+			}
 			
 			if( $this->Payload->action === 'edited'
 			||  $this->Payload->action === 'synchronize'
@@ -451,6 +460,9 @@
 			&&  $this->Payload->action !== 'reopened'
 			&&  $this->Payload->action !== 'deleted'
 			&&  $this->Payload->action !== 'merged'
+			&&  $this->Payload->action !== 'locked'
+			&&  $this->Payload->action !== 'unlocked'
+			&&  $this->Payload->action !== 'readied'
 			&&  $this->Payload->action !== 'closed without merging' )
 			{
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
@@ -763,10 +775,17 @@
 		 */
 		private function FormatRepositoryEvent( )
 		{
+			if( $this->Payload->review->state === 'edited' )
+			{
+				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			}
+			
 			if( $this->Payload->action !== 'created'
 			&&  $this->Payload->action !== 'deleted'
 			&&  $this->Payload->action !== 'archived'
 			&&  $this->Payload->action !== 'unarchived'
+			&&  $this->Payload->action !== 'transferred'
+			&&  $this->Payload->action !== 'renamed'
 			&&  $this->Payload->action !== 'publicized'
 			&&  $this->Payload->action !== 'privatized' )
 			{
