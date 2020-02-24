@@ -1,14 +1,14 @@
 <?php
 	class GitHub_WebHook
 	{
-		private $EventType;
-		private $Payload;
-		private $RawPayload;
+		private string $EventType;
+		private string $RawPayload;
+		private object $Payload;
 		
 		/**
 		 * Validates and processes current request
 		 */
-		public function ProcessRequest( )
+		public function ProcessRequest( ) : bool
 		{
 			if( !array_key_exists( 'HTTP_X_GITHUB_EVENT', $_SERVER ) )
 			{
@@ -88,7 +88,7 @@
 		 *
 		 * @return bool
 		 */
-		public function ValidateIPAddress( )
+		public function ValidateIPAddress( ) : bool
 		{
 			if( !array_key_exists( 'REMOTE_ADDR', $_SERVER ) )
 			{
@@ -124,7 +124,7 @@
 		 *
 		 * @return bool
 		 */
-		public function ValidateHubSignature( $SecretKey )
+		public function ValidateHubSignature( string $SecretKey ) : bool
 		{
 			if( !array_key_exists( 'HTTP_X_HUB_SIGNATURE', $_SERVER ) )
 			{
@@ -143,7 +143,7 @@
 		 *
 		 * @return string
 		 */
-		public function GetEventType( )
+		public function GetEventType( ) : string
 		{
 			return $this->EventType;
 		}
@@ -151,9 +151,9 @@
 		/**
 		 * Returns decoded payload
 		 *
-		 * @return array
+		 * @return object
 		 */
-		public function GetPayload( )
+		public function GetPayload( ) : object
 		{
 			return $this->Payload;
 		}
@@ -163,7 +163,7 @@
 		 *
 		 * @return string
 		 */
-		public function GetFullRepositoryName( )
+		public function GetFullRepositoryName( ) : string
 		{
 			if( isset( $this->Payload->repository->full_name ) )
 			{

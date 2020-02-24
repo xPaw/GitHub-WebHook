@@ -1,9 +1,9 @@
 <?php
 	class GitHubNotImplementedException extends Exception
 	{
-		public $EventName = '';
+		public string $EventName = '';
 		
-		public function __construct( $Event, $Action = null )
+		public function __construct( string $Event, ?string $Action = null )
 		{
 			$this->EventName = $Event;
 			
@@ -22,9 +22,9 @@
 	
 	class GitHubIgnoredEventException extends Exception
 	{
-		public $EventName = '';
+		public string $EventName = '';
 		
-		public function __construct( $Event )
+		public function __construct( string $Event )
 		{
 			$this->EventName = $Event;
 			
@@ -34,11 +34,12 @@
 	
 	class GitHub_IRC
 	{
-		private $EventType;
-		private $Payload;
+		private string $EventType;
+		private object $Payload;
+		/** @var ?callable */
 		private $URLShortener;
 		
-		public function __construct( $EventType, $Payload, $URLShortener = null )
+		public function __construct( string $EventType, object $Payload, ?callable $URLShortener = null )
 		{
 			$this->EventType = $EventType;
 			$this->Payload = $Payload;
@@ -71,7 +72,7 @@
 		 *
 		 * @return string
 		 */
-		public function GetMessage( )
+		public function GetMessage( ) : string
 		{
 			switch( $this->EventType )
 			{
@@ -107,9 +108,9 @@
 		 *
 		 * @return array
 		 */
-		private function GetDistinctCommits( )
+		private function GetDistinctCommits( ) : array
 		{
-			$Commits = Array( );
+			$Commits = [];
 			
 			foreach( $this->Payload->commits as $Commit )
 			{
@@ -127,37 +128,37 @@
 			return $Commits;
 		}
 		
-		private function BeforeSHA( )
+		private function BeforeSHA( ) : string
 		{
 			return substr( $this->Payload->before, 0, 6 );
 		}
 		
-		private function AfterSHA( )
+		private function AfterSHA( ) : string
 		{
 			return substr( $this->Payload->after, 0, 6 );
 		}
 		
-		private function FormatRepoName( )
+		private function FormatRepoName( ) : string
 		{
 			return "\00310" . $this->Payload->repository->name . "\017";
 		}
 		
-		private function FormatBranch( $Branch )
+		private function FormatBranch( string $Branch ) : string
 		{
 			return "\00306" . $this->InsertZWJ( $Branch ) . "\017";
 		}
 		
-		private function FormatName( $Name )
+		private function FormatName( string $Name ) : string
 		{
 			return "\00312" . $this->InsertZWJ( $Name ) . "\017";
 		}
 		
-		private function InsertZWJ( $String )
+		private function InsertZWJ( string $String ) : string
 		{
 			return substr( $String, 0, 1 ) . "\u{200d}" . substr( $String, 1 );
 		}
 
-		private function FormatAction( $Action = null )
+		private function FormatAction( ?string $Action = null ) : string
 		{
 			if( $Action === null )
 			{
@@ -180,17 +181,17 @@
 			}
 		}
 		
-		private function FormatNumber( $Number )
+		private function FormatNumber( string $Number ) : string
 		{
 			return "\00312\002" . $Number . "\017";
 		}
 		
-		private function FormatHash( $Hash )
+		private function FormatHash( string $Hash ) : string
 		{
 			return "\00314" . $Hash . "\017";
 		}
 		
-		private function ShortenAndFormatURL( $URL )
+		private function ShortenAndFormatURL( string $URL ) : string
 		{
 			if( $this->URLShortener !== null )
 			{
@@ -200,12 +201,12 @@
 			return $this->FormatURL( $URL );
 		}
 		
-		private function FormatURL( $URL )
+		private function FormatURL( string $URL ) : string
 		{
 			return "\00302" . $URL . "\017";
 		}
 		
-		private function ShortMessage( $Message, $Limit = 100 )
+		private function ShortMessage( string $Message, int $Limit = 100 ) : string
 		{
 			$Message = trim( $Message );
 			$NewMessage = Explode( "\n", $Message, 2 );
@@ -236,7 +237,7 @@
 		 * Formats a push event
 		 * See https://developer.github.com/v3/activity/events/types/#pushevent
 		 */
-		private function FormatPushEvent( )
+		private function FormatPushEvent( ) : string
 		{
 			$DistinctCommits = $this->GetDistinctCommits( );
 			$Num = count( $DistinctCommits );
@@ -273,7 +274,7 @@
 					if( $Num > 0 )
 					{
 						$Message .= sprintf( ' (+%s new commit%s)',
-							$this->FormatNumber( $Num ),
+							$this->FormatNumber( (string)$Num ),
 							$Num === 1 ? '' : 's'
 						);
 					}
@@ -315,7 +316,7 @@
 			else
 			{
 				$Message .= sprintf( 'pushed %s new commit%s to %s',
-					$this->FormatNumber( $Num ),
+					$this->FormatNumber( (string)$Num ),
 					$Num === 1 ? '' : 's',
 					$this->FormatBranch( $this->Payload->ref_name )
 				);
@@ -363,7 +364,7 @@
 		 * Formats a deletion event
 		 * See https://developer.github.com/v3/activity/events/types/#deleteevent
 		 */
-		private function FormatDeleteEvent( )
+		private function FormatDeleteEvent( ) : string
 		{
 			if( $this->Payload->ref_type !== 'tag'
 			&&  $this->Payload->ref_type !== 'branch' )
@@ -386,7 +387,7 @@
 		 * Formats an issue event
 		 * See https://developer.github.com/v3/activity/events/types/#issuesevent
 		 */
-		private function FormatIssuesEvent( )
+		private function FormatIssuesEvent( ) : string
 		{
 			if( $this->Payload->action === 'edited'
 			||  $this->Payload->action === 'unpinned'
@@ -426,7 +427,7 @@
 		 * Formats a pull request event
 		 * See https://developer.github.com/v3/activity/events/types/#pullrequestevent
 		 */
-		private function FormatPullRequestEvent( )
+		private function FormatPullRequestEvent( ) : string
 		{
 			if( $this->Payload->action === 'closed' )
 			{
@@ -486,7 +487,7 @@
 		 * Formats a milestone event
 		 * See https://developer.github.com/v3/activity/events/types/#milestoneevent
 		 */
-		private function FormatMilestoneEvent( )
+		private function FormatMilestoneEvent( ) : string
 		{
 			if( $this->Payload->action === 'edited' )
 			{
@@ -515,7 +516,7 @@
 		 * Formats a project event
 		 * See https://developer.github.com/v3/activity/events/types/#projectevent
 		 */
-		private function FormatProjectEvent( )
+		private function FormatProjectEvent( ) : string
 		{
 			if( $this->Payload->action === 'edited' )
 			{
@@ -543,7 +544,7 @@
 		 * Formats a release event
 		 * See https://developer.github.com/v3/activity/events/types/#releaseevent
 		 */
-		private function FormatReleaseEvent( )
+		private function FormatReleaseEvent( ) : string
 		{
 			if( $this->Payload->action !== 'published' )
 			{
@@ -564,7 +565,7 @@
 		 * Formats a commit comment event
 		 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
 		 */
-		private function FormatCommitCommentEvent( )
+		private function FormatCommitCommentEvent( ) : string
 		{
 			if( $this->Payload->action !== 'created' )
 			{
@@ -584,7 +585,7 @@
 		 * Formats a issue comment event
 		 * See https://developer.github.com/v3/activity/events/types/#issuecommentevent
 		 */
-		private function FormatIssueCommentEvent( )
+		private function FormatIssueCommentEvent( ) : string
 		{
 			if( $this->Payload->action !== 'created' )
 			{
@@ -605,7 +606,7 @@
 		 * Formats a pull request review event
 		 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewevent
 		 */
-		private function FormatPullRequestReviewEvent( )
+		private function FormatPullRequestReviewEvent( ) : string
 		{
 			if( $this->Payload->action !== 'submitted' )
 			{
@@ -637,7 +638,7 @@
 		 * Formats a pull request review comment event
 		 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewcommentevent
 		 */
-		private function FormatPullRequestReviewCommentEvent( )
+		private function FormatPullRequestReviewCommentEvent( ) : string
 		{
 			if( $this->Payload->action !== 'created' )
 			{
@@ -657,7 +658,7 @@
 		 * Formats a repository vulnerability alert event
 		 * See https://developer.github.com/v3/activity/events/types/#repositoryvulnerabilityalertevent
 		 */
-		private function FormatRepositoryVulnerabilityAlertEvent( )
+		private function FormatRepositoryVulnerabilityAlertEvent( ) : string
 		{
 			if( $this->Payload->action === 'create' )
 			{
@@ -694,7 +695,7 @@
 		 * Formats a member event
 		 * See https://developer.github.com/v3/activity/events/types/#memberevent
 		 */
-		private function FormatMemberEvent( )
+		private function FormatMemberEvent( ) : string
 		{
 			if( $this->Payload->action !== 'added' && $this->Payload->action !== 'deleted' )
 			{
@@ -713,7 +714,7 @@
 		 * Formats a gollum event (wiki)
 		 * See https://developer.github.com/v3/activity/events/types/#gollumevent
 		 */
-		private function FormatGollumEvent( )
+		private function FormatGollumEvent( ) : string
 		{
 			$Message = '';
 			
@@ -747,7 +748,7 @@
 		 * Formats a ping event
 		 * See https://developer.github.com/webhooks/#ping-event
 		 */
-		private function FormatPingEvent( )
+		private function FormatPingEvent( ) : string
 		{
 			return sprintf( '[%s] Hook %s worked! Zen: %s',
 							$this->FormatRepoName( ),
@@ -760,7 +761,7 @@
 		 * Format a public event. Without a doubt: the best GitHub event
 		 * See https://developer.github.com/v3/activity/events/types/#publicevent
 		 */
-		private function FormatPublicEvent( )
+		private function FormatPublicEvent( ) : string
 		{
 			return sprintf( '[%s] is now open source and available to everyone at %s (You\'re the best %s!)',
 							$this->FormatRepoName( ),
@@ -773,7 +774,7 @@
 		 * Triggered when a repository is created.
 		 * See https://developer.github.com/v3/activity/events/types/#repositoryevent
 		 */
-		private function FormatRepositoryEvent( )
+		private function FormatRepositoryEvent( ) : string
 		{
 			if( $this->Payload->review->state === 'edited' )
 			{
