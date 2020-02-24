@@ -776,7 +776,7 @@
 		 */
 		private function FormatRepositoryEvent( ) : string
 		{
-			if( $this->Payload->review->state === 'edited' )
+			if( $this->Payload->action === 'edited' )
 			{
 				throw new GitHubIgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 			}
