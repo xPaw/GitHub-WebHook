@@ -204,7 +204,7 @@
 			return "\00302" . $URL . "\017";
 		}
 		
-		private function ShortMessage( $Message, $Limit )
+		private function ShortMessage( $Message, $Limit = 100 )
 		{
 			$Message = trim( $Message );
 			$NewMessage = Explode( "\n", $Message, 2 );
@@ -559,10 +559,11 @@
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
 			
-			return sprintf( '[%s] %s commented on commit %s. %s',
+			return sprintf( '[%s] %s commented on commit %s: %s %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
+							$this->ShortMessage( $this->Payload->comment->body ),
 							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
 			);
 		}
@@ -578,11 +579,12 @@
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
 			
-			return sprintf( '[%s] %s commented on issue %s: %s. %s',
+			return sprintf( '[%s] %s commented on issue %s (%s): %s %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatNumber( '#' . $this->Payload->issue->number ),
 							$this->Payload->issue->title,
+							$this->ShortMessage( $this->Payload->comment->body ),
 							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
 			);
 		}
