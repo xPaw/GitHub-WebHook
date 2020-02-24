@@ -2,8 +2,8 @@
 	Header( 'Content-Type: text/plain; charset=utf-8' );
 	
 	// Don't do this in production!
-	ini_set( 'error_reporting', -1 );
-	ini_set( 'display_errors', 1 );
+	ini_set( 'error_reporting', '-1' );
+	ini_set( 'display_errors', '1' );
 	
 	http_response_code( 500 );
 	
@@ -106,7 +106,7 @@
 		socket_close( $Socket );
 	}
 	
-	function wild( $string, $expression )
+	function wild( string $string, string $expression ) : bool
 	{
 		if( strpos( $expression, '*' ) === false )
 		{
@@ -119,12 +119,12 @@
 		return preg_match( '/^' . $expression . '$/', $string ) === 1;
 	}
 	
-	function strip_colors( $message )
+	function strip_colors( string $message ) : string
 	{
 		return preg_replace( "/\x03(\d\d)?/", '', $message );
 	}
 	
-	function shorten_url( $url )
+	function shorten_url( string $url ) : string
 	{
 		$curl = curl_init( );
 		
@@ -146,7 +146,7 @@
 		
 		if( $response !== false )
 		{
-			$response = explode( "\r\n", $response );
+			$response = explode( "\r\n", (string)$response );
 			$key = 'Location: ';
 			
 			foreach( $response as $header )
