@@ -350,7 +350,7 @@
 					$CommitMessages[] = $this->ShortMessage( $DistinctCommits[ $Num ]->message, 50 );
 				}
 
-				$CommitMessages = $this->ShortMessage( implode( ' | ', $CommitMessages ), 200 );
+				$CommitMessages = $this->ShortMessage( implode( $this->FormatHash( ' | ' ), $CommitMessages ), 200 );
 				
 				$Message .= sprintf( ': %s', $CommitMessages );
 			}
