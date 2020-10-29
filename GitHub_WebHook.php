@@ -126,15 +126,15 @@
 		 */
 		public function ValidateHubSignature( string $SecretKey ) : bool
 		{
-			if( !array_key_exists( 'HTTP_X_HUB_SIGNATURE', $_SERVER ) )
+			if( !array_key_exists( 'HTTP_X_HUB_SIGNATURE_256', $_SERVER ) )
 			{
 				throw new Exception( 'Missing X-Hub-Signature header. Did you configure secret token in hook settings?' );
 			}
 			
-			$KnownAlgo = 'sha1';
+			$KnownAlgo = 'sha256';
 			$CalculatedHash = $KnownAlgo . '=' . hash_hmac( $KnownAlgo, $this->RawPayload, $SecretKey, false );
 			
-			return hash_equals( $CalculatedHash, $_SERVER[ 'HTTP_X_HUB_SIGNATURE' ] );
+			return hash_equals( $CalculatedHash, $_SERVER[ 'HTTP_X_HUB_SIGNATURE_256' ] );
 		}
 		
 		/**
