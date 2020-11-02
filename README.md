@@ -72,6 +72,7 @@ MembershipEvent               | :x: |
 MilestoneEvent                | :+1: | `edited` events are ignored by design
 OrganizationEvent             | :x: |
 OrgBlockEvent                 | :x: |
+PackageEvent                  | :+1: |
 PageBuildEvent                | :x: |
 PingEvent                     | :+1: | Not documented by GitHub, sent out when a new hook is created
 ProjectCardEvent              | :x: |

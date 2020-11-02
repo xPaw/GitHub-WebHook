@@ -83,6 +83,7 @@
 				case 'issues'        : return $this->FormatIssuesEvent( );
 				case 'member'        : return $this->FormatMemberEvent( );
 				case 'gollum'        : return $this->FormatGollumEvent( );
+				case 'package'       : return $this->FormatPackageEvent( );
 				case 'project'       : return $this->FormatProjectEvent( );
 				case 'release'       : return $this->FormatReleaseEvent( );
 				case 'milestone'     : return $this->FormatMilestoneEvent( );
@@ -512,6 +513,30 @@
 			);
 		}
 		
+		/**
+		 * Formats a package event
+		 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#package
+		 */
+		private function FormatPackageEvent( ) : string
+		{
+			if( $this->Payload->action !== 'published'
+			&&  $this->Payload->action !== 'updated' )
+			{
+				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
+			}
+			
+			return sprintf(
+				'[%s] %s %s %s package: %s %s. %s',
+				$this->FormatRepoName( ),
+				$this->FormatName( $this->Payload->sender->login ),
+				$this->FormatAction( ),
+				$this->Payload->package->package_type,
+				$this->Payload->package->name,
+				$this->FormatBranch( $this->Payload->package->package_version->version ),
+				$this->ShortenAndFormatURL( $this->Payload->package->html_url )
+			);
+		}
+
 		/**
 		 * Formats a project event
 		 * See https://developer.github.com/v3/activity/events/types/#projectevent
