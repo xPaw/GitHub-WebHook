@@ -106,7 +106,7 @@
 		/**
 		 * Returns distinct commits which have non-empty commit messages
 		 *
-		 * @return array
+		 * @return array<object>
 		 */
 		private function GetDistinctCommits( ) : array
 		{

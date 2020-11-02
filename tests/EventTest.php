@@ -25,6 +25,9 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals( $ExpectedMessage, $Message, $Path );
 	}
 	
+	/**
+	 * @return array<array<string>>
+	 */
 	public function eventProvider() : array
 	{
 		$ProvidedData = [];
@@ -41,9 +44,9 @@ class EventTest extends \PHPUnit\Framework\TestCase
 			$ProvidedData[] =
 			[
 				$Path,
-				trim( file_get_contents( $Path . DIRECTORY_SEPARATOR . 'type.txt' ) ),
-				trim( file_get_contents( $Path . DIRECTORY_SEPARATOR . 'expected.bin' ) ),
-				file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
+				trim( (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'type.txt' ) ),
+				trim( (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'expected.bin' ) ),
+				(string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
 			];
 		}
 

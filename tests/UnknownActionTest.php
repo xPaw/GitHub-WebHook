@@ -13,6 +13,9 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 	
+	/**
+	 * @return array<array<string>>
+	 */
 	public function eventProvider( ) : array
 	{
 		return [

@@ -1,0 +1,10 @@
+parameters:
+	level: 6
+	paths:
+		- .
+	excludes_analyse:
+		- vendor
+		- examples
+	ignoreErrors:
+		- message: "/Access to an undefined property object::.*/"
+		  path: GitHub_*.php

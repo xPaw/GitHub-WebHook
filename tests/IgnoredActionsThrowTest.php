@@ -45,6 +45,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 	
+	/**
+	 * @return array<array<string>>
+	 */
 	public function ignoredIssueActionProvider( ) : array
 	{
 		return [
@@ -55,6 +58,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		];
 	}
 	
+	/**
+	 * @return array<array<string>>
+	 */
 	public function ignoredPullRequestActionProvider( ) : array
 	{
 		return [
@@ -68,6 +74,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		];
 	}
 	
+	/**
+	 * @return array<array<string>>
+	 */
 	public function ignoredPullRequestReviewActionProvider( ) : array
 	{
 		return [
@@ -75,6 +84,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		];
 	}
 	
+	/**
+	 * @return array<array<string>>
+	 */
 	public function ignoredMilestoneActionProvider( ) : array
 	{
 		return [

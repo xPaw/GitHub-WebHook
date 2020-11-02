@@ -12,6 +12,9 @@ class IgnoredEventTest extends \PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 	
+	/**
+	 * @return array<array<string>>
+	 */
 	public function ignoredEventProvider( ) : array
 	{
 		return [
