@@ -4,7 +4,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @dataProvider eventProvider
 	 */
-	public function testEvent( string $EventType, string $ExpectedMessage, string $Payload ) : void
+	public function testEvent( string $Path, string $EventType, string $ExpectedMessage, string $Payload ) : void
 	{
 		// Setup env for processor
 		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = $EventType;
@@ -22,7 +22,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		$Parser = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload() );
 		$Message = $Parser->GetMessage();
 		
-		$this->assertEquals( $ExpectedMessage, $Message );
+		$this->assertEquals( $ExpectedMessage, $Message, $Path );
 	}
 	
 	public function eventProvider() : array
@@ -40,6 +40,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 			
 			$ProvidedData[] =
 			[
+				$Path,
 				trim( file_get_contents( $Path . DIRECTORY_SEPARATOR . 'type.txt' ) ),
 				trim( file_get_contents( $Path . DIRECTORY_SEPARATOR . 'expected.bin' ) ),
 				file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
