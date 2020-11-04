@@ -698,7 +698,7 @@
 			{
 				$this->Payload->action = 'resolved';
 			}
-			else if( $this->Payload->action !== 'dismiss' )
+			else if( $this->Payload->action === 'dismiss' )
 			{
 				$this->Payload->action = 'dismissed';
 			}
