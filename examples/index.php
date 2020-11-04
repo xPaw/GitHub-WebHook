@@ -14,16 +14,7 @@
 	{
 		$Hook->ProcessRequest( );
 		
-		// This check is optional, you can implement some secret GET param for example
-		if( !$Hook->ValidateIPAddress() )
-		{
-			http_response_code( 401 );
-			
-			exit;
-		}
-		
-		// This check is optional, checks if your hook secret matches
-		if( !$Hook->ValidateHubSignature( 'My secret key' ) )
+		if( !$Hook->ValidateHubSignature( GITHUB_SECRET ) )
 		{
 			http_response_code( 401 );
 			

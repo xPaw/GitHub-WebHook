@@ -16,10 +16,9 @@
 	
 	try
 	{
-		// This check is optional, you can implement some secret GET param for example
-		if( !$Hook->ValidateIPAddress() )
+		if( !$Hook->ValidateHubSignature( GITHUB_SECRET ) )
 		{
-			throw new Exception( 'Unauthorized.' );
+			throw new Exception( 'Secret validation failed.' );
 		}
 		
 		$Hook->ProcessRequest( );

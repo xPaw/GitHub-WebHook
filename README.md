@@ -10,12 +10,6 @@ Functions in this class are:
 #### ProcessRequest()
 Accepts an event, throws `Exception` on error.
 
-#### ValidateIPAddress()
-Returns true if a request came from GitHub's IP range, false otherwise.
-
-#### ValidateHubSignature($secretKey)
-Retuns true if HMAC hex digest of the payload matches GitHub's, false otherwise.
-
 #### GetEventType()
 Returns event type.
 See https://developer.github.com/webhooks/#events for a list of events.
@@ -25,6 +19,13 @@ Returns decoded JSON payload as an object.
 
 #### GetFullRepositoryName()
 Returns full name of the repository for which an event was sent for.
+
+#### ValidateHubSignature( $SecretKey )
+Retuns true if HMAC hex digest of the payload matches GitHub's, false otherwise.
+
+#### ~~ValidateIPAddress()~~
+Returns true if a request came from GitHub's IP range, false otherwise.
+⚠ Use `ValidateHubSignature` instead.
 
 ## GitHub_IRC
 `GitHub_IRC.php` accepts input from previous script and outputs
