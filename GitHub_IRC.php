@@ -617,11 +617,11 @@
 				throw new GitHubNotImplementedException( $this->EventType, $this->Payload->action );
 			}
 			
-			return sprintf( '[%s] %s commented on issue %s (%s): %s %s',
+			return sprintf( '[%s] %s commented on %s %s: %s %s',
 							$this->FormatRepoName( ),
 							$this->FormatName( $this->Payload->sender->login ),
 							$this->FormatNumber( '#' . $this->Payload->issue->number ),
-							$this->Payload->issue->title,
+							$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
 							$this->ShortMessage( $this->Payload->comment->body ),
 							$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
 			);
