@@ -1,5 +1,3 @@
-[![Build Status](https://img.shields.io/travis/com/xPaw/GitHub-WebHook.svg?style=flat-square)](https://travis-ci.com/xPaw/GitHub-WebHook)
-
 This script acts as a web hook for [GitHub](https://github.com/) events, processes them,
 and returns messages which can be sent out to an IRC channel.
 
