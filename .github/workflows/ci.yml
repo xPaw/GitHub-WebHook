@@ -13,6 +13,6 @@ jobs:
     - name: Install dependencies
       run: composer install --no-interaction --no-progress
     - name: Run tests
-      run: php${{ matrix.php }} vendor/bin/phpunit --configuration tests/phpunit.xml --verbose --fail-on-warning
+      run: php${{ matrix.php }} vendor/bin/phpunit --verbose --fail-on-warning --coverage-text
     - name: Run phpstan
       run: php${{ matrix.php }} vendor/bin/phpstan analyse
