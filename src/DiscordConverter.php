@@ -99,6 +99,19 @@ class DiscordConverter extends BaseConverter
 		}
 	}
 
+	private function ShortDescription( string $Message, int $Limit = 250 ) : string
+	{
+		$Message = str_replace( "\n\n", "\n", $Message );
+		
+		if( strlen( $Message ) > $Limit )
+		{
+			$Message = substr( $Message, 0, $Limit );
+			$Message .= '…';
+		}
+
+		return $this->Escape( $Message );
+	}
+
 	private function ShortMessage( string $Message, int $Limit = 100 ) : string
 	{
 		$Message = trim( $Message );
@@ -296,7 +309,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $this->Payload->action === 'opened' )
 		{
-			$Embed[ 'description' ] = $this->Escape( $this->Payload->issue->body );
+			$Embed[ 'description' ] = $this->ShortDescription( $this->Payload->issue->body );
 		}
 
 		return $Embed;
@@ -358,7 +371,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $this->Payload->action === 'opened' )
 		{
-			$Embed[ 'description' ] = $this->Escape( $this->Payload->pull_request->body );
+			$Embed[ 'description' ] = $this->ShortDescription( $this->Payload->pull_request->body );
 		}
 		else if( $this->Payload->action === 'merged' )
 		{
