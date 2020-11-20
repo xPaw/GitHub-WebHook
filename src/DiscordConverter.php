@@ -626,13 +626,6 @@ class DiscordConverter extends BaseConverter
 					],
 				],
 			];
-
-			return sprintf( '[%s] ⚠ New vulnerability for %s: %s %s',
-							$this->FormatRepoName( ),
-							$this->FormatName( $this->Payload->alert->affected_package_name ),
-							$this->FormatNumber( $this->Payload->alert->external_identifier ),
-							$this->FormatURL( $this->Payload->alert->external_reference )
-			);
 		}
 		else if( $this->Payload->action === 'resolve' )
 		{
@@ -698,16 +691,6 @@ class DiscordConverter extends BaseConverter
 			}
 			
 			$Messages[] = "[{$Page->action} {$this->Escape( $Page->title )}]({$Page->html_url})" . ( empty( $Page->summary ) ? '' : ( ': ' . $this->ShortMessage( $Page->summary ) ) );
-
-			/*
-			$Message .= sprintf( "[%s] %s %s %s: %s%s",
-						$this->FormatRepoName( ),
-						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( $Page->action ),
-						$Page->title,
-						empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
-						$this->ShortenAndFormatURL( $Page->html_url )
-			);*/
 		}
 		
 		return [
