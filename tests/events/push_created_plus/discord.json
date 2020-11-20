@@ -10,9 +10,9 @@
             },
             "footer": {
                 "text": "xPaw\/GitHub-WebHook",
-                "icon_url": "https:\/\/docs.github.com\/assets\/images\/site\/favicon.svg"
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
             },
-            "description": "\\[\\`ddb694\\`\\]\\(https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/ddb694550ebbb7988193f534063456876acf9cb5\\) Fix event comments and get pull request number without regex\n\\[\\`181fcf\\`\\]\\(https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/181fcf4d9ddf6d0d50a04d64b0c0d24393c810bf\\) Add exception message in GitHubIgnoredEventException"
+            "description": "[`ddb694`](https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/ddb694550ebbb7988193f534063456876acf9cb5) Fix event comments and get pull request number without regex\n[`181fcf`](https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/181fcf4d9ddf6d0d50a04d64b0c0d24393c810bf) Add exception message in GitHubIgnoredEventException"
         }
     ]
 }

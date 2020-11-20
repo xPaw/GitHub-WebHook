@@ -141,7 +141,7 @@ class DiscordConverter extends BaseConverter
 
 	/**
 	 * Formats a push event
-	 * See https://developer.github.com/v3/activity/events/types/#pushevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#push
 	 */
 	private function FormatPushEvent( ) : array
 	{
@@ -254,7 +254,7 @@ class DiscordConverter extends BaseConverter
 				$CommitMessages[] = $Commit;
 			}
 
-			$Embed[ 'description' ] = $this->Escape( implode( "\n", $CommitMessages ), 200 );
+			$Embed[ 'description' ] = implode( "\n", $CommitMessages );
 		}
 
 		return $Embed;

@@ -10,9 +10,9 @@
             },
             "footer": {
                 "text": "xPaw\/GitHub-WebHook",
-                "icon_url": "https:\/\/docs.github.com\/assets\/images\/site\/favicon.svg"
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
             },
-            "description": "\\[\\`8ddec6\\`\\]\\(https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/8ddec647cc7a5a819669ad55d08cfabe49925311\\) Add event tests that can be easily expanded to cover more events"
+            "description": "[`8ddec6`](https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/8ddec647cc7a5a819669ad55d08cfabe49925311) Add event tests that can be easily expanded to cover more events"
         }
     ]
 }
