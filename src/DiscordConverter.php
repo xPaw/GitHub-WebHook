@@ -71,7 +71,7 @@ class DiscordConverter extends BaseConverter
 	{
 		return [
 			'text' => $this->Payload->repository->full_name,
-			'icon_url' => 'https://docs.github.com/assets/images/site/favicon.svg',
+			'icon_url' => 'https://avatars2.githubusercontent.com/in/15368?size=64',
 		];
 	}
 
