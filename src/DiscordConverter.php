@@ -20,7 +20,7 @@ class DiscordConverter extends BaseConverter
 		switch( $this->EventType )
 		{
 			case 'ping'          : $Embed = $this->FormatPingEvent( ); break;
-			//case 'push'          : $Embed = $this->FormatPushEvent( ); break;
+			case 'push'          : $Embed = $this->FormatPushEvent( ); break;
 			//case 'delete'        : $Embed = $this->FormatDeleteEvent( ); break;
 			//case 'public'        : $Embed = $this->FormatPublicEvent( ); break;
 			case 'issues'        : $Embed = $this->FormatIssuesEvent( ); break;
@@ -99,13 +99,152 @@ class DiscordConverter extends BaseConverter
 		}
 	}
 
+	private function ShortMessage( string $Message, int $Limit = 100 ) : string
+	{
+		$Message = trim( $Message );
+		$NewMessage = explode( "\n", $Message, 2 );
+		$NewMessage = $NewMessage[ 0 ];
+
+		if( strlen( $NewMessage ) > $Limit )
+		{
+			$NewMessage = substr( $Message, 0, $Limit );
+		}
+
+		if( $NewMessage !== $Message )
+		{
+			// Tidy ellipsis
+			if( substr( $NewMessage, -3 ) === '...' )
+			{
+				$NewMessage = substr( $NewMessage, 0, -3 ) . '…';
+			}
+			else if( substr( $NewMessage, -1 ) !== '…' )
+			{
+				$NewMessage .= '…';
+			}
+		}
+
+		return $this->Escape( $NewMessage );
+	}
+
 	/**
 	 * Formats a push event
 	 * See https://developer.github.com/v3/activity/events/types/#pushevent
 	 */
-	private function FormatPushEvent( ) : string
+	private function FormatPushEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		$DistinctCommits = $this->GetDistinctCommits( );
+		$Num = count( $DistinctCommits );
+
+		$Embed = [
+			'title' => '',
+			'url' => $this->Payload->repository->html_url,
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
+
+		if( isset( $this->Payload->created ) && $this->Payload->created )
+		{
+			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
+			{
+				$Embed[ 'title' ] = "tagged `{$this->Escape( $this->Payload->ref_name )}` at `" . $this->Escape( $this->Payload->base_ref_name ?? $this->AfterSHA() ) . "`";
+				$Embed[ 'color' ] = $this->FormatAction( 'tagged' );
+			}
+			else
+			{
+				$Embed[ 'title' ] = "created `{$this->Escape( $this->Payload->ref_name )}`";
+
+				if( isset( $this->Payload->base_ref ) )
+				{
+					$Embed[ 'title' ] .= " from `{$this->Escape( $this->Payload->base_ref_name )}`";
+				}
+				else if( $Num > 0 )
+				{
+					$Embed[ 'title' ] .= " at `{$this->AfterSHA( )}`";
+				}
+
+				if( $Num > 0 )
+				{
+					$Embed[ 'title' ] .= sprintf( ' (+%d new commit%s)',
+						$Num,
+						$Num === 1 ? '' : 's'
+					);
+				}
+			}
+		}
+		else if( isset( $this->Payload->deleted ) && $this->Payload->deleted )
+		{
+			throw new NotImplementedException( $this->EventType, 'deleted (use DeleteEvent if needed)' );
+		}
+		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
+		{
+			$this->Payload->action = 'force-pushed'; // Don't tell anyone!
+
+			$Embed[ 'title' ] = "{$this->Payload->action} `{$this->Escape( $this->Payload->ref_name )}` from `{$this->BeforeSHA()}` to `{$this->AfterSHA()}`";
+			$Embed[ 'color' ] = $this->FormatAction();
+		}
+		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
+		{
+			if( isset( $this->Payload->base_ref ) )
+			{
+				$Embed[ 'title' ] = "merged `{$this->Escape( $this->Payload->base_ref_name )}` into `{$this->Escape( $this->Payload->ref_name )}`";
+				$Embed[ 'color' ] = $this->FormatAction( 'merged' );
+			}
+			else
+			{
+				$Embed[ 'title' ] = "fast-forwarded `{$this->Escape( $this->Payload->ref_name )}` from `{$this->BeforeSHA()}` to `{$this->AfterSHA()}";
+				$Embed[ 'color' ] = $this->FormatAction( 'fast-forwarded' );
+			}
+		}
+		else
+		{
+			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s to `%s`',
+				$Num,
+				$Num === 1 ? '' : 's',
+				$this->Escape( $this->Payload->ref_name )
+			);
+		}
+
+		if( $this->Payload->forced )
+		{
+			// GitHub supports displaying proper diffs for force pushes
+			// but it only appears to work if the diff url has full hashes
+			// so we construct the url ourselves, instead of using the url in the payload
+			// Note: this uses ".." instead of "..." to force github to actually display changes between the commits
+			// and not the entire diff of the force push
+			$Embed[ 'url' ] = "{$this->Payload->repository->url}/compare/{$this->Payload->before}..{$this->Payload->after}";
+		}
+		else if( $Num === 1 )
+		{
+			// If there's only one distinct commit, link to it directly
+			$Embed[ 'url' ] = $this->Payload->head_commit->url;
+		}
+		else
+		{
+			$Embed[ 'url' ] = $this->Payload->compare;
+		}
+
+		if( $Num > 0 )
+		{
+			$CommitMessages = [];
+			$CommitsLimit = 5;
+
+			while( --$Num >= 0 && --$CommitsLimit >= 0 )
+			{
+				$Commit = "[`" . substr( $DistinctCommits[ $Num ]->id, 0, 6 ) . "`]({$DistinctCommits[ $Num ]->url}) ";
+				$Commit .= $this->ShortMessage( $DistinctCommits[ $Num ]->message );
+
+				if( $DistinctCommits[ $Num ]->author->username !== $this->Payload->sender->login )
+				{
+					$Commit .= " - {$DistinctCommits[ $Num ]->author->username}";
+				}
+
+				$CommitMessages[] = $Commit;
+			}
+
+			$Embed[ 'description' ] = $this->Escape( implode( "\n", $CommitMessages ), 200 );
+		}
+
+		return $Embed;
 	}
 
 	/**
