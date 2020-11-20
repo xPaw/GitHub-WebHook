@@ -5,6 +5,7 @@ parameters:
 	excludes_analyse:
 		- vendor
 		- examples
+		- public
 	ignoreErrors:
 		- message: "/Access to an undefined property object::.*/"
-		  path: GitHub_*.php
+		  path: src/*.php

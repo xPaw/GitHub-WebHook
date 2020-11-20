@@ -13,13 +13,13 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		$_POST[ 'payload' ] = $Payload;
 		
 		// Process incoming event
-		$Hook = new GitHub_WebHook( );
+		$Hook = new GitHubWebHook( );
 		$Hook->ProcessRequest( );
 		
 		$this->assertEquals( $EventType, $Hook->GetEventType() );
 		
 		// Convert processed event into an irc string
-		$Parser = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload() );
+		$Parser = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 		$Message = $Parser->GetMessage();
 		
 		$this->assertEquals( $ExpectedMessage, $Message, $Path );

@@ -6,9 +6,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	 */
 	public function testIssueThrow( string $Action ) : void
 	{
-		$this->expectException( GitHubIgnoredEventException::class );
+		$this->expectException( IgnoredEventException::class );
 
-		$Parser = new GitHub_IRC( 'issues', (object)[ 'action' => $Action ] );
+		$Parser = new IrcConverter( 'issues', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
 	
@@ -17,9 +17,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	 */
 	public function testPullRequestThrow( string $Action ) : void
 	{
-		$this->expectException( GitHubIgnoredEventException::class );
+		$this->expectException( IgnoredEventException::class );
 
-		$Parser = new GitHub_IRC( 'pull_request', (object)[ 'action' => $Action ] );
+		$Parser = new IrcConverter( 'pull_request', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
 	
@@ -28,9 +28,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	 */
 	public function testPullRequestReviewThrow( string $Action ) : void
 	{
-		$this->expectException( GitHubIgnoredEventException::class );
+		$this->expectException( IgnoredEventException::class );
 
-		$Parser = new GitHub_IRC( 'pull_request_review', (object)[ 'action' => 'submitted', 'review' => (object)[ 'state' => $Action ] ] );
+		$Parser = new IrcConverter( 'pull_request_review', (object)[ 'action' => 'submitted', 'review' => (object)[ 'state' => $Action ] ] );
 		$Parser->GetMessage();
 	}
 	
@@ -39,9 +39,9 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	 */
 	public function testMilestoneThrow( string $Action ) : void
 	{
-		$this->expectException( GitHubIgnoredEventException::class );
+		$this->expectException( IgnoredEventException::class );
 
-		$Parser = new GitHub_IRC( 'milestone', (object)[ 'action' => $Action ] );
+		$Parser = new IrcConverter( 'milestone', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
 	

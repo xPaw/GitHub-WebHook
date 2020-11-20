@@ -6,10 +6,10 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 	 */
 	public function testUnknownAction( string $Event ) : void
 	{
-		$this->expectException( GitHubNotImplementedException::class );
+		$this->expectException( NotImplementedException::class );
 		$this->expectExceptionMessage( 'Unsupported action type "surely_this_action_does_not_exist"' );
 
-		$Parser = new GitHub_IRC( $Event, (object)[ 'action' => 'surely_this_action_does_not_exist' ] );
+		$Parser = new IrcConverter( $Event, (object)[ 'action' => 'surely_this_action_does_not_exist' ] );
 		$Parser->GetMessage();
 	}
 	

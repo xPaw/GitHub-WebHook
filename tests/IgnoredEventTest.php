@@ -6,9 +6,9 @@ class IgnoredEventTest extends \PHPUnit\Framework\TestCase
      */
 	public function testForkEvent( string $Event ) : void
 	{
-		$this->expectException( GitHubIgnoredEventException::class );
+		$this->expectException( IgnoredEventException::class );
 		
-		$Parser = new GitHub_IRC( $Event, (object)[] );
+		$Parser = new IrcConverter( $Event, (object)[] );
 		$Parser->GetMessage();
 	}
 	

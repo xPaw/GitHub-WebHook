@@ -5,10 +5,9 @@
 	ini_set( 'error_reporting', '-1' );
 	ini_set( 'display_errors', '1' );
 	
-	require __DIR__ . '/../GitHub_WebHook.php';
-	require __DIR__ . '/../GitHub_IRC.php';
+	require __DIR__ . '/../Bootstrap.php';
 	
-	$Hook = new GitHub_WebHook( );
+	$Hook = new GitHubWebHook( );
 	
 	try
 	{
@@ -37,7 +36,7 @@
 	
 	try
 	{
-		$IRC = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload() );
+		$IRC = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 		
 		var_dump( $IRC->GetMessage() ); // Optional
 		

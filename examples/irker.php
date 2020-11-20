@@ -8,11 +8,10 @@
 	http_response_code( 500 );
 	
 	require __DIR__ . '/config.php';
-	require __DIR__ . '/../GitHub_WebHook.php';
-	require __DIR__ . '/../GitHub_IRC.php';
+	require __DIR__ . '/../Bootstrap.php';
 	
 	$Socket = false;
-	$Hook = new GitHub_WebHook( );
+	$Hook = new GitHubWebHook( );
 	
 	try
 	{
@@ -29,7 +28,7 @@
 		//print_r( $Hook->GetPayload() );
 		
 		// Format IRC message
-		$IRC = new GitHub_IRC( $Hook->GetEventType(), $Hook->GetPayload(), 'shorten_url' );
+		$IRC = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload(), 'shorten_url' );
 		$Message = $IRC->GetMessage();
 		
 		if( isset( $_GET[ 'strip_colors' ] ) )
@@ -82,13 +81,13 @@
 		
 		http_response_code( 202 );
 	}
-	catch( GitHubIgnoredEventException $e )
+	catch( IgnoredEventException $e )
 	{
 		http_response_code( 200 );
 		
 		echo 'This GitHub event is ignored.';
 	}
-	catch( GitHubNotImplementedException $e )
+	catch( NotImplementedException $e )
 	{
 		http_response_code( 501 );
 		
