@@ -233,11 +233,6 @@ class DiscordConverter extends BaseConverter
 			// and not the entire diff of the force push
 			$Embed[ 'url' ] = "{$this->Payload->repository->url}/compare/{$this->Payload->before}..{$this->Payload->after}";
 		}
-		else if( $Num === 1 )
-		{
-			// If there's only one distinct commit, link to it directly
-			$Embed[ 'url' ] = $this->Payload->head_commit->url;
-		}
 		else
 		{
 			$Embed[ 'url' ] = $this->Payload->compare;
