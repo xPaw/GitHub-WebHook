@@ -28,6 +28,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		{
 			$ExpectedDiscordArray = json_decode( $ExpectedDiscord, true );
 
+			$Hook->ProcessRequest( ); // parse again because irc formatter can mutate the payload
 			$Parser = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 			$Discord = $Parser->GetEmbed();
 
@@ -59,7 +60,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 				trim( (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'type.txt' ) ),
 				trim( (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'expected.bin' ) ),
 				(string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
-				file_exists( $Path . DIRECTORY_SEPARATOR . 'discord.json' ) ? (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'discord.json' ) : null,
+				(string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'discord.json' ),
 			];
 		}
 
