@@ -19,3 +19,13 @@ $Channels = array(
 		"irc://chat.freenode.net/meklu,isnick"
 	),
 );
+
+/* Send config */
+$DiscordWebhooks = array(
+	"SteamDatabase/SteamLinux" => array(
+		"https://discord.com/webhook/.........."
+	),
+	"SteamDatabase/*" => array(
+		"https://discord.com/webhook/.........."
+	),
+);
