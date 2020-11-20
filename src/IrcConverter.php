@@ -73,6 +73,7 @@ class IrcConverter extends BaseConverter
 			case 'locked'     :
 			case 'deleted'    :
 			case 'dismissed'  :
+			case 'unpublished':
 			case 'force-pushed':
 			case 'requested changes':
 			case 'closed without merging':
@@ -470,7 +471,8 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatReleaseEvent( ) : string
 	{
-		if( $this->Payload->action !== 'published' )
+		if( $this->Payload->action !== 'published'
+		&&  $this->Payload->action !== 'unpublished' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
@@ -621,7 +623,7 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatMemberEvent( ) : string
 	{
-		if( $this->Payload->action !== 'added' && $this->Payload->action !== 'deleted' )
+		if( $this->Payload->action !== 'added' && $this->Payload->action !== 'removed' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}

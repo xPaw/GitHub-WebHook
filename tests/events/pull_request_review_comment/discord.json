@@ -1,0 +1,19 @@
+{
+    "embeds": [
+        {
+            "title": "reviewed PR **#2**: Workaround filter\\_input bug",
+            "description": "this is a pull request review comment :heart:",
+            "url": "https:\/\/github.com\/xPaw\/GitHub-WebHook\/pull\/2#discussion_r52840876",
+            "color": 16750592,
+            "author": {
+                "name": "xPaw",
+                "url": "https:\/\/github.com\/xPaw",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
+            },
+            "footer": {
+                "text": "xPaw\/GitHub-WebHook",
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
+            }
+        }
+    ]
+}

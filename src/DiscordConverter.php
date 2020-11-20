@@ -21,27 +21,32 @@ class DiscordConverter extends BaseConverter
 		{
 			case 'ping'          : $Embed = $this->FormatPingEvent( ); break;
 			case 'push'          : $Embed = $this->FormatPushEvent( ); break;
-			//case 'delete'        : $Embed = $this->FormatDeleteEvent( ); break;
-			//case 'public'        : $Embed = $this->FormatPublicEvent( ); break;
+			case 'delete'        : $Embed = $this->FormatDeleteEvent( ); break;
+			case 'public'        : $Embed = $this->FormatPublicEvent( ); break;
 			case 'issues'        : $Embed = $this->FormatIssuesEvent( ); break;
-			//case 'member'        : $Embed = $this->FormatMemberEvent( ); break;
-			//case 'gollum'        : $Embed = $this->FormatGollumEvent( ); break;
-			//case 'package'       : $Embed = $this->FormatPackageEvent( ); break;
-			//case 'project'       : $Embed = $this->FormatProjectEvent( ); break;
-			//case 'release'       : $Embed = $this->FormatReleaseEvent( ); break;
-			//case 'milestone'     : $Embed = $this->FormatMilestoneEvent( ); break;
+			case 'member'        : $Embed = $this->FormatMemberEvent( ); break;
+			case 'gollum'        : $Embed = $this->FormatGollumEvent( ); break;
+			case 'package'       : $Embed = $this->FormatPackageEvent( ); break;
+			case 'project'       : $Embed = $this->FormatProjectEvent( ); break;
+			case 'release'       : $Embed = $this->FormatReleaseEvent( ); break;
+			case 'milestone'     : $Embed = $this->FormatMilestoneEvent( ); break;
 			case 'repository'    : $Embed = $this->FormatRepositoryEvent( ); break;
 			case 'pull_request'  : $Embed = $this->FormatPullRequestEvent( ); break;
-			//case 'issue_comment' : $Embed = $this->FormatIssueCommentEvent( ); break;
-			//case 'commit_comment': $Embed = $this->FormatCommitCommentEvent( ); break;
-			//case 'pull_request_review': $Embed = $this->FormatPullRequestReviewEvent( ); break;
-			//case 'pull_request_review_comment': $Embed = $this->FormatPullRequestReviewCommentEvent( ); break;
-			//case 'repository_vulnerability_alert': $Embed = $this->FormatRepositoryVulnerabilityAlertEvent( ); break;
+			case 'issue_comment' : $Embed = $this->FormatIssueCommentEvent( ); break;
+			case 'commit_comment': $Embed = $this->FormatCommitCommentEvent( ); break;
+			case 'pull_request_review': $Embed = $this->FormatPullRequestReviewEvent( ); break;
+			case 'pull_request_review_comment': $Embed = $this->FormatPullRequestReviewCommentEvent( ); break;
+			case 'repository_vulnerability_alert': $Embed = $this->FormatRepositoryVulnerabilityAlertEvent( ); break;
 		}
 
 		if( empty( $Embed ) )
 		{
 			throw new NotImplementedException( $this->EventType );
+		}
+
+		if( empty( $Embed[ 'description' ] ) )
+		{
+			unset( $Embed[ 'description' ] );
 		}
 
 		return [
@@ -90,8 +95,9 @@ class DiscordConverter extends BaseConverter
 			case 'locked'     :
 			case 'deleted'    :
 			case 'dismissed'  :
+			case 'unpublished':
 			case 'force-pushed':
-			case 'requested changes':
+			case 'requested changes in':
 			case 'closed without merging':
 			case 'closed'     : return 16007990;
 			case 'merged'     : return 7291585;
@@ -99,10 +105,11 @@ class DiscordConverter extends BaseConverter
 		}
 	}
 
-	private function ShortDescription( string $Message, int $Limit = 250 ) : string
+	private function ShortDescription( ?string $Message, int $Limit = 250 ) : string
 	{
+		$Message ??= '';
 		$Message = str_replace( "\n\n", "\n", $Message );
-		
+
 		if( strlen( $Message ) > $Limit )
 		{
 			$Message = substr( $Message, 0, $Limit );
@@ -262,11 +269,23 @@ class DiscordConverter extends BaseConverter
 
 	/**
 	 * Formats a deletion event
-	 * See https://developer.github.com/v3/activity/events/types/#deleteevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#delete
 	 */
-	private function FormatDeleteEvent( ) : string
+	private function FormatDeleteEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->ref_type !== 'tag'
+		&&  $this->Payload->ref_type !== 'branch' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->ref_type );
+		}
+
+		return [
+			'title' => "deleted {$this->Payload->ref_type} `{$this->Escape( $this->Payload->ref )}`",
+			'url' => $this->Payload->repository->html_url,
+			'color' => $this->FormatAction( 'deleted' ),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
@@ -383,101 +402,321 @@ class DiscordConverter extends BaseConverter
 
 	/**
 	 * Formats a milestone event
-	 * See https://developer.github.com/v3/activity/events/types/#milestoneevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#milestone
 	 */
-	private function FormatMilestoneEvent( ) : string
+	private function FormatMilestoneEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'opened'
+		&&  $this->Payload->action !== 'closed'
+		&&  $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "{$this->Payload->action} milestone **#{$this->Payload->milestone->number}**: {$this->Escape( $this->Payload->milestone->title )}",
+			'description' => $this->ShortDescription( $this->Payload->milestone->description ),
+			'url' => $this->Payload->milestone->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a package event
 	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#package
 	 */
-	private function FormatPackageEvent( ) : string
+	private function FormatPackageEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action !== 'published'
+		&&  $this->Payload->action !== 'updated' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return [
+			'title' => "{$this->Payload->action} {$this->Payload->package->package_type} package: **{$this->Escape( $this->Payload->package->name )}** {$this->Payload->package->package_version->version}",
+			'description' => $this->ShortDescription( $this->Payload->package->package_version->body ),
+			'url' => $this->Payload->package->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a project event
-	 * See https://developer.github.com/v3/activity/events/types/#projectevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#project
 	 */
-	private function FormatProjectEvent( ) : string
+	private function FormatProjectEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'closed'
+		&&  $this->Payload->action !== 'reopened'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return [
+			'title' => "{$this->Payload->action} project **#{$this->Payload->project->number}**: {$this->Escape( $this->Payload->project->name )}",
+			'description' => $this->ShortDescription( $this->Payload->project->body ),
+			'url' => $this->Payload->project->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a release event
-	 * See https://developer.github.com/v3/activity/events/types/#releaseevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#release
 	 */
-	private function FormatReleaseEvent( ) : string
+	private function FormatReleaseEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action !== 'published'
+		&&  $this->Payload->action !== 'unpublished' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: {$this->Escape( $this->Payload->release->name )}",
+			'description' => $this->ShortDescription( $this->Payload->release->body ),
+			'url' => $this->Payload->release->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a commit comment event
-	 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#commit_comment
 	 */
-	private function FormatCommitCommentEvent( ) : string
+	private function FormatCommitCommentEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action !== 'created' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return [
+			'title' => "commented on commit `" . substr( $this->Payload->comment->commit_id, 0, 6 ) . "`",
+			'description' => $this->ShortDescription( $this->Payload->comment->body ),
+			'url' => $this->Payload->comment->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a issue comment event
-	 * See https://developer.github.com/v3/activity/events/types/#issuecommentevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#issue_comment
 	 */
-	private function FormatIssueCommentEvent( ) : string
+	private function FormatIssueCommentEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action !== 'created' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return [
+			'title' => "commented on **#{$this->Payload->issue->number}**: {$this->Escape( $this->Payload->issue->title )}",
+			'description' => $this->ShortDescription( $this->Payload->comment->body ),
+			'url' => $this->Payload->comment->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a pull request review event
-	 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request_review
 	 */
-	private function FormatPullRequestReviewEvent( ) : string
+	private function FormatPullRequestReviewEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action !== 'submitted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		if( $this->Payload->review->state === 'commented' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->review->state );
+		}
+
+		if( $this->Payload->review->state === 'changes_requested' )
+		{
+			$this->Payload->review->state = 'requested changes in';
+		}
+
+		return [
+			'title' => "{$this->Payload->review->state} PR **#{$this->Payload->pull_request->number}**: {$this->Escape( $this->Payload->pull_request->title )}",
+			'description' => $this->ShortDescription( $this->Payload->review->body ),
+			'url' => $this->Payload->review->html_url,
+			'color' => $this->FormatAction( $this->Payload->review->state ),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a pull request review comment event
-	 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewcommentevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request_review_comment
 	 */
-	private function FormatPullRequestReviewCommentEvent( ) : string
+	private function FormatPullRequestReviewCommentEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action !== 'created' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return [
+			'title' => "reviewed PR **#{$this->Payload->pull_request->number}**: {$this->Escape( $this->Payload->pull_request->title )}",
+			'description' => $this->ShortDescription( $this->Payload->comment->body ),
+			'url' => $this->Payload->comment->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a repository vulnerability alert event
-	 * See https://developer.github.com/v3/activity/events/types/#repositoryvulnerabilityalertevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#repository_vulnerability_alert
 	 */
-	private function FormatRepositoryVulnerabilityAlertEvent( ) : string
+	private function FormatRepositoryVulnerabilityAlertEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action === 'create' )
+		{
+			return [
+				'title' => "⚠ New vulnerability for **{$this->Escape( $this->Payload->alert->affected_package_name )}**",
+				'url' => $this->Payload->alert->external_reference,
+				'color' => $this->FormatAction(),
+				'author' => $this->FormatAuthor(),
+				'footer' => $this->FormatFooter(),
+				'fields' =>
+				[
+					[
+						'name' => 'Affected range',
+						'value' => $this->Escape( $this->Payload->alert->affected_range )
+					],
+					[
+						'name' => 'Fixed in',
+						'value' => $this->Escape( $this->Payload->alert->fixed_in )
+					],
+					[
+						'name' => 'Identifier',
+						'value' => $this->Escape( $this->Payload->alert->external_identifier )
+					],
+				],
+			];
+
+			return sprintf( '[%s] ⚠ New vulnerability for %s: %s %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->alert->affected_package_name ),
+							$this->FormatNumber( $this->Payload->alert->external_identifier ),
+							$this->FormatURL( $this->Payload->alert->external_reference )
+			);
+		}
+		else if( $this->Payload->action === 'resolve' )
+		{
+			$this->Payload->action = 'resolved';
+		}
+		else if( $this->Payload->action === 'dismiss' )
+		{
+			$this->Payload->action = 'dismissed';
+		}
+		else
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return [
+			'title' => "Vulnerability for **{$this->Escape( $this->Payload->alert->affected_package_name )}** {$this->Payload->action}",
+			'url' => $this->Payload->alert->external_reference,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a member event
-	 * See https://developer.github.com/v3/activity/events/types/#memberevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#member
 	 */
-	private function FormatMemberEvent( ) : string
+	private function FormatMemberEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		if( $this->Payload->action !== 'added' && $this->Payload->action !== 'removed' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return [
+			'title' => "{$this->Payload->action} **{$this->Payload->member->login}** as a collaborator",
+			'url' => $this->Payload->repository->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**
 	 * Formats a gollum event (wiki)
-	 * See https://developer.github.com/v3/activity/events/types/#gollumevent
+	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#gollum
 	 */
-	private function FormatGollumEvent( ) : string
+	private function FormatGollumEvent( ) : array
 	{
-		throw new NotImplementedException( $this->EventType );
+		$Messages = [];
+		
+		foreach( $this->Payload->pages as $Page )
+		{
+			if( !empty( $Message ) )
+			{
+				$Message .= "\n";
+			}
+			
+			// Append compare url since github doesn't provide one
+			if( $Page->action === 'edited' )
+			{
+				$Page->html_url .= '/_compare/' . $Page->sha;
+			}
+			
+			$Messages[] = "[{$Page->action} {$this->Escape( $Page->title )}]({$Page->html_url})" . ( empty( $Page->summary ) ? '' : ( ': ' . $this->ShortMessage( $Page->summary ) ) );
+
+			/*
+			$Message .= sprintf( "[%s] %s %s %s: %s%s",
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( $Page->action ),
+						$Page->title,
+						empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
+						$this->ShortenAndFormatURL( $Page->html_url )
+			);*/
+		}
+		
+		return [
+			'title' => "updated wiki",
+			'description' => implode( "\n", $Messages ),
+			'color' => $this->FormatAction( 'updated' ),
+			'author' => $this->FormatAuthor(),
+			'footer' => $this->FormatFooter(),
+		];
 	}
 
 	/**

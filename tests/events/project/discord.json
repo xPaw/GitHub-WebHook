@@ -1,0 +1,19 @@
+{
+    "embeds": [
+        {
+            "title": "created project **#1**: Space 2.0",
+            "description": "Project tasks for a trip to Space",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/projects\/1",
+            "color": 16750592,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            },
+            "footer": {
+                "text": "Codertocat\/Hello-World",
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
+            }
+        }
+    ]
+}

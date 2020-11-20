@@ -1,0 +1,18 @@
+{
+    "embeds": [
+        {
+            "title": "new-private-repository is now open source and available to everyone!",
+            "url": "https:\/\/github.com\/xPaw\/new-private-repository",
+            "color": 5025616,
+            "author": {
+                "name": "xPaw",
+                "url": "https:\/\/github.com\/xPaw",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
+            },
+            "footer": {
+                "text": "xPaw\/new-private-repository",
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
+            }
+        }
+    ]
+}
