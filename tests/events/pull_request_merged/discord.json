@@ -1,0 +1,19 @@
+{
+    "embeds": [
+        {
+            "title": "PR **#6** merged: test pull request",
+            "url": "https:\/\/github.com\/xPaw\/GitHub-WebHook\/pull\/6",
+            "color": 7291585,
+            "author": {
+                "name": "xPaw",
+                "url": "https:\/\/github.com\/xPaw",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
+            },
+            "footer": {
+                "text": "xPaw\/GitHub-WebHook",
+                "icon_url": "https:\/\/docs.github.com\/assets\/images\/site\/favicon.svg"
+            },
+            "description": "Merged from **xPaw** to `master`"
+        }
+    ]
+}

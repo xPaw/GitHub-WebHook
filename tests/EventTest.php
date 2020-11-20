@@ -4,7 +4,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @dataProvider eventProvider
 	 */
-	public function testEvent( string $Path, string $EventType, string $ExpectedMessage, string $Payload ) : void
+	public function testEvent( string $Path, string $EventType, string $ExpectedMessage, string $Payload, ?string $ExpectedDiscord ) : void
 	{
 		// Setup env for processor
 		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = $EventType;
@@ -23,6 +23,18 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		$Message = $Parser->GetMessage();
 		
 		$this->assertEquals( $ExpectedMessage, $Message, $Path );
+
+		if( $ExpectedDiscord !== null )
+		{
+			$ExpectedDiscordArray = json_decode( $ExpectedDiscord, true );
+
+			$Parser = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
+			$Discord = $Parser->GetEmbed();
+
+			//file_put_contents( $Path . '/discord.json', json_encode( $Discord, JSON_PRETTY_PRINT ) . "\n" );
+
+			$this->assertEquals( $ExpectedDiscordArray, $Discord, $Path );
+		}
 	}
 	
 	/**
@@ -47,6 +59,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 				trim( (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'type.txt' ) ),
 				trim( (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'expected.bin' ) ),
 				(string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'payload.json' ),
+				file_exists( $Path . DIRECTORY_SEPARATOR . 'discord.json' ) ? (string)file_get_contents( $Path . DIRECTORY_SEPARATOR . 'discord.json' ) : null,
 			];
 		}
 
