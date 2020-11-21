@@ -707,7 +707,6 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "Hook {$this->Payload->hook->id} worked!",
 			'description' => $this->Escape( $this->Payload->zen ),
-			'url' => $this->Payload->repository->html_url,
 			'color' => 5025616,
 			'author' => $this->FormatAuthor(),
 			'footer' => $this->FormatFooter(),
