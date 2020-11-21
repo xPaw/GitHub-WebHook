@@ -32,6 +32,7 @@ class IrcConverter extends BaseConverter
 			// Spammy events that we do not care about
 			case 'fork'          :
 			case 'watch'         :
+			case 'star'          :
 			case 'status'        : throw new IgnoredEventException( $this->EventType );
 		}
 		

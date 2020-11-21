@@ -10,6 +10,7 @@ class DiscordConverter extends BaseConverter
 	{
 		if( $this->EventType === 'fork'
 		||  $this->EventType === 'watch'
+		||  $this->EventType === 'star'
 		||  $this->EventType === 'status' )
 		{
 			throw new IgnoredEventException( $this->EventType );

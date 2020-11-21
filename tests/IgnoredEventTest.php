@@ -20,6 +20,7 @@ class IgnoredEventTest extends \PHPUnit\Framework\TestCase
 		return [
 			[ 'fork' ],
 			[ 'watch' ],
+			[ 'star' ],
 			[ 'status' ],
 		];
 	}
