@@ -49,46 +49,72 @@ Throws `NotImplementedException` when you pass an event that
 is not parsed anyhow, and throws `IgnoredEventException` for
 `fork`, `watch` and `status` events which are ignored by design.
 
-## Events [\[ref\]](https://developer.github.com/v3/activity/events/types/)
+## Events [\[ref\]](https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads)
 
-Event                         | Status | Notes
------------------------------ | ------ | -----
-CommitCommentEvent            | :+1: |
-CreateEvent                   | :x: |
-DeleteEvent                   | :+1: |
-DeploymentEvent               | :x: |
-DeploymentStatusEvent         | :x: |
-ForkEvent                     | :droplet: | Ignored by design
-GollumEvent                   | :+1: |
-InstallationEvent             | :x: |
-InstallationRepositoriesEvent | :x: |
-IssueCommentEvent             | :+1: |
-IssuesEvent                   | :+1: | `assigned`, `unassigned`, `labeled`, `unlabeled` events are ignored by design
-LabelEvent                    | :x: |
-MarketplacePurchaseEvent      | :x: |
-MemberEvent                   | :+1: | `edited` events are ignored by design
-MembershipEvent               | :x: |
-MilestoneEvent                | :+1: | `edited` events are ignored by design
-OrganizationEvent             | :x: |
-OrgBlockEvent                 | :x: |
-PackageEvent                  | :+1: |
-PageBuildEvent                | :x: |
-PingEvent                     | :+1: | Not documented by GitHub, sent out when a new hook is created
-ProjectCardEvent              | :x: |
-ProjectColumnEvent            | :x: |
-ProjectEvent                  | :+1: | `edited` events are ignored by design
-PublicEvent                   | :+1: |
-PullRequestEvent              | :+1: | `synchronize`, `assigned`, `unassigned`, `labeled`, `unlabeled`, `review_requested`, `review_request_removed` events are ignored by design
-PullRequestReviewEvent        | :+1: |
-PullRequestReviewCommentEvent | :+1: |
-PushEvent                     | :+1: | Only distinct commits are counted and printed. Ignores branch deletions (use `delete` event instead)
-ReleaseEvent                  | :+1: |
-RepositoryEvent               | :+1: |
-StatusEvent                   | :droplet: | Ignored by design
-TeamEvent                     | :x: |
-TeamAddEvent                  | :x: |
-WatchEvent                    | :droplet: | Ignored by design
-RepositoryVulnerabilityAlertEvent | :+1: |
+### Supported events
+
+- commit_comment
+- delete
+- gollum
+- issue_comment
+- issues
+- member
+- milestone
+- package
+- ping
+- project
+- public
+- pull_request
+- pull_request_review
+- pull_request_review_comment
+- push
+- release
+- repository
+- repository_vulnerability_alert
+
+### Not yet supported events
+
+- check_run
+- check_suite
+- code_scanning_alert
+- deploy_key
+- deployment
+- deployment_status
+- label
+- membership
+- meta
+- org_block
+- organization
+- page_build
+- project_card
+- project_column
+- repository_import
+- sponsorship
+- team
+- team_add
+
+### Events ignored by design
+
+- create - Formatted from push event instead
+- fork
+- star
+- status
+- watch
+
+Additionally, events like labelling or assigning an issue are also ignored.
+Push event ignores branch deletions (use delete event instead).
+
+### Events that can not be supported
+
+- content_reference
+- github_app_authorization
+- installation
+- installation_repositories
+- marketplace_purchase
+- repository_dispatch
+- security_advisory
+- workflow_dispatch
+- workflow_run
 
 ## License
 [MIT](LICENSE)
