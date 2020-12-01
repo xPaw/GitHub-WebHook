@@ -11,17 +11,19 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		$_SERVER[ 'REQUEST_METHOD' ] = 'POST';
 		$_SERVER[ 'CONTENT_TYPE' ] = 'application/x-www-form-urlencoded';
 		$_POST[ 'payload' ] = $Payload;
-		
+
 		// Process incoming event
 		$Hook = new GitHubWebHook( );
 		$Hook->ProcessRequest( );
-		
+
 		$this->assertEquals( $EventType, $Hook->GetEventType() );
-		
+
 		// Convert processed event into an irc string
 		$Parser = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 		$Message = $Parser->GetMessage();
-		
+
+		//file_put_contents( $Path . '/expected.bin', $Message . "\n" );
+
 		$this->assertEquals( $ExpectedMessage, $Message, $Path );
 
 		if( $ExpectedDiscord !== null )
@@ -37,23 +39,23 @@ class EventTest extends \PHPUnit\Framework\TestCase
 			$this->assertEquals( $ExpectedDiscordArray, $Discord, $Path );
 		}
 	}
-	
+
 	/**
 	 * @return array<array<string>>
 	 */
 	public function eventProvider() : array
 	{
 		$ProvidedData = [];
-		
+
 		foreach( new DirectoryIterator( __DIR__ . DIRECTORY_SEPARATOR . 'events' ) as $File )
 		{
 			if( $File->isDot() || !$File->isDir() )
 			{
 				continue;
 			}
-			
+
 			$Path = $File->getPathname();
-			
+
 			$ProvidedData[] =
 			[
 				$Path,
