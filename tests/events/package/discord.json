@@ -2,7 +2,7 @@
     "embeds": [
         {
             "title": "published npm package: **hello-world-npm** 1.0.0",
-            "description": "# hello-world-npm\nThis is a simple npm package that demonstrates the \\[Github Packages\\]\\(https:\/\/github.com\/features\/package\\).\n## Installation \n\\`$ npm install\\`\n## Usage\n\\`\\`\\`\nconst myPackage = require\\('hello-world-node-package'\\);\nmyPackage.helloWorld\\(\\);\n\u2026",
+            "description": "# hello-world-npm\nThis is a simple npm package that demonstrates the [Github Packages](https:\/\/github.com\/features\/package).\n## Installation \n`$ npm install`\n## Usage\n```\nconst myPackage = require('hello-world-node-package');\nmyPackage.helloWorld();\n\u2026",
             "url": "https:\/\/github.com\/Codertocat\/hello-world-npm\/packages\/10696",
             "color": 5025616,
             "author": {

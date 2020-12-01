@@ -109,6 +109,7 @@ class DiscordConverter extends BaseConverter
 	private function ShortDescription( ?string $Message, int $Limit = 250 ) : string
 	{
 		$Message ??= '';
+		$Message = strip_tags( $Message );
 		$Message = str_replace( "\n\n", "\n", $Message );
 
 		if( strlen( $Message ) > $Limit )
@@ -117,7 +118,7 @@ class DiscordConverter extends BaseConverter
 			$Message .= '…';
 		}
 
-		return $this->Escape( $Message );
+		return $Message;
 	}
 
 	private function ShortMessage( string $Message, int $Limit = 100 ) : string
