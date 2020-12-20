@@ -128,7 +128,7 @@ class GitHubWebHook
 	{
 		if( !array_key_exists( 'HTTP_X_HUB_SIGNATURE_256', $_SERVER ) )
 		{
-			throw new Exception( 'Missing X-Hub-Signature header. Did you configure secret token in hook settings?' );
+			throw new Exception( 'Missing X-Hub-Signature-256 header. Did you configure secret token in hook settings?' );
 		}
 		
 		$KnownAlgo = 'sha256';
