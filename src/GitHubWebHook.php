@@ -2,7 +2,6 @@
 class GitHubWebHook
 {
 	private string $EventType;
-	private string $RawPayload;
 	private object $Payload;
 	
 	/**
@@ -33,6 +32,7 @@ class GitHubWebHook
 		}
 		
 		$ContentType = $_SERVER[ 'CONTENT_TYPE' ];
+		$RawPayload = null;
 		
 		if( $ContentType === 'application/x-www-form-urlencoded' )
 		{
@@ -41,18 +41,18 @@ class GitHubWebHook
 				throw new Exception( 'Missing payload.' );
 			}
 			
-			$this->RawPayload = $_POST[ 'payload' ];
+			$RawPayload = $_POST[ 'payload' ];
 		}
 		else if( $ContentType === 'application/json' )
 		{
-			$this->RawPayload = file_get_contents( 'php://input' );
+			$RawPayload = file_get_contents( 'php://input' );
 		}
 		else
 		{
 			throw new Exception( 'Unknown content type.' );
 		}
 		
-		$this->Payload = json_decode( $this->RawPayload );
+		$this->Payload = json_decode( $RawPayload );
 		
 		if( $this->Payload === null )
 		{
@@ -132,7 +132,7 @@ class GitHubWebHook
 		}
 		
 		$KnownAlgo = 'sha256';
-		$CalculatedHash = $KnownAlgo . '=' . hash_hmac( $KnownAlgo, $this->RawPayload, $SecretKey, false );
+		$CalculatedHash = $KnownAlgo . '=' . hash_hmac( $KnownAlgo, file_get_contents( 'php://input' ), $SecretKey, false );
 		
 		return hash_equals( $CalculatedHash, $_SERVER[ 'HTTP_X_HUB_SIGNATURE_256' ] );
 	}
