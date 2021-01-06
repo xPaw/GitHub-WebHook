@@ -247,12 +247,21 @@ class DiscordConverter extends BaseConverter
 
 			while( --$Num >= 0 && --$CommitsLimit >= 0 )
 			{
-				$Commit = "[`" . substr( $DistinctCommits[ $Num ]->id, 0, 6 ) . "`]({$DistinctCommits[ $Num ]->url}) ";
-				$Commit .= $this->ShortMessage( $DistinctCommits[ $Num ]->message );
+				$DistinctCommit = $DistinctCommits[ $Num ];
 
-				if( $DistinctCommits[ $Num ]->author->username !== $this->Payload->sender->login )
+				$Commit = "[`" . substr( $DistinctCommit->id, 0, 6 ) . "`]({$DistinctCommit->url}) ";
+				$Commit .= $this->ShortMessage( $DistinctCommit->message );
+
+				if( isset( $DistinctCommit->author->username ) )
 				{
-					$Commit .= " - {$DistinctCommits[ $Num ]->author->username}";
+					if( $DistinctCommit->author->username !== $this->Payload->sender->login )
+					{
+						$Commit .= " - {$DistinctCommit->author->username}";
+					}
+				}
+				else
+				{
+					$Commit .= " - *{$this->Escape( $DistinctCommit->author->name )}*";
 				}
 
 				$CommitMessages[] = $Commit;
