@@ -90,9 +90,11 @@ class DiscordConverter extends BaseConverter
 
 		switch( $Action )
 		{
+			
 			case 'created'    :
 			case 'resolved'   :
 			case 'reopened'   : return 16750592;
+
 			case 'locked'     :
 			case 'deleted'    :
 			case 'dismissed'  :
@@ -101,7 +103,10 @@ class DiscordConverter extends BaseConverter
 			case 'requested changes in':
 			case 'closed without merging':
 			case 'closed'     : return 16007990;
+
+			case 'enabled auto-merge':
 			case 'merged'     : return 7291585;
+
 			default           : return 5025616;
 		}
 	}
