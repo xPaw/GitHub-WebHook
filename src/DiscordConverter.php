@@ -361,6 +361,10 @@ class DiscordConverter extends BaseConverter
 		{
 			$this->Payload->action = 'readied';
 		}
+		else if( $this->Payload->action === 'auto_merge_enabled' )
+		{
+			$this->Payload->action = 'enabled auto-merge';
+		}
 
 		if( $this->Payload->action === 'edited'
 		||  $this->Payload->action === 'synchronize'
@@ -381,6 +385,7 @@ class DiscordConverter extends BaseConverter
 		&&  $this->Payload->action !== 'locked'
 		&&  $this->Payload->action !== 'unlocked'
 		&&  $this->Payload->action !== 'readied'
+		&&  $this->Payload->action !== 'enabled auto-merge'
 		&&  $this->Payload->action !== 'closed without merging' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
