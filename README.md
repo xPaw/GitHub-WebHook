@@ -51,6 +51,8 @@ is not parsed anyhow, and throws `IgnoredEventException` for
 
 ## Events [\[ref\]](https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads)
 
+Track changes to GitHub webhook payloads documentation here: https://github.com/github/docs/commits/main/data/reusables/webhooks
+
 ### Supported events
 
 - commit_comment
