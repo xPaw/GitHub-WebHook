@@ -350,6 +350,10 @@ class IrcConverter extends BaseConverter
 		{
 			$this->Payload->action = 'enabled auto-merge';
 		}
+		else if( $this->Payload->action === 'converted_to_draft' )
+		{
+			$this->Payload->action = 'converted to draft';
+		}
 		
 		if( $this->Payload->action === 'edited'
 		||  $this->Payload->action === 'synchronize'
@@ -371,6 +375,7 @@ class IrcConverter extends BaseConverter
 		&&  $this->Payload->action !== 'unlocked'
 		&&  $this->Payload->action !== 'readied'
 		&&  $this->Payload->action !== 'enabled auto-merge'
+		&&  $this->Payload->action !== 'converted to draft'
 		&&  $this->Payload->action !== 'closed without merging' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
