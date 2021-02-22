@@ -229,10 +229,10 @@ class DiscordConverter extends BaseConverter
 		}
 		else
 		{
-			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s to `%s`',
+			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s to %s',
 				$Num,
 				$Num === 1 ? '' : 's',
-				$this->Escape( $this->Payload->ref_name )
+				$this->EscapeCode( $this->Payload->ref_name )
 			);
 		}
 
@@ -259,14 +259,14 @@ class DiscordConverter extends BaseConverter
 			{
 				$DistinctCommit = $DistinctCommits[ $Num ];
 
-				$Commit = "[`" . substr( $DistinctCommit->id, 0, 6 ) . "`]({$DistinctCommit->url}) ";
+				$Commit = "[{$this->Escapecode( substr( $DistinctCommit->id, 0, 6 ) )}]({$DistinctCommit->url}) ";
 				$Commit .= $this->ShortMessage( $DistinctCommit->message );
 
 				if( isset( $DistinctCommit->author->username ) )
 				{
 					if( $DistinctCommit->author->username !== $this->Payload->sender->login )
 					{
-						$Commit .= " - {$DistinctCommit->author->username}";
+						$Commit .= " - {$this->Escape( $DistinctCommit->author->username )}";
 					}
 				}
 				else
@@ -420,7 +420,7 @@ class DiscordConverter extends BaseConverter
 		}
 		else if( $this->Payload->action === 'merged' )
 		{
-			$Embed[ 'description' ] = "Merged from **{$this->Payload->pull_request->user->login}** to {$this->EscapeCode( $this->Payload->pull_request->base->ref )}";
+			$Embed[ 'description' ] = "Merged from **{$this->Escape( $this->Payload->pull_request->user->login )}** to {$this->EscapeCode( $this->Payload->pull_request->base->ref )}";
 		}
 
 		return $Embed;
@@ -540,7 +540,7 @@ class DiscordConverter extends BaseConverter
 		}
 		
 		return [
-			'title' => "commented on commit `" . substr( $this->Payload->comment->commit_id, 0, 6 ) . "`",
+			'title' => "commented on commit {$this->EscapeCode( substr( $this->Payload->comment->commit_id, 0, 6 ) )}",
 			'description' => $this->ShortDescription( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
@@ -687,7 +687,7 @@ class DiscordConverter extends BaseConverter
 		}
 		
 		return [
-			'title' => "{$this->Payload->action} **{$this->Payload->member->login}** as a collaborator",
+			'title' => "{$this->Payload->action} **{$this->Escape( $this->Payload->member->login )}** as a collaborator",
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
