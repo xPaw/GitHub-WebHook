@@ -55,6 +55,11 @@ class DiscordConverter extends BaseConverter
 		];
 	}
 
+	private static function EscapeCode( string $Message ) : string
+	{
+		return '`' . str_replace( '`',  '``', $Message ) . '`';
+	}
+
 	private static function Escape( string $Message ) : string
 	{
 		return str_replace( [
@@ -173,20 +178,20 @@ class DiscordConverter extends BaseConverter
 		{
 			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
 			{
-				$Embed[ 'title' ] = "tagged `{$this->Escape( $this->Payload->ref_name )}` at `" . $this->Escape( $this->Payload->base_ref_name ?? $this->AfterSHA() ) . "`";
+				$Embed[ 'title' ] = "tagged {$this->EscapeCode( $this->Payload->ref_name )} at " . $this->EscapeCode( $this->Payload->base_ref_name ?? $this->AfterSHA() );
 				$Embed[ 'color' ] = $this->FormatAction( 'tagged' );
 			}
 			else
 			{
-				$Embed[ 'title' ] = "created `{$this->Escape( $this->Payload->ref_name )}`";
+				$Embed[ 'title' ] = "created {$this->EscapeCode( $this->Payload->ref_name )}";
 
 				if( isset( $this->Payload->base_ref ) )
 				{
-					$Embed[ 'title' ] .= " from `{$this->Escape( $this->Payload->base_ref_name )}`";
+					$Embed[ 'title' ] .= " from {$this->EscapeCode( $this->Payload->base_ref_name )}";
 				}
 				else if( $Num > 0 )
 				{
-					$Embed[ 'title' ] .= " at `{$this->AfterSHA( )}`";
+					$Embed[ 'title' ] .= " at {$this->EscapeCode( $this->AfterSHA() )}";
 				}
 
 				if( $Num > 0 )
@@ -206,19 +211,19 @@ class DiscordConverter extends BaseConverter
 		{
 			$this->Payload->action = 'force-pushed'; // Don't tell anyone!
 
-			$Embed[ 'title' ] = "{$this->Payload->action} `{$this->Escape( $this->Payload->ref_name )}` from `{$this->BeforeSHA()}` to `{$this->AfterSHA()}`";
+			$Embed[ 'title' ] = "{$this->Payload->action} {$this->EscapeCode( $this->Payload->ref_name )} from {$this->Escape( $this->BeforeSHA() )} to {$this->Escape( $this->AfterSHA() )}";
 			$Embed[ 'color' ] = $this->FormatAction();
 		}
 		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
 		{
 			if( isset( $this->Payload->base_ref ) )
 			{
-				$Embed[ 'title' ] = "merged `{$this->Escape( $this->Payload->base_ref_name )}` into `{$this->Escape( $this->Payload->ref_name )}`";
+				$Embed[ 'title' ] = "merged {$this->EscapeCode( $this->Payload->base_ref_name )} into {$this->EscapeCode( $this->Payload->ref_name )}";
 				$Embed[ 'color' ] = $this->FormatAction( 'merged' );
 			}
 			else
 			{
-				$Embed[ 'title' ] = "fast-forwarded `{$this->Escape( $this->Payload->ref_name )}` from `{$this->BeforeSHA()}` to `{$this->AfterSHA()}";
+				$Embed[ 'title' ] = "fast-forwarded {$this->EscapeCode( $this->Payload->ref_name )} from {$this->Escape( $this->BeforeSHA() )} to {$this->Escape( $this->AfterSHA() )}";
 				$Embed[ 'color' ] = $this->FormatAction( 'fast-forwarded' );
 			}
 		}
@@ -291,7 +296,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "deleted {$this->Payload->ref_type} `{$this->Escape( $this->Payload->ref )}`",
+			'title' => "deleted {$this->Payload->ref_type} {$this->EscapeCode( $this->Payload->ref )}",
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction( 'deleted' ),
 			'author' => $this->FormatAuthor(),
@@ -415,7 +420,7 @@ class DiscordConverter extends BaseConverter
 		}
 		else if( $this->Payload->action === 'merged' )
 		{
-			$Embed[ 'description' ] = "Merged from **{$this->Payload->pull_request->user->login}** to `{$this->Escape( $this->Payload->pull_request->base->ref )}`";
+			$Embed[ 'description' ] = "Merged from **{$this->Payload->pull_request->user->login}** to {$this->EscapeCode( $this->Payload->pull_request->base->ref )}";
 		}
 
 		return $Embed;

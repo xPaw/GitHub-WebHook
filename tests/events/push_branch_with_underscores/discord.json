@@ -1,0 +1,18 @@
+{
+    "embeds": [
+        {
+            "title": "created `fix_export_with_alpha` at `46f500` (+1 new commit)",
+            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/commit\/46f500abc031",
+            "author": {
+                "name": "lewa-j",
+                "url": "https:\/\/github.com\/lewa-j",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/5416122?v=4"
+            },
+            "footer": {
+                "text": "SteamDatabase\/ValveResourceFormat",
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
+            },
+            "description": "[`46f500`](https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/commit\/46f500abc031be1eb4ea7611eaf622773b47dcac) Fix PNG export of textures with non transparency data in the alpha channel"
+        }
+    ]
+}
