@@ -78,14 +78,6 @@ class DiscordConverter extends BaseConverter
 		];
 	}
 
-	private function FormatFooter() : array
-	{
-		return [
-			'text' => $this->Payload->repository->full_name,
-			'icon_url' => 'https://avatars2.githubusercontent.com/in/15368?size=64',
-		];
-	}
-
 	private function FormatAction( ?string $Action = null ) : int
 	{
 		if( $Action === null )
@@ -171,7 +163,6 @@ class DiscordConverter extends BaseConverter
 			'title' => '',
 			'url' => $this->Payload->repository->html_url,
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 
 		if( isset( $this->Payload->created ) && $this->Payload->created )
@@ -300,7 +291,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction( 'deleted' ),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -339,7 +329,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->issue->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 
 		if( $this->Payload->action === 'opened' )
@@ -411,7 +400,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->pull_request->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 
 		if( $this->Payload->action === 'opened' )
@@ -451,7 +439,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->milestone->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -473,7 +460,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->package->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -502,7 +488,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->project->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -524,7 +509,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->release->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -545,7 +529,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -566,7 +549,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -597,7 +579,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->review->html_url,
 			'color' => $this->FormatAction( $this->Payload->review->state ),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -618,7 +599,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -635,7 +615,6 @@ class DiscordConverter extends BaseConverter
 				'url' => $this->Payload->alert->external_reference,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
-				'footer' => $this->FormatFooter(),
 				'fields' =>
 				[
 					[
@@ -671,7 +650,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->alert->external_reference,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -691,7 +669,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -724,7 +701,6 @@ class DiscordConverter extends BaseConverter
 			'description' => implode( "\n", $Messages ),
 			'color' => $this->FormatAction( 'updated' ),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -739,7 +715,6 @@ class DiscordConverter extends BaseConverter
 			'description' => $this->Escape( $this->Payload->zen ),
 			'color' => 5025616,
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -754,7 +729,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->repository->html_url,
 			'color' => 5025616,
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 
@@ -786,7 +760,6 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
-			'footer' => $this->FormatFooter(),
 		];
 	}
 }

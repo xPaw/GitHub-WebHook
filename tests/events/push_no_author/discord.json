@@ -8,10 +8,6 @@
                 "url": "https:\/\/github.com\/SinZ163",
                 "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/767456?v=4"
             },
-            "footer": {
-                "text": "ModDota\/DotaTracking",
-                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
-            },
             "description": "[`560082`](https:\/\/github.com\/ModDota\/DotaTracking\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171) Update gitignore and add a readme to dota\/gamemode\/content to keep folder alive - *Dota \\*test\\* Tracking*"
         }
     ]

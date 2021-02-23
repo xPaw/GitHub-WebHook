@@ -8,10 +8,6 @@
                 "url": "https:\/\/github.com\/xPaw",
                 "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
             },
-            "footer": {
-                "text": "xPaw\/GitHub-WebHook",
-                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
-            },
             "description": "[`ddb694`](https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/ddb694550ebbb7988193f534063456876acf9cb5) Fix event comments and get pull request number without regex\n[`181fcf`](https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/181fcf4d9ddf6d0d50a04d64b0c0d24393c810bf) Add exception message in GitHubIgnoredEventException"
         }
     ]

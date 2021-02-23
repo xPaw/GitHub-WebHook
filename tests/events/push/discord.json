@@ -8,10 +8,6 @@
                 "url": "https:\/\/github.com\/xPaw",
                 "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
             },
-            "footer": {
-                "text": "xPaw\/GitHub-WebHook",
-                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
-            },
             "description": "[`8ddec6`](https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/8ddec647cc7a5a819669ad55d08cfabe49925311) Add event tests that can be easily expanded to cover more events"
         }
     ]

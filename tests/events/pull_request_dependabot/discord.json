@@ -9,10 +9,6 @@
                 "url": "https:\/\/github.com\/apps\/dependabot",
                 "icon_url": "https:\/\/avatars0.githubusercontent.com\/in\/29110?v=4"
             },
-            "footer": {
-                "text": "SteamDatabase\/ValveResourceFormat",
-                "icon_url": "https:\/\/avatars2.githubusercontent.com\/in\/15368?size=64"
-            },
             "description": "Bumps [Microsoft.NET.Test.Sdk](https:\/\/github.com\/microsoft\/vstest) from 16.7.1 to 16.8.0.\nRelease notes\nSourced from Microsoft.NET.Test.Sdk's releases.\nv16.8.0\nSee the release notes here.\nv16.8.0-preview-20200921-01\nSee the release notes here.\nv16.8\u2026"
         }
     ]
