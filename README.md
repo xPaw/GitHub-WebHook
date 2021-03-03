@@ -1,5 +1,9 @@
 This script acts as a web hook for [GitHub](https://github.com/) events, processes them,
-and returns messages which can be sent out to an IRC channel.
+and returns messages which can be sent out to an IRC channel or a Discord webhook,
+depending on the converter used.
+
+See `examples/discord.php` for a basic application that sends webhooks to Discord.  
+See `examples/irker.php` for a basic application that sends messages to IRC.  
 
 ## GitHubWebHook
 `GitHubWebHook.php` accepts, processes and validates an event,
