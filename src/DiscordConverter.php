@@ -755,8 +755,15 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
+		$Title = "{$this->Payload->action} **{$this->Escape( $this->Payload->repository->name )}**";
+
+		if( $this->Payload->action === 'renamed' )
+		{
+			$Title .= " (from *{$this->Escape( $this->Payload->changes->repository->name->from )}*)";
+		}
+
 		return [
-			'title' => "{$this->Payload->action} **{$this->Escape( $this->Payload->repository->name )}**",
+			'title' => $Title,
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
