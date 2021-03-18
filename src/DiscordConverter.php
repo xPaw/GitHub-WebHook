@@ -761,6 +761,17 @@ class DiscordConverter extends BaseConverter
 		{
 			$Title .= " (from *{$this->Escape( $this->Payload->changes->repository->name->from )}*)";
 		}
+		else if( $this->Payload->action === 'transferred' )
+		{
+			if( isset( $this->Payload->changes->owner->from->user ) )
+			{
+				$Title .= " (from *{$this->Escape( $this->Payload->changes->owner->from->user->login )}*)";
+			}
+			else if( isset( $this->Payload->changes->owner->from->organization ) )
+			{
+				$Title .= " (from *{$this->Escape( $this->Payload->changes->owner->from->organization->login )}*)";
+			}
+		}
 
 		return [
 			'title' => $Title,
