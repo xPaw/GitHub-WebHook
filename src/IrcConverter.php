@@ -13,6 +13,8 @@ class IrcConverter extends BaseConverter
 			case 'ping'          : return $this->FormatPingEvent( );
 			case 'push'          : return $this->FormatPushEvent( );
 			case 'delete'        : return $this->FormatDeleteEvent( );
+			case 'discussion'    : return $this->FormatDiscussionEvent( ); break;
+			case 'discussion_comment': return $this->FormatDiscussionCommentEvent( ); break;
 			case 'public'        : return $this->FormatPublicEvent( );
 			case 'issues'        : return $this->FormatIssuesEvent( );
 			case 'member'        : return $this->FormatMemberEvent( );
@@ -524,19 +526,36 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatIssueCommentEvent( ) : string
 	{
-		if( $this->Payload->action !== 'created' )
+		if( $this->Payload->action === 'edited' )
 		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
 		
-		return sprintf( '[%s] %s commented on %s %s: %s %s',
-						$this->FormatRepoName( ),
-						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatNumber( '#' . $this->Payload->issue->number ),
-						$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
-						$this->ShortMessage( $this->Payload->comment->body ),
-						$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
-		);
+		if( $this->Payload->action === 'created' )
+		{
+			return sprintf(
+				'[%s] %s commented on %s %s: %s %s',
+				$this->FormatRepoName( ),
+				$this->FormatName( $this->Payload->sender->login ),
+				$this->FormatNumber( '#' . $this->Payload->issue->number ),
+				$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
+				$this->ShortMessage( $this->Payload->comment->body ),
+				$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
+			);
+		}
+
+		if( $this->Payload->action === 'deleted' )
+		{
+			return sprintf(
+				'[%s] %s deleted comment in issue %s from %s',
+				$this->FormatRepoName( ),
+				$this->FormatName( $this->Payload->sender->login ),
+				$this->FormatNumber( '#' . $this->Payload->issue->number ),
+				$this->FormatName( $this->Payload->comment->user->login ),
+			);
+		}
+
+		throw new NotImplementedException( $this->EventType, $this->Payload->action );
 	}
 	
 	/**
@@ -591,6 +610,87 @@ class IrcConverter extends BaseConverter
 		);
 	}
 	
+/**
+	 * Formats a pull request review comment event
+	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion
+	 */
+	private function FormatDiscussionEvent( ) : string
+	{
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'answered'
+		||  $this->Payload->action === 'unanswered' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action === 'category_changed' )
+		{
+			$this->Payload->action = 'changed category';
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'deleted'
+		&&  $this->Payload->action !== 'pinned'
+		&&  $this->Payload->action !== 'unpinned'
+		&&  $this->Payload->action !== 'locked'
+		&&  $this->Payload->action !== 'unlocked'
+		&&  $this->Payload->action !== 'transferred'
+		&&  $this->Payload->action !== 'changed category' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		return sprintf(
+			'[%s] %s %s discussion %s: %s. %s',
+			$this->FormatRepoName( ),
+			$this->FormatName( $this->Payload->sender->login ),
+			$this->FormatAction( ),
+			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
+			$this->Payload->discussion->title,
+			$this->ShortenAndFormatURL( $this->Payload->discussion->html_url )
+		);
+
+		return $Embed;
+	}
+
+	/**
+	 * Formats a pull request review comment event
+	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion_comment
+	 */
+	private function FormatDiscussionCommentEvent( ) : string
+	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action === 'created' )
+		{
+			return sprintf(
+				'[%s] %s commented on discussion %s %s: %s %s',
+				$this->FormatRepoName( ),
+				$this->FormatName( $this->Payload->sender->login ),
+				$this->FormatNumber( '#' . $this->Payload->discussion->number ),
+				$this->FormatHash( '(' . $this->Payload->discussion->title . ')' ),
+				$this->ShortMessage( $this->Payload->comment->body ),
+				$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
+			);
+		}
+
+		if( $this->Payload->action === 'deleted' )
+		{
+			return sprintf(
+				'[%s] %s deleted comment in discussion %s from %s',
+				$this->FormatRepoName( ),
+				$this->FormatName( $this->Payload->sender->login ),
+				$this->FormatNumber( '#' . $this->Payload->discussion->number ),
+				$this->FormatName( $this->Payload->comment->user->login ),
+			);
+		}
+
+		throw new NotImplementedException( $this->EventType, $this->Payload->action );
+	}
+
 	/**
 	 * Formats a repository vulnerability alert event
 	 * See https://developer.github.com/v3/activity/events/types/#repositoryvulnerabilityalertevent
