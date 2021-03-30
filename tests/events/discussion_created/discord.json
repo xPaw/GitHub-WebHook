@@ -1,0 +1,15 @@
+{
+    "embeds": [
+        {
+            "title": ":speech_balloon: Discussion **#90** created: Welcome to discussions!",
+            "url": "https:\/\/github.com\/octo-org\/octo-repo\/discussions\/90",
+            "color": 16750592,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            },
+            "description": "We're glad to have you here!"
+        }
+    ]
+}

@@ -61,6 +61,8 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 
 - commit_comment
 - delete
+- discussion
+- discussion_comment
 - gollum
 - issue_comment
 - issues

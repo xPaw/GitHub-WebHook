@@ -23,6 +23,8 @@ class DiscordConverter extends BaseConverter
 			case 'ping'          : $Embed = $this->FormatPingEvent( ); break;
 			case 'push'          : $Embed = $this->FormatPushEvent( ); break;
 			case 'delete'        : $Embed = $this->FormatDeleteEvent( ); break;
+			case 'discussion'    : $Embed = $this->FormatDiscussionEvent( ); break;
+			case 'discussion_comment': $Embed = $this->FormatDiscussionCommentEvent( ); break;
 			case 'public'        : $Embed = $this->FormatPublicEvent( ); break;
 			case 'issues'        : $Embed = $this->FormatIssuesEvent( ); break;
 			case 'member'        : $Embed = $this->FormatMemberEvent( ); break;
@@ -87,7 +89,6 @@ class DiscordConverter extends BaseConverter
 
 		switch( $Action )
 		{
-			
 			case 'created'    :
 			case 'resolved'   :
 			case 'reopened'   : return 16750592;
@@ -538,18 +539,33 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatIssueCommentEvent( ) : array
 	{
-		if( $this->Payload->action !== 'created' )
+		if( $this->Payload->action === 'edited' )
 		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
-		
-		return [
-			'title' => "commented on **#{$this->Payload->issue->number}**: {$this->Escape( $this->Payload->issue->title )}",
-			'description' => $this->ShortDescription( $this->Payload->comment->body ),
-			'url' => $this->Payload->comment->html_url,
-			'color' => $this->FormatAction(),
-			'author' => $this->FormatAuthor(),
-		];
+
+		if( $this->Payload->action === 'created' )
+		{
+			return [
+				'title' => "commented on issue **#{$this->Payload->issue->number}**: {$this->Escape( $this->Payload->issue->title )}",
+				'description' => $this->ShortDescription( $this->Payload->comment->body ),
+				'url' => $this->Payload->comment->html_url,
+				'color' => $this->FormatAction(),
+				'author' => $this->FormatAuthor(),
+			];
+		}
+
+		if( $this->Payload->action === 'deleted' )
+		{
+			return [
+				'title' => "deleted comment in issue **#{$this->Payload->issue->number}** from {$this->Payload->comment->user->login}",
+				'url' => $this->Payload->comment->html_url,
+				'color' => $this->FormatAction(),
+				'author' => $this->FormatAuthor(),
+			];
+		}
+
+		throw new NotImplementedException( $this->EventType, $this->Payload->action );
 	}
 
 	/**
@@ -600,6 +616,86 @@ class DiscordConverter extends BaseConverter
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
 		];
+	}
+
+	/**
+	 * Formats a pull request review comment event
+	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion
+	 */
+	private function FormatDiscussionEvent( ) : array
+	{
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'answered'
+		||  $this->Payload->action === 'unanswered' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action === 'category_changed' )
+		{
+			$this->Payload->action = 'changed category';
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'deleted'
+		&&  $this->Payload->action !== 'pinned'
+		&&  $this->Payload->action !== 'unpinned'
+		&&  $this->Payload->action !== 'locked'
+		&&  $this->Payload->action !== 'unlocked'
+		&&  $this->Payload->action !== 'transferred'
+		&&  $this->Payload->action !== 'changed category' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+		
+		$Embed = [
+			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$this->Payload->action}: {$this->Escape( $this->Payload->discussion->title )}",
+			'url' => $this->Payload->discussion->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+
+		if( $this->Payload->action === 'created' )
+		{
+			$Embed[ 'description' ] = $this->ShortDescription( $this->Payload->discussion->body );
+		}
+
+		return $Embed;
+	}
+
+	/**
+	 * Formats a pull request review comment event
+	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion_comment
+	 */
+	private function FormatDiscussionCommentEvent( ) : array
+	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action === 'created' )
+		{
+			return [
+				'title' => "commented on discussion **#{$this->Payload->discussion->number}**: {$this->Escape( $this->Payload->discussion->title )}",
+				'description' => $this->ShortDescription( $this->Payload->comment->body ),
+				'url' => $this->Payload->comment->html_url,
+				'color' => $this->FormatAction(),
+				'author' => $this->FormatAuthor(),
+			];
+		}
+
+		if( $this->Payload->action === 'deleted' )
+		{
+			return [
+				'title' => "deleted comment in discussion **#{$this->Payload->discussion->number}** from {$this->Payload->comment->user->login}",
+				'url' => $this->Payload->comment->html_url,
+				'color' => $this->FormatAction(),
+				'author' => $this->FormatAuthor(),
+			];
+		}
+
+		throw new NotImplementedException( $this->EventType, $this->Payload->action );
 	}
 
 	/**
