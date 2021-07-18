@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 class IrcConverter extends BaseConverter
 {
 	/**
@@ -789,7 +791,7 @@ class IrcConverter extends BaseConverter
 	{
 		return sprintf( '[%s] Hook %s worked! Zen: %s',
 						$this->FormatRepoName( ),
-						$this->FormatHash( $this->Payload->hook->id ),
+						$this->FormatHash( (string)$this->Payload->hook->id ),
 						$this->FormatName( $this->Payload->zen )
 		);
 	}
