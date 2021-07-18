@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 class UnknownEventTest extends \PHPUnit\Framework\TestCase
 {
 	public function testForkEvent( ) : void
