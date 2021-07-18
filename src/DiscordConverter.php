@@ -115,7 +115,22 @@ class DiscordConverter extends BaseConverter
 	{
 		$Message ??= '';
 		$Message = strip_tags( $Message );
-		$Message = str_replace( "\n\n", "\n", $Message );
+		$Message = str_replace( [ "\r", "\n\n" ], [ "", "\n" ], $Message );
+
+		// Limit amount of new lines
+		$Length = strlen( $Message );
+		$NewLines = 0;
+
+		for( $i = 0; $i < $Length; $i++ )
+		{
+			if( $Message[ $i ] === "\n" )
+			{
+				if( ++$NewLines > 10 )
+				{
+					$Message[ $i ] = ' ';
+				}
+			}
+		}
 
 		if( strlen( $Message ) > $Limit )
 		{
