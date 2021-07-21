@@ -15,8 +15,8 @@ class IrcConverter extends BaseConverter
 			case 'ping'          : return $this->FormatPingEvent( );
 			case 'push'          : return $this->FormatPushEvent( );
 			case 'delete'        : return $this->FormatDeleteEvent( );
-			case 'discussion'    : return $this->FormatDiscussionEvent( ); break;
-			case 'discussion_comment': return $this->FormatDiscussionCommentEvent( ); break;
+			case 'discussion'    : return $this->FormatDiscussionEvent( );
+			case 'discussion_comment': return $this->FormatDiscussionCommentEvent( );
 			case 'public'        : return $this->FormatPublicEvent( );
 			case 'issues'        : return $this->FormatIssuesEvent( );
 			case 'member'        : return $this->FormatMemberEvent( );
@@ -651,8 +651,6 @@ class IrcConverter extends BaseConverter
 			$this->Payload->discussion->title,
 			$this->ShortenAndFormatURL( $this->Payload->discussion->html_url )
 		);
-
-		return $Embed;
 	}
 
 	/**
