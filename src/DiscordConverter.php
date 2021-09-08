@@ -521,8 +521,15 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
+		$Name = $this->Payload->release->tag_name;
+
+		if( !empty( $this->Payload->release->name ) && $this->Payload->release->name !== $this->Payload->release->tag_name )
+		{
+			$Name .= " ({$this->Payload->release->name})";
+		}
+
 		return [
-			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: {$this->Escape( $this->Payload->release->name )}",
+			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: {$this->Escape( $Name )}",
 			'description' => $this->ShortDescription( $this->Payload->release->body ),
 			'url' => $this->Payload->release->html_url,
 			'color' => $this->FormatAction(),

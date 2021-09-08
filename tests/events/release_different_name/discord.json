@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "published a pre-release: 0.0.4 \\(Some cool fixes\\)",
+            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/releases\/tag\/0.0.4",
+            "color": 5025616,
+            "author": {
+                "name": "xPaw",
+                "url": "https:\/\/github.com\/xPaw",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
+            }
+        }
+    ]
+}
