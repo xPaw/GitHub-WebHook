@@ -74,7 +74,13 @@ class IrcConverter extends BaseConverter
 		{
 			case 'created'    :
 			case 'resolved'   :
-			case 'reopened'   : return "\00307" . $Action . "\017";
+			case 'reopened'   :
+				return "\00307" . $Action . "\017";
+
+			case 'closed'     :
+			case 'merged'     :
+				return "\00313" . $Action . "\017";
+
 			case 'locked'     :
 			case 'deleted'    :
 			case 'dismissed'  :
@@ -82,8 +88,10 @@ class IrcConverter extends BaseConverter
 			case 'force-pushed':
 			case 'requested changes':
 			case 'closed without merging':
-			case 'closed'     : return "\00304" . $Action . "\017";
-			default           : return "\00309" . $Action . "\017";
+				return "\00304" . $Action . "\017";
+
+			default           :
+				return "\00309" . $Action . "\017";
 		}
 	}
 	

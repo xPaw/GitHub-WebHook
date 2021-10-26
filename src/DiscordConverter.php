@@ -91,6 +91,7 @@ class DiscordConverter extends BaseConverter
 
 		switch( $Action )
 		{
+			case 'enabled auto-merge':
 			case 'created'    :
 			case 'resolved'   :
 			case 'reopened'   : return 16750592;
@@ -101,10 +102,9 @@ class DiscordConverter extends BaseConverter
 			case 'unpublished':
 			case 'force-pushed':
 			case 'requested changes in':
-			case 'closed without merging':
-			case 'closed'     : return 16007990;
+			case 'closed without merging': return 16007990;
 
-			case 'enabled auto-merge':
+			case 'closed'     : return 8540383;
 			case 'merged'     : return 7291585;
 
 			default           : return 5025616;
