@@ -802,11 +802,6 @@ class DiscordConverter extends BaseConverter
 		
 		foreach( $this->Payload->pages as $Page )
 		{
-			if( !empty( $Message ) )
-			{
-				$Message .= "\n";
-			}
-			
 			// Append compare url since github doesn't provide one
 			if( $Page->action === 'edited' )
 			{
