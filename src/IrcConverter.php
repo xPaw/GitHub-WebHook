@@ -627,6 +627,8 @@ class IrcConverter extends BaseConverter
 	private function FormatDiscussionEvent( ) : string
 	{
 		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'labeled'
+		||  $this->Payload->action === 'unlabeled'
 		||  $this->Payload->action === 'answered'
 		||  $this->Payload->action === 'unanswered' )
 		{

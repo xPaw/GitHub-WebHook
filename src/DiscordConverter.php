@@ -649,6 +649,8 @@ class DiscordConverter extends BaseConverter
 	private function FormatDiscussionEvent( ) : array
 	{
 		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'labeled'
+		||  $this->Payload->action === 'unlabeled'
 		||  $this->Payload->action === 'answered'
 		||  $this->Payload->action === 'unanswered' )
 		{
