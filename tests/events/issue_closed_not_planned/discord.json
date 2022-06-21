@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "Issue **#5** closed as not planned: Add tests",
+            "url": "https:\/\/github.com\/xPaw\/GitHub-WebHook\/issues\/5",
+            "color": 8540383,
+            "author": {
+                "name": "xPaw",
+                "url": "https:\/\/github.com\/xPaw",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
+            }
+        }
+    ]
+}
