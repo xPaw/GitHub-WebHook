@@ -133,8 +133,15 @@ class GitHubWebHook
 			throw new Exception( 'Missing X-Hub-Signature-256 header. Did you configure secret token in hook settings?' );
 		}
 		
+		$Payload = file_get_contents( 'php://input' );
+
+		if( $Payload === false )
+		{
+			throw new Exception( 'Failed to read php://input.' );
+		}
+
 		$KnownAlgo = 'sha256';
-		$CalculatedHash = $KnownAlgo . '=' . hash_hmac( $KnownAlgo, file_get_contents( 'php://input' ), $SecretKey, false );
+		$CalculatedHash = $KnownAlgo . '=' . hash_hmac( $KnownAlgo, $Payload, $SecretKey, false );
 		
 		return hash_equals( $CalculatedHash, $_SERVER[ 'HTTP_X_HUB_SIGNATURE_256' ] );
 	}
