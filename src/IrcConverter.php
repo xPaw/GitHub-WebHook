@@ -105,16 +105,6 @@ class IrcConverter extends BaseConverter
 		return "\00314" . $Hash . "\017";
 	}
 	
-	private function ShortenAndFormatURL( string $URL ) : string
-	{
-		if( $this->URLShortener !== null )
-		{
-			$URL = call_user_func( $this->URLShortener, $URL );
-		}
-		
-		return $this->FormatURL( $URL );
-	}
-	
 	private function FormatURL( string $URL ) : string
 	{
 		return "\00302" . $URL . "\017";
@@ -269,7 +259,7 @@ class IrcConverter extends BaseConverter
 			$Message .= sprintf( ': %s', $CommitMessages );
 		}
 
-		$Message .= ' ' . $this->ShortenAndFormatURL( $URL );
+		$Message .= ' ' . $this->FormatURL( $URL );
 
 		return $Message;
 	}
@@ -333,7 +323,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatAction( ),
 						$this->FormatNumber( sprintf( '#%d', $this->Payload->issue->number ) ),
 						$this->Payload->issue->title,
-						$this->ShortenAndFormatURL( $this->Payload->issue->html_url )
+						$this->FormatURL( $this->Payload->issue->html_url )
 		);
 	}
 	
@@ -403,7 +393,7 @@ class IrcConverter extends BaseConverter
 							( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
 							'',
 						$this->Payload->pull_request->title,
-						$this->ShortenAndFormatURL( $this->Payload->pull_request->html_url )
+						$this->FormatURL( $this->Payload->pull_request->html_url )
 		);
 	}
 	
@@ -432,7 +422,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatAction( ),
 						$this->FormatNumber( sprintf( '#%d', $this->Payload->milestone->number ) ),
 						$this->Payload->milestone->title,
-						$this->ShortenAndFormatURL( $this->Payload->milestone->html_url )
+						$this->FormatURL( $this->Payload->milestone->html_url )
 		);
 	}
 	
@@ -456,7 +446,7 @@ class IrcConverter extends BaseConverter
 			$this->Payload->package->package_type,
 			$this->Payload->package->name,
 			$this->FormatBranch( $this->Payload->package->package_version->version ),
-			$this->ShortenAndFormatURL( $this->Payload->package->html_url )
+			$this->FormatURL( $this->Payload->package->html_url )
 		);
 	}
 
@@ -484,7 +474,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
 						$this->Payload->project->name,
-						$this->ShortenAndFormatURL( $this->Payload->project->html_url )
+						$this->FormatURL( $this->Payload->project->html_url )
 		);
 	}
 
@@ -506,7 +496,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatAction( ),
 						$this->Payload->release->prerelease ? 'pre-' : '',
 						$this->FormatBranch( empty( $this->Payload->release->name ) ? $this->Payload->release->tag_name : $this->Payload->release->name ),
-						$this->ShortenAndFormatURL( $this->Payload->release->html_url )
+						$this->FormatURL( $this->Payload->release->html_url )
 		);
 	}
 	
@@ -526,7 +516,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
 						$this->ShortMessage( $this->Payload->comment->body ),
-						$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
+						$this->FormatURL( $this->Payload->comment->html_url )
 		);
 	}
 	
@@ -550,7 +540,7 @@ class IrcConverter extends BaseConverter
 				$this->FormatNumber( '#' . $this->Payload->issue->number ),
 				$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
 				$this->ShortMessage( $this->Payload->comment->body ),
-				$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
+				$this->FormatURL( $this->Payload->comment->html_url )
 			);
 		}
 
@@ -596,7 +586,7 @@ class IrcConverter extends BaseConverter
 						$this->Payload->review->state === 'requested changes' ? ' in' : '',
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 						$this->Payload->pull_request->title,
-						$this->ShortenAndFormatURL( $this->Payload->review->html_url )
+						$this->FormatURL( $this->Payload->review->html_url )
 		);
 	}
 	
@@ -616,7 +606,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 						$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
-						$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
+						$this->FormatURL( $this->Payload->comment->html_url )
 		);
 	}
 	
@@ -659,7 +649,7 @@ class IrcConverter extends BaseConverter
 			$this->FormatAction( ),
 			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
 			$this->Payload->discussion->title,
-			$this->ShortenAndFormatURL( $this->Payload->discussion->html_url )
+			$this->FormatURL( $this->Payload->discussion->html_url )
 		);
 	}
 
@@ -683,7 +673,7 @@ class IrcConverter extends BaseConverter
 				$this->FormatNumber( '#' . $this->Payload->discussion->number ),
 				$this->FormatHash( '(' . $this->Payload->discussion->title . ')' ),
 				$this->ShortMessage( $this->Payload->comment->body ),
-				$this->ShortenAndFormatURL( $this->Payload->comment->html_url )
+				$this->FormatURL( $this->Payload->comment->html_url )
 			);
 		}
 
@@ -784,7 +774,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatAction( $Page->action ),
 						$Page->title,
 						empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
-						$this->ShortenAndFormatURL( $Page->html_url )
+						$this->FormatURL( $Page->html_url )
 			);
 		}
 		

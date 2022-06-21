@@ -5,14 +5,11 @@ class BaseConverter
 {
 	protected string $EventType;
 	protected object $Payload;
-	/** @var ?callable */
-	protected $URLShortener;
 
-	public function __construct( string $EventType, object $Payload, ?callable $URLShortener = null )
+	public function __construct( string $EventType, object $Payload )
 	{
 		$this->EventType = $EventType;
 		$this->Payload = $Payload;
-		$this->URLShortener = $URLShortener;
 
 		// ref_name is not always available, apparently, we make sure it is
 		if( !isset( $this->Payload->ref_name ) && isset( $this->Payload->ref ) )

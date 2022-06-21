@@ -35,7 +35,7 @@ Returns true if a request came from GitHub's IP range, false otherwise.
 `IrcConverter.php` accepts input from previous script and outputs
 a colored string which can be sent to IRC.
 
-#### __construct( $EventType, $Payload, $URLShortener = null )
+#### __construct( $EventType, $Payload )
 `IrcConverter` constructor takes 3 paramaters (last one is optional).
 All you need to do is pass data after parsing the message with `GitHubWebHook`
 like so: `new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );`
