@@ -577,10 +577,12 @@ class DiscordConverter extends BaseConverter
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
 
+		$IsPullRequest = isset( $this->Payload->issue->pull_request );
+
 		if( $this->Payload->action === 'created' )
 		{
 			return [
-				'title' => "commented on issue **#{$this->Payload->issue->number}**: {$this->Escape( $this->Payload->issue->title )}",
+				'title' => "commented on " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}**: {$this->Escape( $this->Payload->issue->title )}",
 				'description' => $this->ShortDescription( $this->Payload->comment->body ),
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
@@ -591,7 +593,7 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'deleted' )
 		{
 			return [
-				'title' => "deleted comment in issue **#{$this->Payload->issue->number}** from {$this->Payload->comment->user->login}",
+				'title' => "deleted comment in " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}** from {$this->Payload->comment->user->login}",
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),

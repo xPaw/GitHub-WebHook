@@ -547,10 +547,11 @@ class IrcConverter extends BaseConverter
 		if( $this->Payload->action === 'deleted' )
 		{
 			return sprintf(
-				'[%s] %s deleted comment in issue %s from %s',
+				'[%s] %s deleted comment in %s %s from %s',
 				$this->FormatRepoName( ),
 				$this->FormatName( $this->Payload->sender->login ),
 				$this->FormatNumber( '#' . $this->Payload->issue->number ),
+				$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
 				$this->FormatName( $this->Payload->comment->user->login ),
 			);
 		}
