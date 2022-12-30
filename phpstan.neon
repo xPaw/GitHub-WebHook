@@ -3,10 +3,10 @@ parameters:
 	level: max
 	paths:
 		- .
-	excludes_analyse:
-		- vendor
-		- examples
-		- public
+	excludePaths:
+		- vendor/
+		- examples/
+		- public/
 	ignoreErrors:
 		- message: "/Access to an undefined property object::.*/"
 		  path: src/*.php
