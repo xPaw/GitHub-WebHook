@@ -361,6 +361,18 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'opened' )
 		{
 			$Embed[ 'description' ] = $this->ShortDescription( $this->Payload->issue->body );
+
+			if( !empty( $this->Payload->issue->labels ) )
+			{
+				$Labels = [];
+
+				foreach( $this->Payload->issue->labels as $Label )
+				{
+					$Labels[] = $Label->name;
+				}
+
+				$Embed[ 'footer' ][ 'text' ] = implode( ' | ', $Labels );
+			}
 		}
 
 		return $Embed;

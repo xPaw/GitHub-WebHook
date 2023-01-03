@@ -1,0 +1,18 @@
+{
+    "embeds": [
+        {
+            "title": "Issue **#508** opened: Particle rendering is busted",
+            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/issues\/508",
+            "color": 5025616,
+            "author": {
+                "name": "xPaw",
+                "url": "https:\/\/github.com\/xPaw",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=4"
+            },
+            "description": "Seems like a combination of Valve updating some of the particle stuff, and our code not handling certain things.\nIt needs a loving pass to fix up the existing stuff we have. I committed a few fix which should ease the task.",
+            "footer": {
+                "text": "bug"
+            }
+        }
+    ]
+}
