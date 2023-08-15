@@ -269,7 +269,7 @@ class DiscordConverter extends BaseConverter
 			{
 				$DistinctCommit = $DistinctCommits[ $Num ];
 
-				$Commit = "[{$this->Escapecode( substr( $DistinctCommit->id, 0, 6 ) )}]({$DistinctCommit->url}) ";
+				$Commit = "[{$this->EscapeCode( substr( $DistinctCommit->id, 0, 6 ) )}]({$DistinctCommit->url}) ";
 				$Commit .= $this->ShortMessage( $DistinctCommit->message );
 
 				if( isset( $DistinctCommit->author->username ) )

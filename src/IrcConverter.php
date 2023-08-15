@@ -113,7 +113,7 @@ class IrcConverter extends BaseConverter
 	private function ShortMessage( string $Message, int $Limit = 100 ) : string
 	{
 		$Message = trim( $Message );
-		$NewMessage = Explode( "\n", $Message, 2 );
+		$NewMessage = explode( "\n", $Message, 2 );
 		$NewMessage = $NewMessage[ 0 ];
 		
 		if( strlen( $NewMessage ) > $Limit )

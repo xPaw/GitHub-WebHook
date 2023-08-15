@@ -54,14 +54,16 @@ class GitHubWebHook
 			throw new Exception( 'Unknown content type.' );
 		}
 		
-		$this->Payload = json_decode( $RawPayload );
-		
-		if( $this->Payload === null )
+		$Decoded = json_decode( $RawPayload );
+
+		if( $Decoded === null || !is_object( $Decoded ) )
 		{
 			throw new Exception( 'Failed to decode JSON: ' .
 				( function_exists( 'json_last_error_msg' ) ? json_last_error_msg() : json_last_error() )
 			);
 		}
+		
+		$this->Payload = $Decoded;
 		
 		if( !isset( $this->Payload->repository ) )
 		{
