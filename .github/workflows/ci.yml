@@ -10,16 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1']
+        php: ['8.2']
     steps:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php }}
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: composer install --no-interaction --no-progress
     - name: Run tests
-      run: php vendor/bin/phpunit --verbose --fail-on-warning --coverage-text
+      run: php vendor/bin/phpunit --fail-on-warning --coverage-text
     - name: Run phpstan
       run: php vendor/bin/phpstan analyse

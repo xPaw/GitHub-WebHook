@@ -50,7 +50,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @return array<array<string>>
 	 */
-	public function ignoredIssueActionProvider( ) : array
+	public static function ignoredIssueActionProvider( ) : array
 	{
 		return [
 			[ 'labeled' ],
@@ -63,7 +63,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @return array<array<string>>
 	 */
-	public function ignoredPullRequestActionProvider( ) : array
+	public static function ignoredPullRequestActionProvider( ) : array
 	{
 		return [
 			[ 'synchronize' ],
@@ -79,7 +79,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @return array<array<string>>
 	 */
-	public function ignoredPullRequestReviewActionProvider( ) : array
+	public static function ignoredPullRequestReviewActionProvider( ) : array
 	{
 		return [
 			[ 'commented' ],
@@ -89,7 +89,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @return array<array<string>>
 	 */
-	public function ignoredMilestoneActionProvider( ) : array
+	public static function ignoredMilestoneActionProvider( ) : array
 	{
 		return [
 			[ 'edited' ],

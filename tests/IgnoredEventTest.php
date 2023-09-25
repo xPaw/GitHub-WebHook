@@ -17,7 +17,7 @@ class IgnoredEventTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @return array<array<string>>
 	 */
-	public function ignoredEventProvider( ) : array
+	public static function ignoredEventProvider( ) : array
 	{
 		return [
 			[ 'fork' ],

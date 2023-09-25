@@ -18,7 +18,7 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @return array<array<string>>
 	 */
-	public function eventProvider( ) : array
+	public static function eventProvider( ) : array
 	{
 		return [
 			//[ 'ping' ], // no action
