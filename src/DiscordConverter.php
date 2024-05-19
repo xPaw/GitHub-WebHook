@@ -1,12 +1,14 @@
 <?php
 declare(strict_types=1);
 
+namespace GitHubWebHook;
+
 class DiscordConverter extends BaseConverter
 {
 	/**
-	 * Parses GitHub's webhook payload and returns a formatted message
+	 * Parses GitHub's webhook payload and returns a formatted message.
 	 *
-	 * @return array
+	 * @return mixed[]
 	 */
 	public function GetEmbed( ) : array
 	{
@@ -73,6 +75,7 @@ class DiscordConverter extends BaseConverter
 		], $Message );
 	}
 
+	/** @return array{name: string, url: string, icon_url: string} */
 	private function FormatAuthor() : array
 	{
 		return [
@@ -170,8 +173,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a push event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#push
+	 * Formats a push event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#push
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatPushEvent( ) : array
 	{
@@ -294,8 +300,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a deletion event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#delete
+	 * Formats a deletion event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#delete
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatDeleteEvent( ) : array
 	{
@@ -314,8 +323,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats an issue event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#issues
+	 * Formats an issue event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#issues
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatIssuesEvent( ) : array
 	{
@@ -379,8 +391,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
+	 * Formats a pull request event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatPullRequestEvent( ) : array
 	{
@@ -454,8 +469,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a milestone event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#milestone
+	 * Formats a milestone event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#milestone
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatMilestoneEvent( ) : array
 	{
@@ -482,8 +500,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a package event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#package
+	 * Formats a package event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#package
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatPackageEvent( ) : array
 	{
@@ -492,7 +513,7 @@ class DiscordConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return [
 			'title' => "{$this->Payload->action} {$this->Payload->package->package_type} package: **{$this->Escape( $this->Payload->package->name )}** {$this->Payload->package->package_version->version}",
 			'description' => $this->ShortDescription( $this->Payload->package->package_version->body ),
@@ -503,8 +524,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a project event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#project
+	 * Formats a project event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#project
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatProjectEvent( ) : array
 	{
@@ -520,7 +544,7 @@ class DiscordConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return [
 			'title' => "{$this->Payload->action} project **#{$this->Payload->project->number}**: {$this->Escape( $this->Payload->project->name )}",
 			'description' => $this->ShortDescription( $this->Payload->project->body ),
@@ -531,8 +555,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a release event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#release
+	 * Formats a release event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#release
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatReleaseEvent( ) : array
 	{
@@ -559,8 +586,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a commit comment event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#commit_comment
+	 * Formats a commit comment event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#commit_comment
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatCommitCommentEvent( ) : array
 	{
@@ -568,7 +598,7 @@ class DiscordConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return [
 			'title' => "commented on commit {$this->EscapeCode( substr( $this->Payload->comment->commit_id, 0, 6 ) )}",
 			'description' => $this->ShortDescription( $this->Payload->comment->body ),
@@ -579,8 +609,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a issue comment event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#issue_comment
+	 * Formats a issue comment event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#issue_comment
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatIssueCommentEvent( ) : array
 	{
@@ -616,8 +649,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request_review
+	 * Formats a pull request review event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request_review
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatPullRequestReviewEvent( ) : array
 	{
@@ -646,8 +682,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request_review_comment
+	 * Formats a pull request review comment event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#pull_request_review_comment
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatPullRequestReviewCommentEvent( ) : array
 	{
@@ -655,7 +694,7 @@ class DiscordConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return [
 			'title' => "reviewed PR **#{$this->Payload->pull_request->number}**: {$this->Escape( $this->Payload->pull_request->title )}",
 			'description' => $this->ShortDescription( $this->Payload->comment->body ),
@@ -666,8 +705,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event
-	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion
+	 * Formats a pull request review comment event.
+	 *
+	 * @see https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatDiscussionEvent( ) : array
 	{
@@ -696,7 +738,7 @@ class DiscordConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		$Embed = [
 			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$this->Payload->action}: {$this->Escape( $this->Payload->discussion->title )}",
 			'url' => $this->Payload->discussion->html_url,
@@ -713,8 +755,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event
-	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion_comment
+	 * Formats a pull request review comment event.
+	 *
+	 * @see https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion_comment
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatDiscussionCommentEvent( ) : array
 	{
@@ -748,8 +793,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a repository vulnerability alert event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#repository_vulnerability_alert
+	 * Formats a repository vulnerability alert event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#repository_vulnerability_alert
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatRepositoryVulnerabilityAlertEvent( ) : array
 	{
@@ -789,7 +837,7 @@ class DiscordConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return [
 			'title' => "Vulnerability for **{$this->Escape( $this->Payload->alert->affected_package_name )}** {$this->Payload->action}",
 			'url' => $this->Payload->alert->external_reference,
@@ -799,8 +847,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a member event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#member
+	 * Formats a member event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#member
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatMemberEvent( ) : array
 	{
@@ -808,7 +859,7 @@ class DiscordConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return [
 			'title' => "{$this->Payload->action} **{$this->Escape( $this->Payload->member->login )}** as a collaborator",
 			'url' => $this->Payload->repository->html_url,
@@ -818,13 +869,16 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a gollum event (wiki)
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#gollum
+	 * Formats a gollum event (wiki).
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#gollum
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatGollumEvent( ) : array
 	{
 		$Messages = [];
-		
+
 		foreach( $this->Payload->pages as $Page )
 		{
 			// Append compare url since github doesn't provide one
@@ -832,10 +886,10 @@ class DiscordConverter extends BaseConverter
 			{
 				$Page->html_url .= '/_compare/' . $Page->sha;
 			}
-			
+
 			$Messages[] = "[{$Page->action} {$this->Escape( $Page->title )}]({$Page->html_url})" . ( empty( $Page->summary ) ? '' : ( ': ' . $this->ShortMessage( $Page->summary ) ) );
 		}
-		
+
 		return [
 			'title' => "updated wiki",
 			'description' => implode( "\n", $Messages ),
@@ -845,8 +899,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a ping event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#ping
+	 * Formats a ping event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#ping
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatPingEvent( ) : array
 	{
@@ -859,8 +916,11 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Format a public event. Without a doubt: the best GitHub event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#public
+	 * Format a public event. Without a doubt: the best GitHub event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#public
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatPublicEvent( ) : array
 	{
@@ -874,7 +934,10 @@ class DiscordConverter extends BaseConverter
 
 	/**
 	 * Triggered when a repository is created.
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#repository
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#repository
+	 *
+	 * @return mixed[]
 	 */
 	private function FormatRepositoryEvent( ) : array
 	{

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace GitHubWebHook;
+
 class BaseConverter
 {
 	protected string $EventType;
@@ -34,7 +36,7 @@ class BaseConverter
 	}
 
 	/**
-	 * Returns distinct commits which have non-empty commit messages
+	 * Returns distinct commits which have non-empty commit messages.
 	 *
 	 * @return array<object>
 	 */

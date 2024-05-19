@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use GitHubWebHook\IrcConverter;
+use GitHubWebHook\NotImplementedException;
+
 class UnknownEventTest extends \PHPUnit\Framework\TestCase
 {
 	public function testForkEvent( ) : void

@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use GitHubWebHook\IrcConverter;
+use GitHubWebHook\NotImplementedException;
+
 class UnknownActionTest extends \PHPUnit\Framework\TestCase
 {
 	/**
@@ -14,7 +17,7 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 		$Parser = new IrcConverter( $Event, (object)[ 'action' => 'surely_this_action_does_not_exist' ] );
 		$Parser->GetMessage();
 	}
-	
+
 	/**
 	 * @return array<array<string>>
 	 */

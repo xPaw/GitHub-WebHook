@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace GitHubWebHook;
+
 class IrcConverter extends BaseConverter
 {
 	/**
@@ -32,32 +34,32 @@ class IrcConverter extends BaseConverter
 			case 'pull_request_review': return $this->FormatPullRequestReviewEvent( );
 			case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
 			case 'repository_vulnerability_alert': return $this->FormatRepositoryVulnerabilityAlertEvent( );
-			
+
 			// Spammy events that we do not care about
 			case 'fork'          :
 			case 'watch'         :
 			case 'star'          :
 			case 'status'        : throw new IgnoredEventException( $this->EventType );
 		}
-		
+
 		throw new NotImplementedException( $this->EventType );
 	}
-	
+
 	private function FormatRepoName( ) : string
 	{
 		return "\00310" . $this->Payload->repository->name . "\017";
 	}
-	
+
 	private function FormatBranch( string $Branch ) : string
 	{
 		return "\00306" . $this->InsertZWJ( $Branch ) . "\017";
 	}
-	
+
 	private function FormatName( string $Name ) : string
 	{
 		return "\00312" . $this->InsertZWJ( $Name ) . "\017";
 	}
-	
+
 	private function InsertZWJ( string $String ) : string
 	{
 		return substr( $String, 0, 1 ) . "\u{200d}" . substr( $String, 1 );
@@ -69,7 +71,7 @@ class IrcConverter extends BaseConverter
 		{
 			$Action = $this->Payload->action;
 		}
-		
+
 		switch( $Action )
 		{
 			case 'created'    :
@@ -94,33 +96,33 @@ class IrcConverter extends BaseConverter
 				return "\00309" . $Action . "\017";
 		}
 	}
-	
+
 	private function FormatNumber( string $Number ) : string
 	{
 		return "\00312\002" . $Number . "\017";
 	}
-	
+
 	private function FormatHash( string $Hash ) : string
 	{
 		return "\00314" . $Hash . "\017";
 	}
-	
+
 	private function FormatURL( string $URL ) : string
 	{
 		return "\00302" . $URL . "\017";
 	}
-	
+
 	private function ShortMessage( string $Message, int $Limit = 100 ) : string
 	{
 		$Message = trim( $Message );
 		$NewMessage = explode( "\n", $Message, 2 );
 		$NewMessage = $NewMessage[ 0 ];
-		
+
 		if( strlen( $NewMessage ) > $Limit )
 		{
 			$NewMessage = substr( $Message, 0, $Limit );
 		}
-		
+
 		if( $NewMessage !== $Message )
 		{
 			// Tidy ellipsis
@@ -133,24 +135,25 @@ class IrcConverter extends BaseConverter
 				$NewMessage .= '…';
 			}
 		}
-		
+
 		return $NewMessage;
 	}
-	
+
 	/**
-	 * Formats a push event
-	 * See https://developer.github.com/v3/activity/events/types/#pushevent
+	 * Formats a push event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#pushevent
 	 */
 	private function FormatPushEvent( ) : string
 	{
 		$DistinctCommits = $this->GetDistinctCommits( );
 		$Num = count( $DistinctCommits );
-		
+
 		$Message = sprintf( '[%s] %s ',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->pusher->name )
 		);
-		
+
 		if( isset( $this->Payload->created ) && $this->Payload->created )
 		{
 			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
@@ -165,7 +168,7 @@ class IrcConverter extends BaseConverter
 			else
 			{
 				$Message .= sprintf( 'created %s', $this->FormatBranch( $this->Payload->ref_name ) );
-				
+
 				if( isset( $this->Payload->base_ref ) )
 				{
 					$Message .= sprintf( ' from %s', $this->FormatBranch( $this->Payload->base_ref_name ) );
@@ -174,7 +177,7 @@ class IrcConverter extends BaseConverter
 				{
 					$Message .= sprintf( ' at %s', $this->FormatHash( $this->AfterSHA( ) ) );
 				}
-				
+
 				if( $Num > 0 )
 				{
 					$Message .= sprintf( ' (+%s new commit%s)',
@@ -191,7 +194,7 @@ class IrcConverter extends BaseConverter
 		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
 		{
 			$this->Payload->action = 'force-pushed'; // Don't tell anyone!
-			
+
 			$Message .= sprintf( '%s %s from %s to %s',
 				$this->FormatAction( ),
 				$this->FormatBranch( $this->Payload->ref_name ),
@@ -225,7 +228,7 @@ class IrcConverter extends BaseConverter
 				$this->FormatBranch( $this->Payload->ref_name )
 			);
 		}
-		
+
 		if( $this->Payload->forced )
 		{
 			// GitHub supports displaying proper diffs for force pushes
@@ -244,7 +247,7 @@ class IrcConverter extends BaseConverter
 		{
 			$URL = $this->Payload->compare;
 		}
-		
+
 		if( $Num > 0 )
 		{
 			$CommitMessages = [];
@@ -255,7 +258,7 @@ class IrcConverter extends BaseConverter
 			}
 
 			$CommitMessages = $this->ShortMessage( implode( $this->FormatHash( ' | ' ), $CommitMessages ), 200 );
-			
+
 			$Message .= sprintf( ': %s', $CommitMessages );
 		}
 
@@ -263,10 +266,11 @@ class IrcConverter extends BaseConverter
 
 		return $Message;
 	}
-	
+
 	/**
-	 * Formats a deletion event
-	 * See https://developer.github.com/v3/activity/events/types/#deleteevent
+	 * Formats a deletion event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#deleteevent
 	 */
 	private function FormatDeleteEvent( ) : string
 	{
@@ -275,9 +279,9 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->ref_type );
 		}
-		
+
 		$this->Payload->action = 'deleted';
-		
+
 		return sprintf( '[%s] %s %s %s %s',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->sender->login ),
@@ -286,10 +290,11 @@ class IrcConverter extends BaseConverter
 			$this->FormatBranch( $this->Payload->ref )
 		);
 	}
-	
+
 	/**
-	 * Formats an issue event
-	 * See https://developer.github.com/v3/activity/events/types/#issuesevent
+	 * Formats an issue event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#issuesevent
 	 */
 	private function FormatIssuesEvent( ) : string
 	{
@@ -304,7 +309,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
-		
+
 		if( $this->Payload->action !== 'opened'
 		&&  $this->Payload->action !== 'closed'
 		&&  $this->Payload->action !== 'reopened'
@@ -316,7 +321,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s %s issue %s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -326,10 +331,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $this->Payload->issue->html_url )
 		);
 	}
-	
+
 	/**
-	 * Formats a pull request event
-	 * See https://developer.github.com/v3/activity/events/types/#pullrequestevent
+	 * Formats a pull request event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#pullrequestevent
 	 */
 	private function FormatPullRequestEvent( ) : string
 	{
@@ -356,7 +362,7 @@ class IrcConverter extends BaseConverter
 		{
 			$this->Payload->action = 'converted to draft';
 		}
-		
+
 		if( $this->Payload->action === 'edited'
 		||  $this->Payload->action === 'synchronize'
 		||  $this->Payload->action === 'labeled'
@@ -368,7 +374,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
-		
+
 		if( $this->Payload->action !== 'opened'
 		&&  $this->Payload->action !== 'reopened'
 		&&  $this->Payload->action !== 'deleted'
@@ -382,7 +388,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s %s %spull request %s%s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -396,10 +402,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $this->Payload->pull_request->html_url )
 		);
 	}
-	
+
 	/**
-	 * Formats a milestone event
-	 * See https://developer.github.com/v3/activity/events/types/#milestoneevent
+	 * Formats a milestone event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#milestoneevent
 	 */
 	private function FormatMilestoneEvent( ) : string
 	{
@@ -407,7 +414,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
-		
+
 		if( $this->Payload->action !== 'opened'
 		&&  $this->Payload->action !== 'closed'
 		&&  $this->Payload->action !== 'created'
@@ -415,7 +422,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s %s milestone %s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -425,10 +432,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $this->Payload->milestone->html_url )
 		);
 	}
-	
+
 	/**
-	 * Formats a package event
-	 * See https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#package
+	 * Formats a package event.
+	 *
+	 * @see https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads#package
 	 */
 	private function FormatPackageEvent( ) : string
 	{
@@ -437,7 +445,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf(
 			'[%s] %s %s %s package: %s %s. %s',
 			$this->FormatRepoName( ),
@@ -451,8 +459,9 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a project event
-	 * See https://developer.github.com/v3/activity/events/types/#projectevent
+	 * Formats a project event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#projectevent
 	 */
 	private function FormatProjectEvent( ) : string
 	{
@@ -468,7 +477,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s %s project: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -479,8 +488,9 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a release event
-	 * See https://developer.github.com/v3/activity/events/types/#releaseevent
+	 * Formats a release event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#releaseevent
 	 */
 	private function FormatReleaseEvent( ) : string
 	{
@@ -489,7 +499,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s %s a %srelease %s: %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -499,10 +509,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $this->Payload->release->html_url )
 		);
 	}
-	
+
 	/**
-	 * Formats a commit comment event
-	 * See https://developer.github.com/v3/activity/events/types/#commitcommentevent
+	 * Formats a commit comment event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#commitcommentevent
 	 */
 	private function FormatCommitCommentEvent( ) : string
 	{
@@ -510,7 +521,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s commented on commit %s: %s %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -519,10 +530,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $this->Payload->comment->html_url )
 		);
 	}
-	
+
 	/**
-	 * Formats a issue comment event
-	 * See https://developer.github.com/v3/activity/events/types/#issuecommentevent
+	 * Formats a issue comment event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#issuecommentevent
 	 */
 	private function FormatIssueCommentEvent( ) : string
 	{
@@ -530,7 +542,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
-		
+
 		if( $this->Payload->action === 'created' )
 		{
 			return sprintf(
@@ -558,10 +570,11 @@ class IrcConverter extends BaseConverter
 
 		throw new NotImplementedException( $this->EventType, $this->Payload->action );
 	}
-	
+
 	/**
-	 * Formats a pull request review event
-	 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewevent
+	 * Formats a pull request review event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#pullrequestreviewevent
 	 */
 	private function FormatPullRequestReviewEvent( ) : string
 	{
@@ -569,17 +582,17 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		if( $this->Payload->review->state === 'commented' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->review->state );
 		}
-		
+
 		if( $this->Payload->review->state === 'changes_requested' )
 		{
 			$this->Payload->review->state = 'requested changes';
 		}
-		
+
 		return sprintf( '[%s] %s %s%s pull request %s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -590,10 +603,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $this->Payload->review->html_url )
 		);
 	}
-	
+
 	/**
-	 * Formats a pull request review comment event
-	 * See https://developer.github.com/v3/activity/events/types/#pullrequestreviewcommentevent
+	 * Formats a pull request review comment event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#pullrequestreviewcommentevent
 	 */
 	private function FormatPullRequestReviewCommentEvent( ) : string
 	{
@@ -601,7 +615,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s reviewed pull request %s at %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -610,10 +624,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $this->Payload->comment->html_url )
 		);
 	}
-	
-/**
-	 * Formats a pull request review comment event
-	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion
+
+	/**
+	 * Formats a pull request review comment event.
+	 *
+	 * @see https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion
 	 */
 	private function FormatDiscussionEvent( ) : string
 	{
@@ -642,7 +657,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf(
 			'[%s] %s %s discussion %s: %s. %s',
 			$this->FormatRepoName( ),
@@ -655,8 +670,9 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event
-	 * See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion_comment
+	 * Formats a pull request review comment event.
+	 *
+	 * @see https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#discussion_comment
 	 */
 	private function FormatDiscussionCommentEvent( ) : string
 	{
@@ -693,8 +709,9 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a repository vulnerability alert event
-	 * See https://developer.github.com/v3/activity/events/types/#repositoryvulnerabilityalertevent
+	 * Formats a repository vulnerability alert event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#repositoryvulnerabilityalertevent
 	 */
 	private function FormatRepositoryVulnerabilityAlertEvent( ) : string
 	{
@@ -719,7 +736,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] Vulnerability %s for %s: %s %s',
 						$this->FormatRepoName( ),
 						$this->FormatAction( ),
@@ -730,8 +747,9 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a member event
-	 * See https://developer.github.com/v3/activity/events/types/#memberevent
+	 * Formats a member event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#memberevent
 	 */
 	private function FormatMemberEvent( ) : string
 	{
@@ -739,7 +757,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s %s %s as a collaborator',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -747,28 +765,29 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->member->login )
 		);
 	}
-	
+
 	/**
-	 * Formats a gollum event (wiki)
-	 * See https://developer.github.com/v3/activity/events/types/#gollumevent
+	 * Formats a gollum event (wiki).
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#gollumevent
 	 */
 	private function FormatGollumEvent( ) : string
 	{
 		$Message = '';
-		
+
 		foreach( $this->Payload->pages as $Page )
 		{
 			if( !empty( $Message ) )
 			{
 				$Message .= "\n";
 			}
-			
+
 			// Append compare url since github doesn't provide one
 			if( $Page->action === 'edited' )
 			{
 				$Page->html_url .= '/_compare/' . $Page->sha;
 			}
-			
+
 			$Message .= sprintf( "[%s] %s %s %s: %s%s",
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
@@ -778,13 +797,14 @@ class IrcConverter extends BaseConverter
 						$this->FormatURL( $Page->html_url )
 			);
 		}
-		
+
 		return $Message;
 	}
-	
+
 	/**
-	 * Formats a ping event
-	 * See https://developer.github.com/webhooks/#ping-event
+	 * Formats a ping event.
+	 *
+	 * @see https://developer.github.com/webhooks/#ping-event
 	 */
 	private function FormatPingEvent( ) : string
 	{
@@ -794,10 +814,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->zen )
 		);
 	}
-	
+
 	/**
-	 * Format a public event. Without a doubt: the best GitHub event
-	 * See https://developer.github.com/v3/activity/events/types/#publicevent
+	 * Format a public event. Without a doubt: the best GitHub event.
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#publicevent
 	 */
 	private function FormatPublicEvent( ) : string
 	{
@@ -807,10 +828,11 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login )
 		);
 	}
-	
+
 	/**
-	 * Triggered when a repository is created.
-	 * See https://developer.github.com/v3/activity/events/types/#repositoryevent
+	 * Triggered when a repository is created..
+	 *
+	 * @see https://developer.github.com/v3/activity/events/types/#repositoryevent
 	 */
 	private function FormatRepositoryEvent( ) : string
 	{
@@ -818,7 +840,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
-		
+
 		if( $this->Payload->action !== 'created'
 		&&  $this->Payload->action !== 'deleted'
 		&&  $this->Payload->action !== 'archived'
@@ -830,7 +852,7 @@ class IrcConverter extends BaseConverter
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
-		
+
 		return sprintf( '[%s] %s %s this repository. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),

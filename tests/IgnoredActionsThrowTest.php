@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use GitHubWebHook\IgnoredEventException;
+use GitHubWebHook\IrcConverter;
+
 class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 {
 	/**
@@ -13,7 +16,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser = new IrcConverter( 'issues', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
-	
+
 	/**
 	 * @dataProvider ignoredPullRequestActionProvider
 	 */
@@ -24,7 +27,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser = new IrcConverter( 'pull_request', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
-	
+
 	/**
 	 * @dataProvider ignoredPullRequestReviewActionProvider
 	 */
@@ -35,7 +38,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser = new IrcConverter( 'pull_request_review', (object)[ 'action' => 'submitted', 'review' => (object)[ 'state' => $Action ] ] );
 		$Parser->GetMessage();
 	}
-	
+
 	/**
 	 * @dataProvider ignoredMilestoneActionProvider
 	 */
@@ -46,7 +49,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser = new IrcConverter( 'milestone', (object)[ 'action' => $Action ] );
 		$Parser->GetMessage();
 	}
-	
+
 	/**
 	 * @return array<array<string>>
 	 */
@@ -59,7 +62,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 			[ 'unassigned' ],
 		];
 	}
-	
+
 	/**
 	 * @return array<array<string>>
 	 */
@@ -75,7 +78,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 			[ 'review_request_removed' ],
 		];
 	}
-	
+
 	/**
 	 * @return array<array<string>>
 	 */
@@ -85,7 +88,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 			[ 'commented' ],
 		];
 	}
-	
+
 	/**
 	 * @return array<array<string>>
 	 */

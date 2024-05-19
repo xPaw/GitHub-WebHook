@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use GitHubWebHook\DiscordConverter;
+use GitHubWebHook\GitHubWebHook;
+use GitHubWebHook\IrcConverter;
+
 class EventTest extends \PHPUnit\Framework\TestCase
 {
 	/**
@@ -45,7 +49,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 	/**
 	 * @return array<array<string>>
 	 */
-	public function eventProvider() : array
+	public static function eventProvider() : array
 	{
 		$ProvidedData = [];
 

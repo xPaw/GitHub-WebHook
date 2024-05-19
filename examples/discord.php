@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+use GitHubWebHook\DiscordConverter;
+use GitHubWebHook\GitHubWebHook;
+use GitHubWebHook\IgnoredEventException;
+use GitHubWebHook\NotImplementedException;
+
 header( 'Content-Type: text/plain; charset=utf-8' );
 
 // Don't do this in production!

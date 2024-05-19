@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use GitHubWebHook\IgnoredEventException;
+use GitHubWebHook\IrcConverter;
+
 class IgnoredEventTest extends \PHPUnit\Framework\TestCase
 {
 	/**
@@ -9,11 +12,11 @@ class IgnoredEventTest extends \PHPUnit\Framework\TestCase
 	public function testForkEvent( string $Event ) : void
 	{
 		$this->expectException( IgnoredEventException::class );
-		
+
 		$Parser = new IrcConverter( $Event, (object)[] );
 		$Parser->GetMessage();
 	}
-	
+
 	/**
 	 * @return array<array<string>>
 	 */
