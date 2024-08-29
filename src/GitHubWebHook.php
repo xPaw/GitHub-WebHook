@@ -91,42 +91,6 @@ class GitHubWebHook
 	}
 
 	/**
-	 * Optional function to check if request came from GitHub's IP range.
-	 *
-	 * @return bool
-	 */
-	public function ValidateIPAddress( ) : bool
-	{
-		if( !array_key_exists( 'REMOTE_ADDR', $_SERVER ) )
-		{
-			throw new Exception( 'Missing remote address.' );
-		}
-
-		$Remote = ip2long( $_SERVER[ 'REMOTE_ADDR' ] );
-
-		// https://api.github.com/meta
-		$Addresses =
-		[
-			[ '192.30.252.0',    22 ],
-			[ '185.199.108.0',   22 ],
-			[ '140.82.112.0',    20 ],
-		];
-
-		foreach( $Addresses as $CIDR )
-		{
-			$Base = ip2long( $CIDR[ 0 ] );
-			$Mask = pow( 2, ( 32 - $CIDR[ 1 ] ) ) - 1;
-
-			if( $Base === ( $Remote & ~$Mask ) )
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
 	 * Optional function to check if HMAC hex digest of the payload matches GitHub's.
 	 */
 	public function ValidateHubSignature( string $SecretKey ) : bool

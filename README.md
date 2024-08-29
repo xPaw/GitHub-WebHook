@@ -27,10 +27,6 @@ Returns full name of the repository for which an event was sent for.
 #### ValidateHubSignature( $SecretKey )
 Retuns true if HMAC hex digest of the payload matches GitHub's, false otherwise.
 
-#### ~~ValidateIPAddress()~~
-Returns true if a request came from GitHub's IP range, false otherwise.
-⚠ Use `ValidateHubSignature` instead.
-
 ## IrcConverter
 `IrcConverter.php` accepts input from previous script and outputs
 a colored string which can be sent to IRC.
