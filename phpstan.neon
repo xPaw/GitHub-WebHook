@@ -1,6 +1,9 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
 parameters:
-	checkFunctionNameCase: true
 	level: max
+	strictRules:
+		disallowedConstructs: false
 	paths:
 		- .
 	excludePaths:

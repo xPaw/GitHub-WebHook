@@ -115,7 +115,7 @@ class DiscordConverter extends BaseConverter
 		}
 	}
 
-	private function ShortDescription( ?string $Message, int $Limit = 250 ) : string
+	private static function ShortDescription( ?string $Message, int $Limit = 250 ) : string
 	{
 		$Message ??= '';
 		$Message = strip_tags( $Message );
@@ -145,7 +145,7 @@ class DiscordConverter extends BaseConverter
 		return $Message;
 	}
 
-	private function ShortMessage( string $Message, int $Limit = 100 ) : string
+	private static function ShortMessage( string $Message, int $Limit = 100 ) : string
 	{
 		$Message = trim( $Message );
 		$NewMessage = explode( "\n", $Message, 2 );
@@ -169,7 +169,7 @@ class DiscordConverter extends BaseConverter
 			}
 		}
 
-		return $this->Escape( $NewMessage );
+		return self::Escape( $NewMessage );
 	}
 
 	/**
@@ -194,20 +194,20 @@ class DiscordConverter extends BaseConverter
 		{
 			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
 			{
-				$Embed[ 'title' ] = "tagged {$this->EscapeCode( $this->Payload->ref_name )} at " . $this->EscapeCode( $this->Payload->base_ref_name ?? $this->AfterSHA() );
+				$Embed[ 'title' ] = "tagged " . self::EscapeCode( $this->Payload->ref_name ) . " at " . self::EscapeCode( $this->Payload->base_ref_name ?? $this->AfterSHA() );
 				$Embed[ 'color' ] = $this->FormatAction( 'tagged' );
 			}
 			else
 			{
-				$Embed[ 'title' ] = "created {$this->EscapeCode( $this->Payload->ref_name )}";
+				$Embed[ 'title' ] = "created " . self::EscapeCode( $this->Payload->ref_name );
 
 				if( isset( $this->Payload->base_ref ) )
 				{
-					$Embed[ 'title' ] .= " from {$this->EscapeCode( $this->Payload->base_ref_name )}";
+					$Embed[ 'title' ] .= " from " . self::EscapeCode( $this->Payload->base_ref_name );
 				}
 				else if( $Num > 0 )
 				{
-					$Embed[ 'title' ] .= " at {$this->EscapeCode( $this->AfterSHA() )}";
+					$Embed[ 'title' ] .= " at " . self::EscapeCode( $this->AfterSHA() );
 				}
 
 				if( $Num > 0 )
@@ -227,19 +227,19 @@ class DiscordConverter extends BaseConverter
 		{
 			$this->Payload->action = 'force-pushed'; // Don't tell anyone!
 
-			$Embed[ 'title' ] = "{$this->Payload->action} {$this->EscapeCode( $this->Payload->ref_name )} from {$this->Escape( $this->BeforeSHA() )} to {$this->Escape( $this->AfterSHA() )}";
+			$Embed[ 'title' ] = "{$this->Payload->action} " . self::EscapeCode( $this->Payload->ref_name ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
 			$Embed[ 'color' ] = $this->FormatAction();
 		}
 		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
 		{
 			if( isset( $this->Payload->base_ref ) )
 			{
-				$Embed[ 'title' ] = "merged {$this->EscapeCode( $this->Payload->base_ref_name )} into {$this->EscapeCode( $this->Payload->ref_name )}";
+				$Embed[ 'title' ] = "merged " . self::EscapeCode( $this->Payload->base_ref_name ) . " into " . self::EscapeCode( $this->Payload->ref_name );
 				$Embed[ 'color' ] = $this->FormatAction( 'merged' );
 			}
 			else
 			{
-				$Embed[ 'title' ] = "fast-forwarded {$this->EscapeCode( $this->Payload->ref_name )} from {$this->Escape( $this->BeforeSHA() )} to {$this->Escape( $this->AfterSHA() )}";
+				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->Payload->ref_name ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
 				$Embed[ 'color' ] = $this->FormatAction( 'fast-forwarded' );
 			}
 		}
@@ -248,7 +248,7 @@ class DiscordConverter extends BaseConverter
 			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s to %s',
 				$Num,
 				$Num === 1 ? '' : 's',
-				$this->EscapeCode( $this->Payload->ref_name )
+				self::EscapeCode( $this->Payload->ref_name )
 			);
 		}
 
@@ -275,19 +275,19 @@ class DiscordConverter extends BaseConverter
 			{
 				$DistinctCommit = $DistinctCommits[ $Num ];
 
-				$Commit = "[{$this->EscapeCode( substr( $DistinctCommit->id, 0, 6 ) )}]({$DistinctCommit->url}) ";
-				$Commit .= $this->ShortMessage( $DistinctCommit->message );
+				$Commit = "[" . self::EscapeCode( substr( $DistinctCommit->id, 0, 6 ) ) . "]({$DistinctCommit->url}) ";
+				$Commit .= self::ShortMessage( $DistinctCommit->message );
 
 				if( isset( $DistinctCommit->author->username ) )
 				{
 					if( $DistinctCommit->author->username !== $this->Payload->sender->login )
 					{
-						$Commit .= " - {$this->Escape( $DistinctCommit->author->username )}";
+						$Commit .= " - " . self::Escape( $DistinctCommit->author->username );
 					}
 				}
 				else
 				{
-					$Commit .= " - *{$this->Escape( $DistinctCommit->author->name )}*";
+					$Commit .= " - *" . self::Escape( $DistinctCommit->author->name ) . "*";
 				}
 
 				$CommitMessages[] = $Commit;
@@ -315,7 +315,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "deleted {$this->Payload->ref_type} {$this->EscapeCode( $this->Payload->ref )}",
+			'title' => "deleted {$this->Payload->ref_type} " . self::EscapeCode( $this->Payload->ref ),
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction( 'deleted' ),
 			'author' => $this->FormatAuthor(),
@@ -364,7 +364,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		$Embed = [
-			'title' => "Issue **#{$this->Payload->issue->number}** {$this->Payload->action}: {$this->Escape( $this->Payload->issue->title )}",
+			'title' => "Issue **#{$this->Payload->issue->number}** {$this->Payload->action}: " . self::Escape( $this->Payload->issue->title ),
 			'url' => $this->Payload->issue->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -372,7 +372,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $this->Payload->action === 'opened' )
 		{
-			$Embed[ 'description' ] = $this->ShortDescription( $this->Payload->issue->body );
+			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->issue->body );
 
 			if( !empty( $this->Payload->issue->labels ) )
 			{
@@ -450,7 +450,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		$Embed = [
-			'title' => ( $this->Payload->pull_request->draft ? 'Draft ' : '' ) . "PR **#{$this->Payload->pull_request->number}** {$this->Payload->action}: {$this->Escape( $this->Payload->pull_request->title )}",
+			'title' => ( $this->Payload->pull_request->draft ? 'Draft ' : '' ) . "PR **#{$this->Payload->pull_request->number}** {$this->Payload->action}: " . self::Escape( $this->Payload->pull_request->title ),
 			'url' => $this->Payload->pull_request->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -458,11 +458,11 @@ class DiscordConverter extends BaseConverter
 
 		if( $this->Payload->action === 'opened' )
 		{
-			$Embed[ 'description' ] = $this->ShortDescription( $this->Payload->pull_request->body );
+			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->pull_request->body );
 		}
 		else if( $this->Payload->action === 'merged' )
 		{
-			$Embed[ 'description' ] = "Merged from **{$this->Escape( $this->Payload->pull_request->user->login )}** to {$this->EscapeCode( $this->Payload->pull_request->base->ref )}";
+			$Embed[ 'description' ] = "Merged from **" . self::Escape( $this->Payload->pull_request->user->login ) . "** to " . self::EscapeCode( $this->Payload->pull_request->base->ref );
 		}
 
 		return $Embed;
@@ -491,8 +491,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} milestone **#{$this->Payload->milestone->number}**: {$this->Escape( $this->Payload->milestone->title )}",
-			'description' => $this->ShortDescription( $this->Payload->milestone->description ),
+			'title' => "{$this->Payload->action} milestone **#{$this->Payload->milestone->number}**: " . self::Escape( $this->Payload->milestone->title ),
+			'description' => self::ShortDescription( $this->Payload->milestone->description ),
 			'url' => $this->Payload->milestone->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -515,8 +515,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} {$this->Payload->package->package_type} package: **{$this->Escape( $this->Payload->package->name )}** {$this->Payload->package->package_version->version}",
-			'description' => $this->ShortDescription( $this->Payload->package->package_version->body ),
+			'title' => "{$this->Payload->action} {$this->Payload->package->package_type} package: **" . self::Escape( $this->Payload->package->name ) . "** {$this->Payload->package->package_version->version}",
+			'description' => self::ShortDescription( $this->Payload->package->package_version->body ),
 			'url' => $this->Payload->package->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -546,8 +546,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} project **#{$this->Payload->project->number}**: {$this->Escape( $this->Payload->project->name )}",
-			'description' => $this->ShortDescription( $this->Payload->project->body ),
+			'title' => "{$this->Payload->action} project **#{$this->Payload->project->number}**: " . self::Escape( $this->Payload->project->name ),
+			'description' => self::ShortDescription( $this->Payload->project->body ),
 			'url' => $this->Payload->project->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -577,8 +577,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: {$this->Escape( $Name )}",
-			'description' => $this->ShortDescription( $this->Payload->release->body ),
+			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: " . self::Escape( $Name ),
+			'description' => self::ShortDescription( $this->Payload->release->body ),
 			'url' => $this->Payload->release->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -600,8 +600,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "commented on commit {$this->EscapeCode( substr( $this->Payload->comment->commit_id, 0, 6 ) )}",
-			'description' => $this->ShortDescription( $this->Payload->comment->body ),
+			'title' => "commented on commit " . self::EscapeCode( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
+			'description' => self::ShortDescription( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -627,8 +627,8 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'created' )
 		{
 			return [
-				'title' => "commented on " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}**: {$this->Escape( $this->Payload->issue->title )}",
-				'description' => $this->ShortDescription( $this->Payload->comment->body ),
+				'title' => "commented on " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}**: " . self::Escape( $this->Payload->issue->title ),
+				'description' => self::ShortDescription( $this->Payload->comment->body ),
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -673,8 +673,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->review->state} PR **#{$this->Payload->pull_request->number}**: {$this->Escape( $this->Payload->pull_request->title )}",
-			'description' => $this->ShortDescription( $this->Payload->review->body ),
+			'title' => "{$this->Payload->review->state} PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			'description' => self::ShortDescription( $this->Payload->review->body ),
 			'url' => $this->Payload->review->html_url,
 			'color' => $this->FormatAction( $this->Payload->review->state ),
 			'author' => $this->FormatAuthor(),
@@ -696,8 +696,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "reviewed PR **#{$this->Payload->pull_request->number}**: {$this->Escape( $this->Payload->pull_request->title )}",
-			'description' => $this->ShortDescription( $this->Payload->comment->body ),
+			'title' => "reviewed PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			'description' => self::ShortDescription( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -740,7 +740,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		$Embed = [
-			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$this->Payload->action}: {$this->Escape( $this->Payload->discussion->title )}",
+			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$this->Payload->action}: " . self::Escape( $this->Payload->discussion->title ),
 			'url' => $this->Payload->discussion->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -748,7 +748,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $this->Payload->action === 'created' )
 		{
-			$Embed[ 'description' ] = $this->ShortDescription( $this->Payload->discussion->body );
+			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->discussion->body );
 		}
 
 		return $Embed;
@@ -771,8 +771,8 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'created' )
 		{
 			return [
-				'title' => "commented on discussion **#{$this->Payload->discussion->number}**: {$this->Escape( $this->Payload->discussion->title )}",
-				'description' => $this->ShortDescription( $this->Payload->comment->body ),
+				'title' => "commented on discussion **#{$this->Payload->discussion->number}**: " . self::Escape( $this->Payload->discussion->title ),
+				'description' => self::ShortDescription( $this->Payload->comment->body ),
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -804,7 +804,7 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'create' )
 		{
 			return [
-				'title' => "⚠ New vulnerability for **{$this->Escape( $this->Payload->alert->affected_package_name )}**",
+				'title' => "⚠ New vulnerability for **" . self::Escape( $this->Payload->alert->affected_package_name ) . "**",
 				'url' => $this->Payload->alert->external_reference,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -812,15 +812,15 @@ class DiscordConverter extends BaseConverter
 				[
 					[
 						'name' => 'Affected range',
-						'value' => $this->Escape( $this->Payload->alert->affected_range )
+						'value' => self::Escape( $this->Payload->alert->affected_range )
 					],
 					[
 						'name' => 'Fixed in',
-						'value' => $this->Escape( $this->Payload->alert->fixed_in )
+						'value' => self::Escape( $this->Payload->alert->fixed_in )
 					],
 					[
 						'name' => 'Identifier',
-						'value' => $this->Escape( $this->Payload->alert->external_identifier )
+						'value' => self::Escape( $this->Payload->alert->external_identifier )
 					],
 				],
 			];
@@ -839,7 +839,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "Vulnerability for **{$this->Escape( $this->Payload->alert->affected_package_name )}** {$this->Payload->action}",
+			'title' => "Vulnerability for **" . self::Escape( $this->Payload->alert->affected_package_name ) . "** {$this->Payload->action}",
 			'url' => $this->Payload->alert->external_reference,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -861,7 +861,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} **{$this->Escape( $this->Payload->member->login )}** as a collaborator",
+			'title' => "{$this->Payload->action} **" . self::Escape( $this->Payload->member->login ) . "** as a collaborator",
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -887,7 +887,7 @@ class DiscordConverter extends BaseConverter
 				$Page->html_url .= '/_compare/' . $Page->sha;
 			}
 
-			$Messages[] = "[{$Page->action} {$this->Escape( $Page->title )}]({$Page->html_url})" . ( empty( $Page->summary ) ? '' : ( ': ' . $this->ShortMessage( $Page->summary ) ) );
+			$Messages[] = "[{$Page->action} " . self::Escape( $Page->title ) . "]({$Page->html_url})" . ( empty( $Page->summary ) ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
 		}
 
 		return [
@@ -909,7 +909,7 @@ class DiscordConverter extends BaseConverter
 	{
 		return [
 			'title' => "Hook {$this->Payload->hook->id} worked!",
-			'description' => $this->Escape( $this->Payload->zen ),
+			'description' => self::Escape( $this->Payload->zen ),
 			'color' => 5025616,
 			'author' => $this->FormatAuthor(),
 		];
@@ -925,7 +925,7 @@ class DiscordConverter extends BaseConverter
 	private function FormatPublicEvent( ) : array
 	{
 		return [
-			'title' => "{$this->Escape( $this->Payload->repository->name )} is now open source and available to everyone!",
+			'title' => self::Escape( $this->Payload->repository->name ) . " is now open source and available to everyone!",
 			'url' => $this->Payload->repository->html_url,
 			'color' => 5025616,
 			'author' => $this->FormatAuthor(),
@@ -958,21 +958,21 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		$Title = "{$this->Payload->action} **{$this->Escape( $this->Payload->repository->name )}**";
+		$Title = "{$this->Payload->action} **" . self::Escape( $this->Payload->repository->name ) . "**";
 
 		if( $this->Payload->action === 'renamed' )
 		{
-			$Title .= " (from *{$this->Escape( $this->Payload->changes->repository->name->from )}*)";
+			$Title .= " (from *" . self::Escape( $this->Payload->changes->repository->name->from ) . "*)";
 		}
 		else if( $this->Payload->action === 'transferred' )
 		{
 			if( isset( $this->Payload->changes->owner->from->user ) )
 			{
-				$Title .= " (from *{$this->Escape( $this->Payload->changes->owner->from->user->login )}*)";
+				$Title .= " (from *" . self::Escape( $this->Payload->changes->owner->from->user->login ) . "*)";
 			}
 			else if( isset( $this->Payload->changes->owner->from->organization ) )
 			{
-				$Title .= " (from *{$this->Escape( $this->Payload->changes->owner->from->organization->login )}*)";
+				$Title .= " (from *" . self::Escape( $this->Payload->changes->owner->from->organization->login ) . "*)";
 			}
 		}
 

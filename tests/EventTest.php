@@ -22,7 +22,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		$Hook = new GitHubWebHook( );
 		$Hook->ProcessRequest( );
 
-		$this->assertEquals( $EventType, $Hook->GetEventType() );
+		self::assertEquals( $EventType, $Hook->GetEventType() );
 
 		// Convert processed event into an irc string
 		$Parser = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
@@ -30,7 +30,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 
 		//file_put_contents( $Path . '/expected.bin', $Message . "\n" );
 
-		$this->assertEquals( $ExpectedMessage, $Message, $Path );
+		self::assertEquals( $ExpectedMessage, $Message, $Path );
 
 		if( $ExpectedDiscord !== null )
 		{
@@ -42,7 +42,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 
 			//file_put_contents( $Path . '/discord.json', json_encode( $Discord, JSON_PRETTY_PRINT ) . "\n" );
 
-			$this->assertEquals( $ExpectedDiscordArray, $Discord, $Path );
+			self::assertEquals( $ExpectedDiscordArray, $Discord, $Path );
 		}
 	}
 

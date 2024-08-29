@@ -59,7 +59,7 @@ class GitHubWebHook
 
 		$Decoded = json_decode( $RawPayload );
 
-		if( $Decoded === null || !is_object( $Decoded ) )
+		if( !is_object( $Decoded ) )
 		{
 			throw new Exception( 'Failed to decode JSON: ' .
 				( function_exists( 'json_last_error_msg' ) ? json_last_error_msg() : json_last_error() )
@@ -150,7 +150,7 @@ class GitHubWebHook
 	}
 
 	/**
-	 * Returns event type
+	 * Returns event type.
 	 *
 	 * @see https://developer.github.com/webhooks/#events
 	 */
