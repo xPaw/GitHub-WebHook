@@ -122,7 +122,7 @@ class DiscordConverter extends BaseConverter
 		$Message = str_replace( [ "\r", "\n\n" ], [ "", "\n" ], $Message );
 
 		// Limit amount of new lines
-		$Length = strlen( $Message );
+		$Length = mb_strlen( $Message );
 		$NewLines = 0;
 
 		for( $i = 0; $i < $Length; $i++ )
@@ -136,9 +136,9 @@ class DiscordConverter extends BaseConverter
 			}
 		}
 
-		if( strlen( $Message ) > $Limit )
+		if( mb_strlen( $Message ) > $Limit )
 		{
-			$Message = substr( $Message, 0, $Limit );
+			$Message = mb_substr( $Message, 0, $Limit );
 			$Message .= '…';
 		}
 
@@ -151,17 +151,17 @@ class DiscordConverter extends BaseConverter
 		$NewMessage = explode( "\n", $Message, 2 );
 		$NewMessage = $NewMessage[ 0 ];
 
-		if( strlen( $NewMessage ) > $Limit )
+		if( mb_strlen( $NewMessage ) > $Limit )
 		{
-			$NewMessage = substr( $Message, 0, $Limit );
+			$NewMessage = mb_substr( $Message, 0, $Limit );
 		}
 
 		if( $NewMessage !== $Message )
 		{
 			// Tidy ellipsis
-			if( substr( $NewMessage, -3 ) === '...' )
+			if( mb_substr( $NewMessage, -3 ) === '...' )
 			{
-				$NewMessage = substr( $NewMessage, 0, -3 ) . '…';
+				$NewMessage = mb_substr( $NewMessage, 0, -3 ) . '…';
 			}
 			else if( substr( $NewMessage, -1 ) !== '…' )
 			{
