@@ -259,7 +259,7 @@ class DiscordConverter extends BaseConverter
 			// so we construct the url ourselves, instead of using the url in the payload
 			// Note: this uses ".." instead of "..." to force github to actually display changes between the commits
 			// and not the entire diff of the force push
-			$Embed[ 'url' ] = "{$this->Payload->repository->url}/compare/{$this->Payload->before}..{$this->Payload->after}";
+			$Embed[ 'url' ] = "{$this->Payload->repository->html_url}/compare/{$this->Payload->before}..{$this->Payload->after}";
 		}
 		else
 		{
