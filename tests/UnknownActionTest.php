@@ -3,12 +3,11 @@ declare(strict_types=1);
 
 use GitHubWebHook\IrcConverter;
 use GitHubWebHook\NotImplementedException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class UnknownActionTest extends \PHPUnit\Framework\TestCase
 {
-	/**
-	 * @dataProvider eventProvider
-	 */
+	#[DataProvider('eventProvider')]
 	public function testUnknownAction( string $Event ) : void
 	{
 		$this->expectException( NotImplementedException::class );

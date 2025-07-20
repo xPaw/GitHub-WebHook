@@ -4,12 +4,11 @@ declare(strict_types=1);
 use GitHubWebHook\DiscordConverter;
 use GitHubWebHook\GitHubWebHook;
 use GitHubWebHook\IrcConverter;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class EventTest extends \PHPUnit\Framework\TestCase
 {
-	/**
-	 * @dataProvider eventProvider
-	 */
+	#[DataProvider('eventProvider')]
 	public function testEvent( string $Path, string $EventType, string $ExpectedMessage, string $Payload, ?string $ExpectedDiscord ) : void
 	{
 		// Setup env for processor

@@ -3,12 +3,11 @@ declare(strict_types=1);
 
 use GitHubWebHook\IgnoredEventException;
 use GitHubWebHook\IrcConverter;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 {
-	/**
-	 * @dataProvider ignoredIssueActionProvider
-	 */
+	#[DataProvider('ignoredIssueActionProvider')]
 	public function testIssueThrow( string $Action ) : void
 	{
 		$this->expectException( IgnoredEventException::class );
@@ -17,9 +16,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 
-	/**
-	 * @dataProvider ignoredPullRequestActionProvider
-	 */
+	#[DataProvider('ignoredPullRequestActionProvider')]
 	public function testPullRequestThrow( string $Action ) : void
 	{
 		$this->expectException( IgnoredEventException::class );
@@ -28,9 +25,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 
-	/**
-	 * @dataProvider ignoredPullRequestReviewActionProvider
-	 */
+	#[DataProvider('ignoredPullRequestReviewActionProvider')]
 	public function testPullRequestReviewThrow( string $Action ) : void
 	{
 		$this->expectException( IgnoredEventException::class );
@@ -39,9 +34,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 
-	/**
-	 * @dataProvider ignoredMilestoneActionProvider
-	 */
+	#[DataProvider('ignoredMilestoneActionProvider')]
 	public function testMilestoneThrow( string $Action ) : void
 	{
 		$this->expectException( IgnoredEventException::class );

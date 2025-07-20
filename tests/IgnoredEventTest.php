@@ -3,12 +3,11 @@ declare(strict_types=1);
 
 use GitHubWebHook\IgnoredEventException;
 use GitHubWebHook\IrcConverter;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class IgnoredEventTest extends \PHPUnit\Framework\TestCase
 {
-	/**
-	 * @dataProvider ignoredEventProvider
-     */
+	#[DataProvider('ignoredEventProvider')]
 	public function testForkEvent( string $Event ) : void
 	{
 		$this->expectException( IgnoredEventException::class );

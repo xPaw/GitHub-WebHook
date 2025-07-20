@@ -1,9 +1,7 @@
 includes:
     - vendor/phpstan/phpstan-strict-rules/rules.neon
 parameters:
-	level: max
-	strictRules:
-		disallowedConstructs: false
+	level: 9
 	paths:
 		- .
 	excludePaths:
@@ -11,5 +9,7 @@ parameters:
 		- examples/
 		- public/
 	ignoreErrors:
+		- identifier: empty.notAllowed
+
 		- message: "/Access to an undefined property object::.*/"
 		  path: src/*.php
