@@ -7,7 +7,6 @@ parameters:
 	excludePaths:
 		- vendor/
 		- examples/
-		- public/
 	ignoreErrors:
 		- identifier: empty.notAllowed
 
