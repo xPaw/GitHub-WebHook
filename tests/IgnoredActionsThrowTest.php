@@ -43,6 +43,35 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Parser->GetMessage();
 	}
 
+	public function testCodeScanningAlertThrow( ) : void
+	{
+		$this->expectException( IgnoredEventException::class );
+
+		$Parser = new IrcConverter( 'code_scanning_alert', (object)[ 'action' => 'appeared_in_branch' ] );
+		$Parser->GetMessage();
+	}
+
+	#[DataProvider('ignoredSecretScanningAlertActionProvider')]
+	public function testSecretScanningAlertThrow( string $Action ) : void
+	{
+		$this->expectException( IgnoredEventException::class );
+
+		$Parser = new IrcConverter( 'secret_scanning_alert', (object)[ 'action' => $Action ] );
+		$Parser->GetMessage();
+	}
+
+	/**
+	 * @return array<array<string>>
+	 */
+	public static function ignoredSecretScanningAlertActionProvider( ) : array
+	{
+		return [
+			[ 'assigned' ],
+			[ 'unassigned' ],
+			[ 'validated' ],
+		];
+	}
+
 	/**
 	 * @return array<array<string>>
 	 */

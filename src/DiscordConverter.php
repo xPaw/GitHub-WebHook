@@ -51,6 +51,10 @@ class DiscordConverter extends BaseConverter
 			case 'pull_request_review': $Embed = $this->FormatPullRequestReviewEvent( ); break;
 			case 'pull_request_review_comment': $Embed = $this->FormatPullRequestReviewCommentEvent( ); break;
 			case 'repository_vulnerability_alert': $Embed = $this->FormatRepositoryVulnerabilityAlertEvent( ); break;
+			case 'repository_advisory': $Embed = $this->FormatRepositoryAdvisoryEvent( ); break;
+			case 'dependabot_alert': $Embed = $this->FormatDependabotAlertEvent( ); break;
+			case 'code_scanning_alert': $Embed = $this->FormatCodeScanningAlertEvent( ); break;
+			case 'secret_scanning_alert': $Embed = $this->FormatSecretScanningAlertEvent( ); break;
 		}
 
 		if( empty( $Embed ) )
@@ -104,11 +108,14 @@ class DiscordConverter extends BaseConverter
 			case 'enabled auto-merge':
 			case 'created'    :
 			case 'resolved'   :
+			case 'reintroduced':
 			case 'reopened'   : return 16750592;
 
 			case 'locked'     :
 			case 'deleted'    :
 			case 'dismissed'  :
+			case 'auto-dismissed':
+			case 'publicly leaked':
 			case 'unpublished':
 			case 'force-pushed':
 			case 'requested changes in':
@@ -844,6 +851,221 @@ class DiscordConverter extends BaseConverter
 			'url' => $this->Payload->alert->external_reference,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a dependabot alert event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#dependabot_alert
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatDependabotAlertEvent( ) : array
+	{
+		$Action = match( $this->Payload->action )
+		{
+			'created' => 'created',
+			'fixed' => 'fixed',
+			'dismissed' => 'dismissed',
+			'auto_dismissed' => 'auto-dismissed',
+			'reopened', 'auto_reopened' => 'reopened',
+			'reintroduced' => 'reintroduced',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		$Advisory = $this->Payload->alert->security_advisory;
+		$Vulnerability = $this->Payload->alert->security_vulnerability;
+
+		$Embed =
+		[
+			'title' => "Dependabot alert **#{$this->Payload->alert->number}** {$Action} for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
+			'url' => $this->Payload->alert->html_url,
+			'color' => $this->FormatAction( $Action ),
+			'author' => $this->FormatAuthor(),
+		];
+
+		if( $Action === 'created' )
+		{
+			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
+			$Embed[ 'fields' ] =
+			[
+				[
+					'name' => 'Severity',
+					'value' => self::Escape( $Advisory->severity )
+				],
+				[
+					'name' => 'Affected range',
+					'value' => self::Escape( $Vulnerability->vulnerable_version_range )
+				],
+			];
+
+			if( isset( $Vulnerability->first_patched_version ) )
+			{
+				$Embed[ 'fields' ][] =
+				[
+					'name' => 'Fixed in',
+					'value' => self::Escape( $Vulnerability->first_patched_version->identifier )
+				];
+			}
+
+			$Embed[ 'fields' ][] =
+			[
+				'name' => 'Identifier',
+				'value' => self::Escape( $Advisory->cve_id ?? $Advisory->ghsa_id )
+			];
+		}
+
+		return $Embed;
+	}
+
+	/**
+	 * Formats a code scanning alert event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#code_scanning_alert
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatCodeScanningAlertEvent( ) : array
+	{
+		if( $this->Payload->action === 'appeared_in_branch' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		$Action = match( $this->Payload->action )
+		{
+			'created' => 'created',
+			'fixed' => 'fixed',
+			'closed_by_user' => 'dismissed',
+			'reopened', 'reopened_by_user' => 'reopened',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		$Embed =
+		[
+			'title' => "Code scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $this->Payload->alert->rule->description ),
+			'url' => $this->Payload->alert->html_url,
+			'color' => $this->FormatAction( $Action ),
+			'author' => $this->FormatAuthor(),
+		];
+
+		if( $Action === 'created' )
+		{
+			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
+			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->alert->most_recent_instance->message->text ?? null );
+			$Embed[ 'fields' ] =
+			[
+				[
+					'name' => 'Severity',
+					'value' => self::Escape( $this->Payload->alert->rule->severity ?? 'none' )
+				],
+				[
+					'name' => 'Tool',
+					'value' => self::Escape( $this->Payload->alert->tool->name ?? 'unknown' )
+				],
+			];
+		}
+
+		return $Embed;
+	}
+
+	/**
+	 * Formats a secret scanning alert event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#secret_scanning_alert
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatSecretScanningAlertEvent( ) : array
+	{
+		if( $this->Payload->action === 'assigned'
+		||  $this->Payload->action === 'unassigned'
+		||  $this->Payload->action === 'validated' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		$Action = match( $this->Payload->action )
+		{
+			'created' => 'created',
+			'resolved' => 'resolved',
+			'reopened' => 'reopened',
+			'publicly_leaked' => 'publicly leaked',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		$SecretType = $this->Payload->alert->secret_type_display_name ?? $this->Payload->alert->secret_type ?? 'unknown';
+
+		$Embed =
+		[
+			'title' => "Secret scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $SecretType ),
+			'url' => $this->Payload->alert->html_url,
+			'color' => $this->FormatAction( $Action ),
+			'author' => $this->FormatAuthor(),
+		];
+
+		if( $Action === 'created' || $Action === 'publicly leaked' )
+		{
+			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
+		}
+
+		if( $Action === 'created' && isset( $this->Payload->alert->push_protection_bypassed_by ) )
+		{
+			$Embed[ 'description' ] = 'Push protection bypassed by **' . self::Escape( $this->Payload->alert->push_protection_bypassed_by->login ) . '**';
+		}
+		else if( $Action === 'resolved' && isset( $this->Payload->alert->resolution ) )
+		{
+			$Embed[ 'description' ] = 'Resolved as ' . self::Escape( str_replace( '_', ' ', $this->Payload->alert->resolution ) );
+		}
+
+		return $Embed;
+	}
+
+	/**
+	 * Formats a repository advisory event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#repository_advisory
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatRepositoryAdvisoryEvent( ) : array
+	{
+		$Advisory = $this->Payload->repository_advisory ?? null;
+
+		if( $this->Payload->action === 'reported' )
+		{
+			// Reported advisories are private, so do not reveal what they are about
+			return [
+				'title' => "⚠ privately reported a vulnerability: **" . self::Escape( $Advisory->ghsa_id ) . "**",
+				'url' => $Advisory->html_url,
+				'color' => $this->FormatAction( 'created' ),
+				'author' => $this->FormatAuthor(),
+			];
+		}
+
+		if( $this->Payload->action !== 'published' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "published a security advisory: " . self::Escape( $Advisory->summary ),
+			'description' => self::ShortDescription( $Advisory->description ),
+			'url' => $Advisory->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+			'fields' =>
+			[
+				[
+					'name' => 'Severity',
+					'value' => self::Escape( $Advisory->severity ?? 'unknown' )
+				],
+				[
+					'name' => 'Identifier',
+					'value' => self::Escape( $Advisory->cve_id ?? $Advisory->ghsa_id )
+				],
+			],
 		];
 	}
 

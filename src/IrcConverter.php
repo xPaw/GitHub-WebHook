@@ -34,6 +34,10 @@ class IrcConverter extends BaseConverter
 			case 'pull_request_review': return $this->FormatPullRequestReviewEvent( );
 			case 'pull_request_review_comment': return $this->FormatPullRequestReviewCommentEvent( );
 			case 'repository_vulnerability_alert': return $this->FormatRepositoryVulnerabilityAlertEvent( );
+			case 'repository_advisory': return $this->FormatRepositoryAdvisoryEvent( );
+			case 'dependabot_alert': return $this->FormatDependabotAlertEvent( );
+			case 'code_scanning_alert': return $this->FormatCodeScanningAlertEvent( );
+			case 'secret_scanning_alert': return $this->FormatSecretScanningAlertEvent( );
 
 			// Spammy events that we do not care about
 			case 'fork'          :
@@ -77,6 +81,7 @@ class IrcConverter extends BaseConverter
 			case 'created'    :
 			case 'resolved'   :
 			case 'reopened'   :
+			case 'reintroduced':
 				return "\00307" . $Action . "\017";
 
 			case 'closed'     :
@@ -86,6 +91,8 @@ class IrcConverter extends BaseConverter
 			case 'locked'     :
 			case 'deleted'    :
 			case 'dismissed'  :
+			case 'auto-dismissed':
+			case 'publicly leaked':
 			case 'unpublished':
 			case 'force-pushed':
 			case 'requested changes':
@@ -743,6 +750,166 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->alert->affected_package_name ),
 						$this->FormatNumber( $this->Payload->alert->external_identifier ),
 						$this->FormatURL( $this->Payload->alert->external_reference )
+		);
+	}
+
+	/**
+	 * Formats a code scanning alert event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#code_scanning_alert
+	 */
+	private function FormatCodeScanningAlertEvent( ) : string
+	{
+		if( $this->Payload->action === 'appeared_in_branch' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action === 'created' )
+		{
+			return sprintf( '[%s] ⚠ New code scanning alert %s: %s (%s) %s',
+							$this->FormatRepoName( ),
+							$this->FormatNumber( '#' . $this->Payload->alert->number ),
+							$this->ShortMessage( $this->Payload->alert->rule->description ),
+							$this->Payload->alert->rule->severity ?? 'none',
+							$this->FormatURL( $this->Payload->alert->html_url )
+			);
+		}
+
+		$Action = match( $this->Payload->action )
+		{
+			'fixed' => 'fixed',
+			'closed_by_user' => 'dismissed',
+			'reopened', 'reopened_by_user' => 'reopened',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		return sprintf( '[%s] Code scanning alert %s %s: %s %s',
+						$this->FormatRepoName( ),
+						$this->FormatNumber( '#' . $this->Payload->alert->number ),
+						$this->FormatAction( $Action ),
+						$this->ShortMessage( $this->Payload->alert->rule->description ),
+						$this->FormatURL( $this->Payload->alert->html_url )
+		);
+	}
+
+	/**
+	 * Formats a dependabot alert event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#dependabot_alert
+	 */
+	private function FormatDependabotAlertEvent( ) : string
+	{
+		$Action = match( $this->Payload->action )
+		{
+			'created' => 'created',
+			'fixed' => 'fixed',
+			'dismissed' => 'dismissed',
+			'auto_dismissed' => 'auto-dismissed',
+			'reopened', 'auto_reopened' => 'reopened',
+			'reintroduced' => 'reintroduced',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		$Advisory = $this->Payload->alert->security_advisory;
+
+		if( $Action === 'created' )
+		{
+			return sprintf( '[%s] ⚠ New Dependabot alert %s for %s: %s (%s) %s',
+							$this->FormatRepoName( ),
+							$this->FormatNumber( '#' . $this->Payload->alert->number ),
+							$this->FormatName( $this->Payload->alert->security_vulnerability->package->name ),
+							$this->FormatNumber( $Advisory->cve_id ?? $Advisory->ghsa_id ),
+							$Advisory->severity,
+							$this->FormatURL( $this->Payload->alert->html_url )
+			);
+		}
+
+		return sprintf( '[%s] Dependabot alert %s %s for %s: %s %s',
+						$this->FormatRepoName( ),
+						$this->FormatNumber( '#' . $this->Payload->alert->number ),
+						$this->FormatAction( $Action ),
+						$this->FormatName( $this->Payload->alert->security_vulnerability->package->name ),
+						$this->FormatNumber( $Advisory->cve_id ?? $Advisory->ghsa_id ),
+						$this->FormatURL( $this->Payload->alert->html_url )
+		);
+	}
+
+	/**
+	 * Formats a secret scanning alert event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#secret_scanning_alert
+	 */
+	private function FormatSecretScanningAlertEvent( ) : string
+	{
+		if( $this->Payload->action === 'assigned'
+		||  $this->Payload->action === 'unassigned'
+		||  $this->Payload->action === 'validated' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		$Action = match( $this->Payload->action )
+		{
+			'created' => 'created',
+			'resolved' => 'resolved',
+			'reopened' => 'reopened',
+			'publicly_leaked' => 'publicly leaked',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		$SecretType = $this->Payload->alert->secret_type_display_name ?? $this->Payload->alert->secret_type ?? 'unknown';
+
+		if( $Action === 'created' )
+		{
+			return sprintf( '[%s] ⚠ New secret scanning alert %s: %s %s',
+							$this->FormatRepoName( ),
+							$this->FormatNumber( '#' . $this->Payload->alert->number ),
+							$SecretType,
+							$this->FormatURL( $this->Payload->alert->html_url )
+			);
+		}
+
+		return sprintf( '[%s] Secret scanning alert %s %s: %s %s',
+						$this->FormatRepoName( ),
+						$this->FormatNumber( '#' . $this->Payload->alert->number ),
+						$this->FormatAction( $Action ),
+						$SecretType,
+						$this->FormatURL( $this->Payload->alert->html_url )
+		);
+	}
+
+	/**
+	 * Formats a repository advisory event.
+	 *
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#repository_advisory
+	 */
+	private function FormatRepositoryAdvisoryEvent( ) : string
+	{
+		if( $this->Payload->action === 'reported' )
+		{
+			// Reported advisories are private, so do not reveal what they are about
+			return sprintf( '[%s] ⚠ %s privately reported a vulnerability: %s %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatNumber( $this->Payload->repository_advisory->ghsa_id ),
+							$this->FormatURL( $this->Payload->repository_advisory->html_url )
+			);
+		}
+
+		if( $this->Payload->action !== 'published' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s a security advisory %s: %s (%s) %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatNumber( $this->Payload->repository_advisory->cve_id ?? $this->Payload->repository_advisory->ghsa_id ),
+						$this->ShortMessage( $this->Payload->repository_advisory->summary ),
+						$this->Payload->repository_advisory->severity ?? 'unknown',
+						$this->FormatURL( $this->Payload->repository_advisory->html_url )
 		);
 	}
 

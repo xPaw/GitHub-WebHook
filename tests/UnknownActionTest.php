@@ -35,6 +35,10 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 			[ 'issue_comment' ],
 			[ 'commit_comment' ],
 			[ 'pull_request_review_comment' ],
+			[ 'code_scanning_alert' ],
+			[ 'repository_advisory' ],
+			[ 'dependabot_alert' ],
+			[ 'secret_scanning_alert' ],
 		];
 	}
 }

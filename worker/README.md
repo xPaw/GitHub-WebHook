@@ -54,7 +54,7 @@ Add a webhook in the settings of a repository or an organization:
 - **Payload URL**: the url of the Worker
 - **Content type**: either one works
 - **Secret**: the `secret` of the pattern that matches the repository, requests without a valid signature are rejected
-- **Events**: pick the ones you want, see the list below
+- **Events**: pick the ones you want, see the [supported events](../README.md#supported-events)
 
 After saving, GitHub sends a `ping` event which should show up in Discord.
 The response to every delivery is visible under Recent Deliveries in the webhook settings,
@@ -69,11 +69,6 @@ and `npx wrangler tail` streams the logs of the Worker.
 | 500 | `REPOSITORIES` is missing or not valid, see `wrangler tail` |
 | 501 | The event or its action is not supported |
 | 502 | Every Discord webhook failed |
-
-Supported events: `commit_comment`, `delete`, `discussion`, `discussion_comment`, `gollum`,
-`issue_comment`, `issues`, `member`, `milestone`, `package`, `ping`, `project`, `public`,
-`pull_request`, `pull_request_review`, `pull_request_review_comment`, `push`, `release`,
-`repository`, `repository_vulnerability_alert`.
 
 ## Development
 Copy `.dev.vars.example` to `.dev.vars` and run `npm run dev` to start the Worker locally.

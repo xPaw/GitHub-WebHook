@@ -1,0 +1,25 @@
+{
+    "embeds": [
+        {
+            "title": "published a security advisory: Path traversal in the static file handler",
+            "description": "### Impact\nA crafted request path lets an attacker read files outside of the public directory.\n### Patches\nUpgrade to 1.4.2.",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p",
+            "color": 5025616,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            },
+            "fields": [
+                {
+                    "name": "Severity",
+                    "value": "high"
+                },
+                {
+                    "name": "Identifier",
+                    "value": "CVE-2023-31415"
+                }
+            ]
+        }
+    ]
+}

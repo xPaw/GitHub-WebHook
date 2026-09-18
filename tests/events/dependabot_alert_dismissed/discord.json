@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "Dependabot alert **#5** dismissed for **rack**: Rack vulnerable to Denial of Service via crafted multipart requests",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/dependabot\/5",
+            "color": 16007990,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

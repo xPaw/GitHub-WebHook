@@ -1,0 +1,28 @@
+{
+    "embeds": [
+        {
+            "title": "\u26a0 Dependabot alert **#5** created for **rack**: Rack vulnerable to Denial of Service via crafted multipart requests",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/dependabot\/5",
+            "color": 16750592,
+            "author": {
+                "name": "github",
+                "url": "https:\/\/github.com\/github",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
+            },
+            "fields": [
+                {
+                    "name": "Severity",
+                    "value": "high"
+                },
+                {
+                    "name": "Affected range",
+                    "value": "\\>= 2.0.4, \\< 2.0.6"
+                },
+                {
+                    "name": "Identifier",
+                    "value": "GHSA-hg78-4f6x-99wq"
+                }
+            ]
+        }
+    ]
+}

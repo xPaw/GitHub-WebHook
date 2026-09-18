@@ -38,6 +38,8 @@ describe('ignored events', () => {
 		['discussion', 'discussion_created', ['edited', 'labeled', 'unlabeled', 'answered', 'unanswered']],
 		['discussion_comment', 'discussion_comment_created', ['edited']],
 		['repository', 'repository', ['edited']],
+		['code_scanning_alert', 'code_scanning_alert_created', ['appeared_in_branch']],
+		['secret_scanning_alert', 'secret_scanning_alert_created', ['assigned', 'unassigned', 'validated']],
 	];
 
 	describe.each(actions)('%s', (eventType, fixture, ignored) => {
@@ -78,6 +80,10 @@ describe('unsupported events', () => {
 		['discussion', 'discussion_created'],
 		['discussion_comment', 'discussion_comment_created'],
 		['repository_vulnerability_alert', 'repository_vulnerability_alert'],
+		['code_scanning_alert', 'code_scanning_alert_created'],
+		['repository_advisory', 'repository_advisory_published'],
+		['dependabot_alert', 'dependabot_alert_created'],
+		['secret_scanning_alert', 'secret_scanning_alert_created'],
 		['member', 'member'],
 		['repository', 'repository'],
 	];

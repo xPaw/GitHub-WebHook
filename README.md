@@ -56,8 +56,10 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 
 ### Supported events
 
+- code_scanning_alert
 - commit_comment
 - delete
+- dependabot_alert
 - discussion
 - discussion_comment
 - gollum
@@ -75,13 +77,14 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - push
 - release
 - repository
+- repository_advisory
 - repository_vulnerability_alert
+- secret_scanning_alert
 
 ### Not yet supported events
 
 - check_run
 - check_suite
-- code_scanning_alert
 - deploy_key
 - deployment
 - deployment_status

@@ -1,0 +1,15 @@
+{
+    "embeds": [
+        {
+            "title": "\u26a0 Secret scanning alert **#3** created: GitHub Personal Access Token",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3",
+            "color": 16750592,
+            "author": {
+                "name": "github",
+                "url": "https:\/\/github.com\/github",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
+            },
+            "description": "Push protection bypassed by **Codertocat**"
+        }
+    ]
+}

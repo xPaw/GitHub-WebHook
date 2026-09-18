@@ -26,6 +26,10 @@ type ProjectEvent = Payload<'project'>;
 type ReleaseEvent = Payload<'release'>;
 type RepositoryEvent = Payload<'repository'>;
 type VulnerabilityAlertEvent = Payload<'repository-vulnerability-alert'>;
+type RepositoryAdvisoryEvent = Payload<'repository-advisory'>;
+type DependabotAlertEvent = Payload<'dependabot-alert'>;
+type CodeScanningAlertEvent = Payload<'code-scanning-alert'>;
+type SecretScanningAlertEvent = Payload<'secret-scanning-alert'>;
 
 export interface DiscordEmbed {
 	title: string;
@@ -113,6 +117,14 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 			return formatPullRequestReviewComment(payload as PullRequestReviewCommentEvent);
 		case 'repository_vulnerability_alert':
 			return formatVulnerabilityAlert(payload as VulnerabilityAlertEvent);
+		case 'repository_advisory':
+			return formatRepositoryAdvisory(payload as RepositoryAdvisoryEvent);
+		case 'dependabot_alert':
+			return formatDependabotAlert(payload as DependabotAlertEvent);
+		case 'code_scanning_alert':
+			return formatCodeScanningAlert(payload as CodeScanningAlertEvent);
+		case 'secret_scanning_alert':
+			return formatSecretScanningAlert(payload as SecretScanningAlertEvent);
 		default:
 			throw new NotImplementedError(eventType);
 	}
@@ -152,11 +164,14 @@ function actionColor(action: string): number {
 		case 'created':
 		case 'resolved':
 		case 'reopened':
+		case 'reintroduced':
 			return 16750592;
 
 		case 'locked':
 		case 'deleted':
 		case 'dismissed':
+		case 'auto-dismissed':
+		case 'publicly leaked':
 		case 'unpublished':
 		case 'force-pushed':
 		case 'requested changes in':
@@ -580,6 +595,147 @@ function formatVulnerabilityAlert(payload: VulnerabilityAlertEvent): DiscordEmbe
 		url: payload.alert.external_reference ?? undefined,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
+	};
+}
+
+/**
+ * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#dependabot_alert
+ */
+function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
+	let action: string = payload.action;
+
+	if (payload.action === 'auto_dismissed') {
+		action = 'auto-dismissed';
+	} else if (payload.action === 'auto_reopened') {
+		action = 'reopened';
+	}
+
+	assertAction('dependabot_alert', action, ['created', 'fixed', 'dismissed', 'auto-dismissed', 'reopened', 'reintroduced']);
+
+	const advisory = payload.alert.security_advisory;
+	const vulnerability = payload.alert.security_vulnerability;
+
+	const embed: DiscordEmbed = {
+		title: `Dependabot alert **#${payload.alert.number}** ${action} for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
+		url: payload.alert.html_url,
+		color: actionColor(action),
+		author: formatAuthor(payload.sender),
+	};
+
+	if (action === 'created') {
+		embed.title = `⚠ ${embed.title}`;
+		embed.fields = [
+			{ name: 'Severity', value: escape(advisory.severity) },
+			{ name: 'Affected range', value: escape(vulnerability.vulnerable_version_range) },
+		];
+
+		if (vulnerability.first_patched_version) {
+			embed.fields.push({ name: 'Fixed in', value: escape(vulnerability.first_patched_version.identifier) });
+		}
+
+		embed.fields.push({ name: 'Identifier', value: escape(advisory.cve_id ?? advisory.ghsa_id) });
+	}
+
+	return embed;
+}
+
+/**
+ * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#code_scanning_alert
+ */
+function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed {
+	let action: string = payload.action;
+
+	if (payload.action === 'closed_by_user') {
+		action = 'dismissed';
+	} else if (payload.action === 'reopened_by_user') {
+		action = 'reopened';
+	}
+
+	assertAction('code_scanning_alert', action, ['created', 'fixed', 'dismissed', 'reopened'], ['appeared_in_branch']);
+
+	const embed: DiscordEmbed = {
+		title: `Code scanning alert **#${payload.alert.number}** ${action}: ${escape(payload.alert.rule.description)}`,
+		url: payload.alert.html_url,
+		color: actionColor(action),
+		author: formatAuthor(payload.sender),
+	};
+
+	if (action === 'created') {
+		embed.title = `⚠ ${embed.title}`;
+		embed.description = shortDescription(payload.alert.most_recent_instance?.message?.text);
+		embed.fields = [
+			{ name: 'Severity', value: escape(payload.alert.rule.severity ?? 'none') },
+			{ name: 'Tool', value: escape(payload.alert.tool?.name ?? 'unknown') },
+		];
+	}
+
+	return embed;
+}
+
+/**
+ * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#secret_scanning_alert
+ */
+function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEmbed {
+	const action = payload.action === 'publicly_leaked' ? 'publicly leaked' : payload.action;
+
+	assertAction(
+		'secret_scanning_alert',
+		action,
+		['created', 'resolved', 'reopened', 'publicly leaked'],
+		['assigned', 'unassigned', 'validated'],
+	);
+
+	const { alert } = payload;
+	const secretType = alert.secret_type_display_name ?? alert.secret_type ?? 'unknown';
+
+	const embed: DiscordEmbed = {
+		title: `Secret scanning alert **#${alert.number}** ${action}: ${escape(secretType)}`,
+		url: alert.html_url,
+		color: actionColor(action),
+		author: formatAuthor(payload.sender),
+	};
+
+	if (action === 'created' || action === 'publicly leaked') {
+		embed.title = `⚠ ${embed.title}`;
+	}
+
+	if (action === 'created' && alert.push_protection_bypassed_by) {
+		embed.description = `Push protection bypassed by **${escape(alert.push_protection_bypassed_by.login)}**`;
+	} else if (action === 'resolved' && alert.resolution) {
+		embed.description = `Resolved as ${escape(alert.resolution.replaceAll('_', ' '))}`;
+	}
+
+	return embed;
+}
+
+/**
+ * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#repository_advisory
+ */
+function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbed {
+	assertAction('repository_advisory', payload.action, ['published', 'reported']);
+
+	const advisory = payload.repository_advisory;
+
+	if (payload.action === 'reported') {
+		// Reported advisories are private, so do not reveal what they are about
+		return {
+			title: `⚠ privately reported a vulnerability: **${escape(advisory.ghsa_id)}**`,
+			url: advisory.html_url,
+			color: actionColor('created'),
+			author: formatAuthor(payload.sender),
+		};
+	}
+
+	return {
+		title: `published a security advisory: ${escape(advisory.summary)}`,
+		description: shortDescription(advisory.description),
+		url: advisory.html_url,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+		fields: [
+			{ name: 'Severity', value: escape(advisory.severity ?? 'unknown') },
+			{ name: 'Identifier', value: escape(advisory.cve_id ?? advisory.ghsa_id) },
+		],
 	};
 }
 

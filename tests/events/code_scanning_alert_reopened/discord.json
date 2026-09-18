@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "Code scanning alert **#10** reopened: Unsafe jQuery plugin",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/code-scanning\/10",
+            "color": 16750592,
+            "author": {
+                "name": "github",
+                "url": "https:\/\/github.com\/github",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
+            }
+        }
+    ]
+}
