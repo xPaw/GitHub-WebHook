@@ -1,123 +1,80 @@
 <?php
 declare(strict_types=1);
 
+use GitHubWebHook\DiscordConverter;
 use GitHubWebHook\IgnoredEventException;
 use GitHubWebHook\IrcConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 {
-	#[DataProvider('ignoredIssueActionProvider')]
-	public function testIssueThrow( string $Action ) : void
+	#[DataProvider('ignoredActionProvider')]
+	public function testIrcThrow( string $Event, object $Payload, string $Message ) : void
 	{
 		$this->expectException( IgnoredEventException::class );
+		$this->expectExceptionMessage( $Message );
 
-		$Parser = new IrcConverter( 'issues', (object)[ 'action' => $Action ] );
+		$Parser = new IrcConverter( $Event, $Payload );
 		$Parser->GetMessage();
 	}
 
-	#[DataProvider('ignoredPullRequestActionProvider')]
-	public function testPullRequestThrow( string $Action ) : void
+	#[DataProvider('ignoredActionProvider')]
+	public function testDiscordThrow( string $Event, object $Payload, string $Message ) : void
 	{
 		$this->expectException( IgnoredEventException::class );
+		$this->expectExceptionMessage( $Message );
 
-		$Parser = new IrcConverter( 'pull_request', (object)[ 'action' => $Action ] );
-		$Parser->GetMessage();
-	}
-
-	#[DataProvider('ignoredPullRequestReviewActionProvider')]
-	public function testPullRequestReviewThrow( string $Action ) : void
-	{
-		$this->expectException( IgnoredEventException::class );
-
-		$Parser = new IrcConverter( 'pull_request_review', (object)[ 'action' => 'submitted', 'review' => (object)[ 'state' => $Action ] ] );
-		$Parser->GetMessage();
-	}
-
-	#[DataProvider('ignoredMilestoneActionProvider')]
-	public function testMilestoneThrow( string $Action ) : void
-	{
-		$this->expectException( IgnoredEventException::class );
-
-		$Parser = new IrcConverter( 'milestone', (object)[ 'action' => $Action ] );
-		$Parser->GetMessage();
-	}
-
-	public function testCodeScanningAlertThrow( ) : void
-	{
-		$this->expectException( IgnoredEventException::class );
-
-		$Parser = new IrcConverter( 'code_scanning_alert', (object)[ 'action' => 'appeared_in_branch' ] );
-		$Parser->GetMessage();
-	}
-
-	#[DataProvider('ignoredSecretScanningAlertActionProvider')]
-	public function testSecretScanningAlertThrow( string $Action ) : void
-	{
-		$this->expectException( IgnoredEventException::class );
-
-		$Parser = new IrcConverter( 'secret_scanning_alert', (object)[ 'action' => $Action ] );
-		$Parser->GetMessage();
+		$Parser = new DiscordConverter( $Event, $Payload );
+		$Parser->GetEmbed();
 	}
 
 	/**
-	 * @return array<array<string>>
+	 * @return array<string, array{string, object, string}>
 	 */
-	public static function ignoredSecretScanningAlertActionProvider( ) : array
+	public static function ignoredActionProvider( ) : array
 	{
-		return [
-			[ 'assigned' ],
-			[ 'unassigned' ],
-			[ 'validated' ],
+		$Events =
+		[
+			[ 'issues', 'issue_opened', [ 'edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned' ] ],
+			[ 'pull_request', 'pull_request_merged', [ 'edited', 'synchronize', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'review_requested', 'review_request_removed' ] ],
+			[ 'milestone', 'milestone', [ 'edited' ] ],
+			[ 'issue_comment', 'issue_comment', [ 'edited' ] ],
+			[ 'discussion', 'discussion_created', [ 'edited', 'labeled', 'unlabeled', 'answered', 'unanswered' ] ],
+			[ 'discussion_comment', 'discussion_comment_created', [ 'edited' ] ],
+			[ 'repository', 'repository', [ 'edited' ] ],
+			[ 'code_scanning_alert', 'code_scanning_alert_created', [ 'appeared_in_branch' ] ],
+			[ 'secret_scanning_alert', 'secret_scanning_alert_created', [ 'assigned', 'unassigned', 'validated' ] ],
 		];
+
+		$ProvidedData = [];
+
+		foreach( $Events as [ $Event, $Fixture, $Actions ] )
+		{
+			foreach( $Actions as $Action )
+			{
+				$Payload = self::LoadPayload( $Fixture );
+				$Payload->action = $Action;
+
+				$ProvidedData[ "$Event - $Action" ] = [ $Event, $Payload, "$Event - $Action" ];
+			}
+		}
+
+		$Payload = self::LoadPayload( 'pull_request_review' );
+		$Payload->review->state = 'commented';
+
+		$ProvidedData[ 'pull_request_review - commented' ] = [ 'pull_request_review', $Payload, 'pull_request_review - commented' ];
+
+		return $ProvidedData;
 	}
 
-	/**
-	 * @return array<array<string>>
-	 */
-	public static function ignoredIssueActionProvider( ) : array
+	private static function LoadPayload( string $Fixture ) : stdClass
 	{
-		return [
-			[ 'labeled' ],
-			[ 'unlabeled' ],
-			[ 'assigned' ],
-			[ 'unassigned' ],
-		];
-	}
+		$Path = __DIR__ . DIRECTORY_SEPARATOR . 'events' . DIRECTORY_SEPARATOR . $Fixture . DIRECTORY_SEPARATOR . 'payload.json';
 
-	/**
-	 * @return array<array<string>>
-	 */
-	public static function ignoredPullRequestActionProvider( ) : array
-	{
-		return [
-			[ 'synchronize' ],
-			[ 'labeled' ],
-			[ 'unlabeled' ],
-			[ 'assigned' ],
-			[ 'unassigned' ],
-			[ 'review_requested' ],
-			[ 'review_request_removed' ],
-		];
-	}
+		$Payload = json_decode( (string)file_get_contents( $Path ), flags: JSON_THROW_ON_ERROR );
 
-	/**
-	 * @return array<array<string>>
-	 */
-	public static function ignoredPullRequestReviewActionProvider( ) : array
-	{
-		return [
-			[ 'commented' ],
-		];
-	}
+		assert( $Payload instanceof stdClass );
 
-	/**
-	 * @return array<array<string>>
-	 */
-	public static function ignoredMilestoneActionProvider( ) : array
-	{
-		return [
-			[ 'edited' ],
-		];
+		return $Payload;
 	}
 }

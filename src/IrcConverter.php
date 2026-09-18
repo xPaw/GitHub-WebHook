@@ -83,6 +83,7 @@ class IrcConverter extends BaseConverter
 				return "\00307" . $Action . "\017";
 
 			case 'closed'     :
+			case 'closed as not planned':
 			case 'merged'     :
 				return "\00313" . $Action . "\017";
 
@@ -321,10 +322,17 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
+		$Action = $this->Payload->action;
+
+		if( $Action === 'closed' && ( $this->Payload->issue->state_reason ?? null ) === 'not_planned' )
+		{
+			$Action = 'closed as not planned';
+		}
+
 		return sprintf( '[%s] %s %s issue %s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( ),
+						$this->FormatAction( $Action ),
 						$this->FormatNumber( sprintf( '#%d', $this->Payload->issue->number ) ),
 						$this->Payload->issue->title,
 						$this->FormatURL( $this->Payload->issue->html_url )
@@ -462,12 +470,20 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		return sprintf( '[%s] %s %s a %srelease %s: %s',
+		$Name = $this->FormatBranch( $this->Payload->release->tag_name );
+
+		if( ( $this->Payload->release->name ?? '' ) !== '' && $this->Payload->release->name !== $this->Payload->release->tag_name )
+		{
+			$Name .= ' (' . $this->Payload->release->name . ')';
+		}
+
+		return sprintf( '[%s] %s %s a %s%srelease %s: %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
+						$this->Payload->release->draft ? 'draft ' : '',
 						$this->Payload->release->prerelease ? 'pre-' : '',
-						$this->FormatBranch( ( $this->Payload->release->name ?? '' ) === '' ? $this->Payload->release->tag_name : $this->Payload->release->name ),
+						$Name,
 						$this->FormatURL( $this->Payload->release->html_url )
 		);
 	}
@@ -761,6 +777,11 @@ class IrcConverter extends BaseConverter
 
 		if( $Action === 'created' )
 		{
+			if( isset( $this->Payload->alert->push_protection_bypassed_by ) )
+			{
+				$SecretType .= ' (push protection bypassed by ' . $this->FormatName( $this->Payload->alert->push_protection_bypassed_by->login ) . ')';
+			}
+
 			return sprintf( '[%s] ⚠ New secret scanning alert %s: %s %s',
 							$this->FormatRepoName( ),
 							$this->FormatNumber( '#' . $this->Payload->alert->number ),
@@ -769,8 +790,14 @@ class IrcConverter extends BaseConverter
 			);
 		}
 
-		return sprintf( '[%s] Secret scanning alert %s %s: %s %s',
+		if( $Action === 'resolved' && isset( $this->Payload->alert->resolution ) )
+		{
+			$SecretType .= ' (' . str_replace( '_', ' ', $this->Payload->alert->resolution ) . ')';
+		}
+
+		return sprintf( '[%s] %sSecret scanning alert %s %s: %s %s',
 						$this->FormatRepoName( ),
+						$Action === 'publicly leaked' ? '⚠ ' : '',
 						$this->FormatNumber( '#' . $this->Payload->alert->number ),
 						$this->FormatAction( $Action ),
 						$SecretType,
@@ -907,10 +934,27 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		return sprintf( '[%s] %s %s this repository. %s',
+		$From = '';
+
+		if( $this->Payload->action === 'renamed' )
+		{
+			$From = ' from ' . $this->FormatName( $this->Payload->changes->repository->name->from );
+		}
+		else if( $this->Payload->action === 'transferred' )
+		{
+			$Owner = $this->Payload->changes->owner->from->user ?? $this->Payload->changes->owner->from->organization ?? null;
+
+			if( $Owner !== null )
+			{
+				$From = ' from ' . $this->FormatName( $Owner->login );
+			}
+		}
+
+		return sprintf( '[%s] %s %s this repository%s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
+						$From,
 						$this->FormatURL( $this->Payload->repository->html_url )
 		);
 	}
