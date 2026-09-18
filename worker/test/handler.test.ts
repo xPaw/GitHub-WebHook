@@ -212,6 +212,30 @@ describe('worker', () => {
 		expect(request.bodyUsed).toBe(false);
 	});
 
+	it('rejects a body that was changed after it was signed', async () => {
+		const signature = await sign(EXACT_SECRET, fixture('push'));
+		const tampered = fixture('push').replace('"pusher"', '"pusher" ');
+
+		const response = await worker.fetch(await buildRequest('push', tampered, { signature }), env);
+
+		expect(response.status).toBe(401);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('verifies bodies that contain multibyte text', async () => {
+		const all: Env = { REPOSITORIES: JSON.stringify({ '*': { secret: EXACT_SECRET, webhooks: [EXACT_HOOK] } }) };
+		const response = await worker.fetch(await buildRequest('issues', fixture('issue_opened_unicode')), all);
+
+		expect(response.status).toBe(202);
+	});
+
+	it('does not accept the legacy sha1 signature header', async () => {
+		const request = await buildRequest('push', fixture('push'), { signature: null });
+		request.headers.set('X-Hub-Signature', 'sha1=0000000000000000000000000000000000000000');
+
+		expect((await worker.fetch(request, env)).status).toBe(401);
+	});
+
 	it('rejects a missing signature', async () => {
 		const response = await worker.fetch(await buildRequest('push', fixture('push'), { signature: null }), env);
 
@@ -219,10 +243,52 @@ describe('worker', () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
-	it('rejects non-POST requests', async () => {
-		const response = await worker.fetch(new Request('https://example.workers.dev/'), env);
+	it.each(['GET', 'HEAD', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])('rejects %s requests', async (method) => {
+		const response = await worker.fetch(new Request('https://example.workers.dev/', { method }), env);
 
 		expect(response.status).toBe(405);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('rejects an empty body', async () => {
+		const signature = `sha256=${'0'.repeat(64)}`;
+		const response = await worker.fetch(await buildRequest('push', '', { signature }), env);
+
+		expect(response.status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('rejects a signature header that was sent twice', async () => {
+		const body = fixture('push');
+		const request = await buildRequest('push', body);
+		request.headers.append('X-Hub-Signature-256', await sign(EXACT_SECRET, body));
+
+		expect((await worker.fetch(request, env)).status).toBe(401);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('reads the headers case insensitively', async () => {
+		const body = fixture('push');
+		const request = new Request('https://example.workers.dev/', {
+			method: 'POST',
+			body,
+			headers: {
+				'x-github-event': 'push',
+				'content-type': 'APPLICATION/JSON',
+				'x-hub-signature-256': await sign(EXACT_SECRET, body),
+			},
+		});
+
+		expect((await worker.fetch(request, env)).status).toBe(202);
+	});
+
+	it('rejects a signature in uppercase, which GitHub never sends', async () => {
+		const body = fixture('push');
+		const signature = (await sign(EXACT_SECRET, body)).toUpperCase().replace('SHA256=', 'sha256=');
+		const request = await buildRequest('push', body, { signature });
+
+		expect((await worker.fetch(request, env)).status).toBe(401);
+		expect(request.bodyUsed).toBe(false);
 	});
 
 	it('rejects an unknown content type', async () => {
