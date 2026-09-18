@@ -15,9 +15,14 @@ npm run deploy
 ```
 
 Edit `repositories.json` before uploading it, see [Configuration](#configuration).
+PowerShell has no `<` redirection, pipe the file instead:
+
+```
+Get-Content repositories.json -Raw | npx wrangler secret put REPOSITORIES
+```
 
 Setting the secret offers to create the Worker if it does not exist yet, accept it.
-The deploy prints the url of the Worker, such as `https://github-webhook-discord.<account>.workers.dev`.
+The deploy prints the url of the Worker, such as `https://github-webhook.<account>.workers.dev`.
 To change the name, or to serve it from your own domain, edit `name` or add
 [`routes`](https://developers.cloudflare.com/workers/configuration/routing/) in `wrangler.jsonc`.
 
