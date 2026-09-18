@@ -261,14 +261,23 @@ class IrcConverter extends BaseConverter
 
 		if( $Num > 0 )
 		{
-			$CommitMessages = [];
+			$CommitMessages = '';
+			$Length = 0;
 
+			// Only whole messages are listed, cutting the joined text could land inside of a color code
 			while( --$Num >= 0 )
 			{
-				$CommitMessages[] = $this->ShortMessage( $DistinctCommits[ $Num ]->message, 50 );
-			}
+				$CommitMessage = $this->ShortMessage( $DistinctCommits[ $Num ]->message, 50 );
+				$Length += mb_strlen( $CommitMessage ) + 3;
 
-			$CommitMessages = $this->ShortMessage( implode( $this->FormatHash( ' | ' ), $CommitMessages ), 200 );
+				if( $Length > 200 && $CommitMessages !== '' )
+				{
+					$CommitMessages .= '…';
+					break;
+				}
+
+				$CommitMessages .= ( $CommitMessages === '' ? '' : $this->FormatHash( ' | ' ) ) . $CommitMessage;
+			}
 
 			$Message .= sprintf( ': %s', $CommitMessages );
 		}
@@ -344,7 +353,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatAction( $Action, $Verb ),
 						$this->FormatNumber( sprintf( '#%d', $this->Payload->issue->number ) ),
 						$Suffix,
-						$this->Payload->issue->title,
+						rtrim( $this->Payload->issue->title, '.' ),
 						$this->FormatURL( $this->Payload->issue->html_url )
 		);
 	}
@@ -423,7 +432,7 @@ class IrcConverter extends BaseConverter
 						$Action === 'merged' ?
 							( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ?? 'ghost' ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
 							'',
-						$this->Payload->pull_request->title,
+						rtrim( $this->Payload->pull_request->title, '.' ),
 						$this->FormatURL( $this->Payload->pull_request->html_url )
 		);
 	}
@@ -454,7 +463,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( $Action ),
 						$this->FormatNumber( sprintf( '#%d', $this->Payload->milestone->number ) ),
-						$this->Payload->milestone->title,
+						rtrim( $this->Payload->milestone->title, '.' ),
 						$this->FormatURL( $this->Payload->milestone->html_url )
 		);
 	}
@@ -555,9 +564,10 @@ class IrcConverter extends BaseConverter
 		if( $this->Payload->action === 'created' )
 		{
 			return sprintf(
-				'[%s] %s commented on %s %s: %s %s',
+				'[%s] %s commented on %s %s %s: %s %s',
 				$this->FormatRepoName( ),
 				$this->FormatName( $this->Payload->sender->login ),
+				isset( $this->Payload->issue->pull_request ) ? 'pull request' : 'issue',
 				$this->FormatNumber( '#' . $this->Payload->issue->number ),
 				$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
 				$this->ShortMessage( $this->Payload->comment->body ),
@@ -568,9 +578,10 @@ class IrcConverter extends BaseConverter
 		if( $this->Payload->action === 'deleted' )
 		{
 			return sprintf(
-				'[%s] %s deleted comment in %s %s from %s',
+				'[%s] %s deleted comment in %s %s %s from %s',
 				$this->FormatRepoName( ),
 				$this->FormatName( $this->Payload->sender->login ),
+				isset( $this->Payload->issue->pull_request ) ? 'pull request' : 'issue',
 				$this->FormatNumber( '#' . $this->Payload->issue->number ),
 				$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
 				$this->FormatName( $this->Payload->comment->user->login ?? 'ghost' ),
@@ -622,7 +633,7 @@ class IrcConverter extends BaseConverter
 							default => '',
 						},
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
-						$this->Payload->pull_request->title,
+						rtrim( $this->Payload->pull_request->title, '.' ),
 						$this->FormatURL( $this->Payload->review->html_url )
 		);
 	}
@@ -643,11 +654,12 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		return sprintf( '[%s] %s reviewed pull request %s at %s. %s',
+		return sprintf( '[%s] %s commented on a review of pull request %s %s: %s %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
-						$this->FormatHash( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
+						$this->FormatHash( '(' . $this->Payload->pull_request->title . ')' ),
+						$this->ShortMessage( $this->Payload->comment->body ),
 						$this->FormatURL( $this->Payload->comment->html_url )
 		);
 	}
@@ -696,7 +708,7 @@ class IrcConverter extends BaseConverter
 			$this->FormatAction( $Action, $Verb ),
 			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
 			$Suffix,
-			$this->Payload->discussion->title,
+			rtrim( $this->Payload->discussion->title, '.' ),
 			$this->FormatURL( $Action === 'answered' ? ( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url ) : $this->Payload->discussion->html_url )
 		);
 	}
@@ -847,7 +859,7 @@ class IrcConverter extends BaseConverter
 		{
 			if( isset( $this->Payload->alert->push_protection_bypassed_by ) )
 			{
-				$SecretType .= ' (push protection bypassed by ' . $this->FormatName( $this->Payload->alert->push_protection_bypassed_by->login ) . ')';
+				$SecretType .= ' (push protection bypassed by ' . $this->FormatName( $this->Payload->alert->push_protection_bypassed_by->login ?? 'ghost' ) . ')';
 			}
 
 			return sprintf( '[%s] ⚠ New secret scanning alert %s: %s %s',

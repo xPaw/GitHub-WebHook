@@ -85,7 +85,7 @@ class BaseConverter
 
 		foreach( $this->Payload->commits as $Commit )
 		{
-			if( isset( $Commit->distinct ) && !$Commit->distinct )
+			if( ( $Commit->distinct ?? true ) === false )
 			{
 				continue;
 			}

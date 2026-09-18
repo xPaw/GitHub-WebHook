@@ -90,7 +90,11 @@ class DiscordConverter extends BaseConverter
 			$Embed[ 'description' ] = self::LimitLength( $Embed[ 'description' ], self::MAX_DESCRIPTION_LENGTH );
 		}
 
-		if( is_array( $Embed[ 'footer' ] ?? null ) && is_string( $Embed[ 'footer' ][ 'text' ] ?? null ) )
+		if( !isset( $Embed[ 'footer' ] ) )
+		{
+			unset( $Embed[ 'footer' ] );
+		}
+		else if( is_array( $Embed[ 'footer' ] ) && is_string( $Embed[ 'footer' ][ 'text' ] ?? null ) )
 		{
 			$Embed[ 'footer' ][ 'text' ] = self::LimitLength( $Embed[ 'footer' ][ 'text' ], self::MAX_FOOTER_LENGTH );
 		}
@@ -144,7 +148,30 @@ class DiscordConverter extends BaseConverter
 
 	private static function EscapeCode( string $Message ) : string
 	{
-		return '`' . str_replace( '`',  '``', $Message ) . '`';
+		// A backtick can only be inside of a code span that is delimited by more of them
+		if( str_contains( $Message, '`' ) )
+		{
+			return '`` ' . $Message . ' ``';
+		}
+
+		return '`' . $Message . '`';
+	}
+
+	/**
+	 * Footers are plain text, so the names need no escaping.
+	 *
+	 * @param ?array<object> $Labels
+	 *
+	 * @return ?array{text: string}
+	 */
+	private static function LabelsFooter( ?array $Labels ) : ?array
+	{
+		if( empty( $Labels ) )
+		{
+			return null;
+		}
+
+		return [ 'text' => implode( ' · ', array_map( static fn( object $Label ) : string => $Label->name, $Labels ) ) ];
 	}
 
 	private static function Escape( string $Message ) : string
@@ -363,7 +390,7 @@ class DiscordConverter extends BaseConverter
 				}
 				else
 				{
-					$Commit .= " - *" . self::Escape( $DistinctCommit->author->name ) . "*";
+					$Commit .= " - *" . self::Escape( $DistinctCommit->author->name ?? 'unknown' ) . "*";
 				}
 
 				$CommitMessages[] = $Commit;
@@ -449,17 +476,7 @@ class DiscordConverter extends BaseConverter
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->issue->body );
 
-			if( !empty( $this->Payload->issue->labels ) )
-			{
-				$Labels = [];
-
-				foreach( $this->Payload->issue->labels as $Label )
-				{
-					$Labels[] = $Label->name;
-				}
-
-				$Embed[ 'footer' ][ 'text' ] = implode( ' · ', $Labels );
-			}
+			$Embed[ 'footer' ] = self::LabelsFooter( $this->Payload->issue->labels ?? null );
 		}
 
 		return $Embed;
@@ -542,6 +559,7 @@ class DiscordConverter extends BaseConverter
 		if( $Action === 'opened' )
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->pull_request->body );
+			$Embed[ 'footer' ] = self::LabelsFooter( $this->Payload->pull_request->labels ?? null );
 		}
 		else if( $Action === 'merged' )
 		{
@@ -771,7 +789,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "reviewed PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => "commented on a review of PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
 			'description' => self::ShortDescription( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
@@ -828,6 +846,7 @@ class DiscordConverter extends BaseConverter
 		if( $Action === 'created' )
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->discussion->body );
+			$Embed[ 'footer' ] = self::LabelsFooter( $this->Payload->discussion->labels ?? null );
 		}
 
 		return $Embed;
@@ -1034,7 +1053,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $Action === 'created' && isset( $this->Payload->alert->push_protection_bypassed_by ) )
 		{
-			$Embed[ 'description' ] = 'Push protection bypassed by **' . self::Escape( $this->Payload->alert->push_protection_bypassed_by->login ) . '**';
+			$Embed[ 'description' ] = 'Push protection bypassed by **' . self::Escape( $this->Payload->alert->push_protection_bypassed_by->login ?? 'ghost' ) . '**';
 		}
 		else if( $Action === 'resolved' && ( $this->Payload->alert->resolution ?? '' ) !== '' )
 		{
@@ -1212,7 +1231,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $this->Payload->action === 'renamed' )
 		{
-			$Title .= " (from *" . self::Escape( $this->Payload->changes->repository->name->from ) . "*)";
+			$Title .= " (from **" . self::Escape( $this->Payload->changes->repository->name->from ) . "**)";
 		}
 		else if( $this->Payload->action === 'transferred' )
 		{

@@ -82,6 +82,8 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 
 	if (embed.footer) {
 		embed.footer.text = limitLength(embed.footer.text, MAX_FOOTER_LENGTH);
+	} else {
+		delete embed.footer;
 	}
 
 	for (const field of embed.fields ?? []) {
@@ -234,6 +236,11 @@ function actionPhrase(action: string): [verb: string, suffix: string] {
 /** Actions after which an alert is open, and so needs attention. */
 const OPEN_ALERT_ACTIONS = new Set(['created', 'reopened', 'reintroduced', 'publicly leaked']);
 
+/** Footers are plain text, so the names need no escaping. */
+function labelsFooter(labels: { name: string }[] | null | undefined): DiscordEmbed['footer'] {
+	return labels && labels.length > 0 ? { text: labels.map((label) => label.name).join(' · ') } : undefined;
+}
+
 /** `refs/heads/some/branch` -> `some/branch`. */
 function refName(ref: string): string {
 	return ref.replace(/^refs\/[^/]+\//, '');
@@ -324,7 +331,7 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 						line += ` - ${escape(commit.author.username)}`;
 					}
 				} else {
-					line += ` - *${escape(commit.author.name)}*`;
+					line += ` - *${escape(commit.author.name ?? 'unknown')}*`;
 				}
 
 				return line;
@@ -371,9 +378,7 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 	if (payload.action === 'opened') {
 		embed.description = shortDescription(payload.issue.body);
 
-		if (payload.issue.labels && payload.issue.labels.length > 0) {
-			embed.footer = { text: payload.issue.labels.map((label) => label.name).join(' · ') };
-		}
+		embed.footer = labelsFooter(payload.issue.labels);
 	}
 
 	return embed;
@@ -436,6 +441,7 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 
 	if (action === 'opened') {
 		embed.description = shortDescription(payload.pull_request.body);
+		embed.footer = labelsFooter(payload.pull_request.labels);
 	} else if (action === 'merged') {
 		embed.description = `Merged from **${escape(payload.pull_request.user?.login ?? 'ghost')}** to ${escapeCode(payload.pull_request.base.ref)}`;
 	}
@@ -555,7 +561,7 @@ function formatPullRequestReviewComment(payload: PullRequestReviewCommentEvent):
 	assertAction('pull_request_review_comment', payload.action, ['created'], ['edited', 'deleted']);
 
 	return {
-		title: `reviewed PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
+		title: `commented on a review of PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
 		description: shortDescription(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
@@ -584,6 +590,7 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 
 	if (action === 'created') {
 		embed.description = shortDescription(payload.discussion.body);
+		embed.footer = labelsFooter(payload.discussion.labels);
 	}
 
 	return embed;
@@ -690,7 +697,7 @@ function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEm
 	}
 
 	if (action === 'created' && alert.push_protection_bypassed_by) {
-		embed.description = `Push protection bypassed by **${escape(alert.push_protection_bypassed_by.login)}**`;
+		embed.description = `Push protection bypassed by **${escape(alert.push_protection_bypassed_by.login ?? 'ghost')}**`;
 	} else if (action === 'resolved' && alert.resolution) {
 		embed.description = `Resolved as ${escape(alert.resolution.replaceAll('_', ' '))}`;
 	}
@@ -784,7 +791,7 @@ function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 	let title = `${payload.action} **${escape(payload.repository.name)}**`;
 
 	if (payload.action === 'renamed') {
-		title += ` (from *${escape(payload.changes.repository.name.from)}*)`;
+		title += ` (from **${escape(payload.changes.repository.name.from)}**)`;
 	} else if (payload.action === 'transferred') {
 		const from = payload.changes.owner.from;
 

@@ -88,6 +88,16 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { unset( $Payload->alert->secret_type, $Payload->alert->secret_type_display_name ); },
 				'title', '⚠ Secret scanning alert **#3** created: unknown',
 			],
+			'push protection bypassed by a deleted user' => [
+				'secret_scanning_alert', 'secret_scanning_alert_created_bypassed',
+				static function( stdClass $Payload ) : void { $Payload->alert->push_protection_bypassed_by = new stdClass; },
+				'description', 'Push protection bypassed by **ghost**',
+			],
+			'branch with a backtick in its name' => [
+				'delete', 'delete_branch',
+				static function( stdClass $Payload ) : void { $Payload->ref = 'weird`branch'; },
+				'title', 'deleted branch `` weird`branch ``',
+			],
 			'package without a version' => [
 				'registry_package', 'registry_package',
 				static function( stdClass $Payload ) : void { $Payload->registry_package->package_version->version = ''; },

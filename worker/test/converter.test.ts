@@ -212,6 +212,30 @@ describe('optional fields', () => {
 		expect(result.title).toBe('⚠ Secret scanning alert **#3** created: unknown');
 	});
 
+	it('push protection bypassed by a deleted user', () => {
+		const result = embed('secret_scanning_alert', 'secret_scanning_alert_created_bypassed', (p) => {
+			p.alert.push_protection_bypassed_by = {};
+		});
+
+		expect(result.description).toBe('Push protection bypassed by **ghost**');
+	});
+
+	it('commit by an author without a username or a name', () => {
+		const result = embed('push', 'push_no_author', (p) => {
+			delete p.commits[0].author.name;
+		});
+
+		expect(result.description).toContain(' - *unknown*');
+	});
+
+	it('branch with a backtick in its name', () => {
+		const result = embed('delete', 'delete_branch', (p) => {
+			p.ref = 'weird`branch';
+		});
+
+		expect(result.title).toBe('deleted branch `` weird`branch ``');
+	});
+
 	it('transferred repository without a previous owner', () => {
 		const result = embed('repository', 'repository_transferred', (p) => {
 			p.changes.owner.from = {};

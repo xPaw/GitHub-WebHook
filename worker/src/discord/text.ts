@@ -13,9 +13,10 @@ export function escape(message: string): string {
 	return message.replace(MARKDOWN_SPECIAL, (character) => `\\${character}`);
 }
 
-/** Wraps a string in an inline code span, escaping any backticks it contains. */
+/** Wraps a string in an inline code span. */
 export function escapeCode(message: string): string {
-	return `\`${message.replaceAll('`', '``')}\``;
+	// A backtick can only be inside of a code span that is delimited by more of them
+	return message.includes('`') ? `\`\` ${message} \`\`` : `\`${message}\``;
 }
 
 /** Truncates to a number of code points, so that emoji and other astral characters stay intact. */
