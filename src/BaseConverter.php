@@ -51,7 +51,7 @@ class BaseConverter
 				continue;
 			}
 
-			if( !empty( $Commit->message ) )
+			if( ( $Commit->message ?? '' ) !== '' )
 			{
 				$Commits[ ] = $Commit;
 			}

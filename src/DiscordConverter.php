@@ -5,6 +5,11 @@ namespace GitHubWebHook;
 
 class DiscordConverter extends BaseConverter
 {
+	private const string HTML_COMMENT = '~<!--.*?-->~s';
+
+	// Requires a tag name, so that a lone "<" in text such as "a < b" is left alone
+	private const string HTML_TAG = '~</?[a-z](?:[^>"\']|"[^"]*"|\'[^\']*\')*>~i';
+
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.
 	 *
@@ -51,7 +56,7 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType );
 		}
 
-		if( empty( $Embed[ 'description' ] ) )
+		if( ( $Embed[ 'description' ] ?? '' ) === '' )
 		{
 			unset( $Embed[ 'description' ] );
 		}
@@ -118,22 +123,16 @@ class DiscordConverter extends BaseConverter
 	private static function ShortDescription( ?string $Message, int $Limit = 250 ) : string
 	{
 		$Message ??= '';
-		$Message = strip_tags( $Message );
+		$Message = preg_replace( self::HTML_COMMENT, '', $Message ) ?? $Message;
+		$Message = preg_replace( self::HTML_TAG, '', $Message ) ?? $Message;
 		$Message = str_replace( [ "\r", "\n\n" ], [ "", "\n" ], $Message );
 
 		// Limit amount of new lines
-		$Length = mb_strlen( $Message );
-		$NewLines = 0;
+		$Lines = explode( "\n", $Message );
 
-		for( $i = 0; $i < $Length; $i++ )
+		if( count( $Lines ) > 11 )
 		{
-			if( $Message[ $i ] === "\n" )
-			{
-				if( ++$NewLines > 10 )
-				{
-					$Message[ $i ] = ' ';
-				}
-			}
+			$Message = implode( "\n", array_slice( $Lines, 0, 11 ) ) . ' ' . implode( ' ', array_slice( $Lines, 11 ) );
 		}
 
 		if( mb_strlen( $Message ) > $Limit )
@@ -163,7 +162,7 @@ class DiscordConverter extends BaseConverter
 			{
 				$NewMessage = mb_substr( $NewMessage, 0, -3 ) . '…';
 			}
-			else if( substr( $NewMessage, -1 ) !== '…' )
+			else if( !str_ends_with( $NewMessage, '…' ) )
 			{
 				$NewMessage .= '…';
 			}
@@ -571,7 +570,7 @@ class DiscordConverter extends BaseConverter
 
 		$Name = $this->Payload->release->tag_name;
 
-		if( !empty( $this->Payload->release->name ) && $this->Payload->release->name !== $this->Payload->release->tag_name )
+		if( ( $this->Payload->release->name ?? '' ) !== '' && $this->Payload->release->name !== $this->Payload->release->tag_name )
 		{
 			$Name .= " ({$this->Payload->release->name})";
 		}
@@ -887,7 +886,7 @@ class DiscordConverter extends BaseConverter
 				$Page->html_url .= '/_compare/' . $Page->sha;
 			}
 
-			$Messages[] = "[{$Page->action} " . self::Escape( $Page->title ) . "]({$Page->html_url})" . ( empty( $Page->summary ) ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
+			$Messages[] = "[{$Page->action} " . self::Escape( $Page->title ) . "]({$Page->html_url})" . ( ( $Page->summary ?? '' ) === '' ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
 		}
 
 		return [

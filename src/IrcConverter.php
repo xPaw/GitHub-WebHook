@@ -130,7 +130,7 @@ class IrcConverter extends BaseConverter
 			{
 				$NewMessage = substr( $NewMessage, 0, -3 ) . '…';
 			}
-			else if( substr( $NewMessage, -1 ) !== '…' )
+			else if( !str_ends_with( $NewMessage, '…' ) )
 			{
 				$NewMessage .= '…';
 			}
@@ -505,7 +505,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
 						$this->Payload->release->prerelease ? 'pre-' : '',
-						$this->FormatBranch( empty( $this->Payload->release->name ) ? $this->Payload->release->tag_name : $this->Payload->release->name ),
+						$this->FormatBranch( ( $this->Payload->release->name ?? '' ) === '' ? $this->Payload->release->tag_name : $this->Payload->release->name ),
 						$this->FormatURL( $this->Payload->release->html_url )
 		);
 	}
@@ -777,7 +777,7 @@ class IrcConverter extends BaseConverter
 
 		foreach( $this->Payload->pages as $Page )
 		{
-			if( !empty( $Message ) )
+			if( $Message !== '' )
 			{
 				$Message .= "\n";
 			}
@@ -793,7 +793,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( $Page->action ),
 						$Page->title,
-						empty( $Page->summary ) ? '' : ( $Page->summary . ' ' ),
+						( $Page->summary ?? '' ) === '' ? '' : ( $Page->summary . ' ' ),
 						$this->FormatURL( $Page->html_url )
 			);
 		}
