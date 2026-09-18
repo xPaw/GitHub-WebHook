@@ -1,0 +1,15 @@
+{
+    "embeds": [
+        {
+            "title": "deleted milestone **#1**: v1.0",
+            "description": "Add new space flight simulator",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/milestone\/1",
+            "color": 16007990,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

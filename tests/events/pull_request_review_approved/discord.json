@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "approved PR **#2**: Update the README with new information.",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/pull\/2#pullrequestreview-237895671",
+            "color": 5025616,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}
