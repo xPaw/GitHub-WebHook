@@ -35,11 +35,15 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 	{
 		$Events =
 		[
-			[ 'issues', 'issue_opened', [ 'edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned' ] ],
-			[ 'pull_request', 'pull_request_merged', [ 'edited', 'synchronize', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'review_requested', 'review_request_removed' ] ],
+			[ 'issues', 'issue_opened', [ 'edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped' ] ],
+			[ 'pull_request', 'pull_request_merged', [ 'edited', 'synchronize', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'review_requested', 'review_request_removed', 'milestoned', 'demilestoned', 'enqueued', 'dequeued', 'auto_merge_disabled' ] ],
+			[ 'pull_request_review', 'pull_request_review', [ 'edited' ] ],
+			[ 'pull_request_review_comment', 'pull_request_review_comment', [ 'edited', 'deleted' ] ],
 			[ 'milestone', 'milestone', [ 'edited' ] ],
+			[ 'release', 'release', [ 'created', 'edited', 'released', 'prereleased' ] ],
+			[ 'member', 'member', [ 'edited' ] ],
 			[ 'issue_comment', 'issue_comment', [ 'edited' ] ],
-			[ 'discussion', 'discussion_created', [ 'edited', 'labeled', 'unlabeled', 'answered', 'unanswered' ] ],
+			[ 'discussion', 'discussion_created', [ 'edited', 'labeled', 'unlabeled', 'unanswered' ] ],
 			[ 'discussion_comment', 'discussion_comment_created', [ 'edited' ] ],
 			[ 'repository', 'repository', [ 'edited' ] ],
 			[ 'code_scanning_alert', 'code_scanning_alert_created', [ 'appeared_in_branch' ] ],

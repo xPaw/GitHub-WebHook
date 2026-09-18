@@ -22,6 +22,7 @@ type DiscussionCommentEvent = Payload<'discussion-comment'>;
 type MemberEvent = Payload<'member'>;
 type MilestoneEvent = Payload<'milestone'>;
 type PackageEvent = Payload<'package'>;
+type RegistryPackageEvent = Payload<'registry-package'>;
 type ReleaseEvent = Payload<'release'>;
 type RepositoryEvent = Payload<'repository'>;
 type RepositoryAdvisoryEvent = Payload<'repository-advisory'>;
@@ -99,7 +100,9 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 		case 'gollum':
 			return formatGollum(payload as GollumEvent);
 		case 'package':
-			return formatPackage(payload as PackageEvent);
+			return formatPackage(eventType, (payload as PackageEvent).package, payload as PackageEvent);
+		case 'registry_package':
+			return formatPackage(eventType, (payload as RegistryPackageEvent).registry_package, payload as RegistryPackageEvent);
 		case 'release':
 			return formatRelease(payload as ReleaseEvent);
 		case 'milestone':
@@ -306,7 +309,7 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 		'issues',
 		payload.action,
 		['opened', 'closed', 'reopened', 'deleted', 'pinned', 'locked', 'unlocked', 'transferred'],
-		['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned'],
+		['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped'],
 	);
 
 	const action =
@@ -358,7 +361,21 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 			'converted to draft',
 			'closed without merging',
 		],
-		['edited', 'synchronize', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'review_requested', 'review_request_removed'],
+		[
+			'edited',
+			'synchronize',
+			'labeled',
+			'unlabeled',
+			'assigned',
+			'unassigned',
+			'review_requested',
+			'review_request_removed',
+			'milestoned',
+			'demilestoned',
+			'enqueued',
+			'dequeued',
+			'auto_merge_disabled',
+		],
 	);
 
 	const embed: DiscordEmbed = {
@@ -389,20 +406,28 @@ function formatMilestone(payload: MilestoneEvent): DiscordEmbed {
 	};
 }
 
-function formatPackage(payload: PackageEvent): DiscordEmbed {
-	assertAction('package', payload.action, ['published', 'updated']);
+/** Both `package` and `registry_package` have the same payload under a different name. */
+function formatPackage(
+	event: string,
+	pkg: PackageEvent['package'] | RegistryPackageEvent['registry_package'],
+	payload: PackageEvent | RegistryPackageEvent,
+): DiscordEmbed {
+	assertAction(event, payload.action, ['published', 'updated']);
+
+	const body = pkg.package_version?.body;
 
 	return {
-		title: `${payload.action} ${payload.package.package_type} package: **${escape(payload.package.name)}** ${payload.package.package_version?.version}`,
-		description: shortDescription(payload.package.package_version?.body as string | null | undefined),
-		url: payload.package.html_url,
+		title: `${payload.action} ${pkg.package_type} package: **${escape(pkg.name)}** ${escape(pkg.package_version?.version ?? 'unknown')}`,
+		// Container packages have an empty object as their body
+		description: shortDescription(typeof body === 'string' ? body : null),
+		url: pkg.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
 	};
 }
 
 function formatRelease(payload: ReleaseEvent): DiscordEmbed {
-	assertAction('release', payload.action, ['published', 'unpublished']);
+	assertAction('release', payload.action, ['published', 'unpublished', 'deleted'], ['created', 'edited', 'released', 'prereleased']);
 
 	let name = payload.release.tag_name;
 
@@ -414,7 +439,8 @@ function formatRelease(payload: ReleaseEvent): DiscordEmbed {
 
 	return {
 		title: `${payload.action} a ${kind}: ${escape(name)}`,
-		description: shortDescription(payload.release.body),
+		// Release notes are only worth showing when the release appears
+		description: payload.action === 'published' ? shortDescription(payload.release.body) : '',
 		url: payload.release.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -459,19 +485,22 @@ function formatComment(
 }
 
 function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed {
-	if (payload.action !== 'submitted') {
-		throw new NotImplementedError('pull_request_review', payload.action);
-	}
+	assertAction('pull_request_review', payload.action, ['submitted', 'dismissed'], ['edited']);
 
-	if (payload.review.state === 'commented') {
-		throw new IgnoredEventError(`pull_request_review - ${payload.review.state}`);
-	}
+	let state: string = payload.review.state;
 
-	const state = payload.review.state === 'changes_requested' ? 'requested changes in' : payload.review.state;
+	if (payload.action === 'dismissed') {
+		state = 'dismissed';
+	} else if (state === 'commented') {
+		throw new IgnoredEventError(`pull_request_review - ${state}`);
+	} else if (state === 'changes_requested') {
+		state = 'requested changes in';
+	}
 
 	return {
-		title: `${state} PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
-		description: shortDescription(payload.review.body),
+		title: `${state}${state === 'dismissed' ? ' a review on' : ''} PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
+		// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
+		description: state === 'dismissed' ? '' : shortDescription(payload.review.body),
 		url: payload.review.html_url,
 		color: actionColor(state),
 		author: formatAuthor(payload.sender),
@@ -479,7 +508,7 @@ function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed 
 }
 
 function formatPullRequestReviewComment(payload: PullRequestReviewCommentEvent): DiscordEmbed {
-	assertAction('pull_request_review_comment', payload.action, ['created']);
+	assertAction('pull_request_review_comment', payload.action, ['created'], ['edited', 'deleted']);
 
 	return {
 		title: `reviewed PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
@@ -496,13 +525,13 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 	assertAction(
 		'discussion',
 		action,
-		['created', 'deleted', 'pinned', 'unpinned', 'locked', 'unlocked', 'transferred', 'changed category'],
-		['edited', 'labeled', 'unlabeled', 'answered', 'unanswered'],
+		['created', 'deleted', 'pinned', 'unpinned', 'locked', 'unlocked', 'transferred', 'answered', 'closed', 'reopened', 'changed category'],
+		['edited', 'labeled', 'unlabeled', 'unanswered'],
 	);
 
 	const embed: DiscordEmbed = {
 		title: `${payload.discussion.category.emoji} Discussion **#${payload.discussion.number}** ${action}: ${escape(payload.discussion.title)}`,
-		url: payload.discussion.html_url,
+		url: payload.action === 'answered' ? payload.answer.html_url : payload.discussion.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
 	};
@@ -644,7 +673,7 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 }
 
 function formatMember(payload: MemberEvent): DiscordEmbed {
-	assertAction('member', payload.action, ['added', 'removed']);
+	assertAction('member', payload.action, ['added', 'removed'], ['edited']);
 
 	return {
 		title: `${payload.action} **${escape(payload.member?.login ?? '')}** as a collaborator`,

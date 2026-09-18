@@ -23,7 +23,8 @@ class IrcConverter extends BaseConverter
 			case 'issues'        : return $this->FormatIssuesEvent( );
 			case 'member'        : return $this->FormatMemberEvent( );
 			case 'gollum'        : return $this->FormatGollumEvent( );
-			case 'package'       : return $this->FormatPackageEvent( );
+			case 'package'       :
+			case 'registry_package': return $this->FormatPackageEvent( );
 			case 'release'       : return $this->FormatReleaseEvent( );
 			case 'milestone'     : return $this->FormatMilestoneEvent( );
 			case 'repository'    : return $this->FormatRepositoryEvent( );
@@ -304,7 +305,9 @@ class IrcConverter extends BaseConverter
 		||  $this->Payload->action === 'labeled'
 		||  $this->Payload->action === 'unlabeled'
 		||  $this->Payload->action === 'assigned'
-		||  $this->Payload->action === 'unassigned' )
+		||  $this->Payload->action === 'unassigned'
+		||  $this->Payload->action === 'typed'
+		||  $this->Payload->action === 'untyped' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -376,7 +379,12 @@ class IrcConverter extends BaseConverter
 		||  $Action === 'assigned'
 		||  $Action === 'unassigned'
 		||  $Action === 'review_requested'
-		||  $Action === 'review_request_removed' )
+		||  $Action === 'review_request_removed'
+		||  $Action === 'milestoned'
+		||  $Action === 'demilestoned'
+		||  $Action === 'enqueued'
+		||  $Action === 'dequeued'
+		||  $Action === 'auto_merge_disabled' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
@@ -448,15 +456,18 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
+		// Both events have the same payload under a different name
+		$Package = $this->Payload->registry_package ?? $this->Payload->package;
+
 		return sprintf(
 			'[%s] %s %s %s package: %s %s. %s',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->sender->login ),
 			$this->FormatAction( ),
-			$this->Payload->package->package_type,
-			$this->Payload->package->name,
-			$this->FormatBranch( $this->Payload->package->package_version->version ),
-			$this->FormatURL( $this->Payload->package->html_url )
+			$Package->package_type,
+			$Package->name,
+			$this->FormatBranch( $Package->package_version->version ?? 'unknown' ),
+			$this->FormatURL( $Package->html_url )
 		);
 	}
 
@@ -465,8 +476,17 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatReleaseEvent( ) : string
 	{
+		if( $this->Payload->action === 'created'
+		||  $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'released'
+		||  $this->Payload->action === 'prereleased' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		if( $this->Payload->action !== 'published'
-		&&  $this->Payload->action !== 'unpublished' )
+		&&  $this->Payload->action !== 'unpublished'
+		&&  $this->Payload->action !== 'deleted' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
@@ -551,19 +571,28 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatPullRequestReviewEvent( ) : string
 	{
-		if( $this->Payload->action !== 'submitted' )
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'submitted'
+		&&  $this->Payload->action !== 'dismissed' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
 		$State = $this->Payload->review->state;
 
-		if( $State === 'commented' )
+		if( $this->Payload->action === 'dismissed' )
+		{
+			$State = 'dismissed';
+		}
+		else if( $State === 'commented' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $State );
 		}
-
-		if( $State === 'changes_requested' )
+		else if( $State === 'changes_requested' )
 		{
 			$State = 'requested changes';
 		}
@@ -572,7 +601,12 @@ class IrcConverter extends BaseConverter
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( $State ),
-						$State === 'requested changes' ? ' in' : '',
+						match( $State )
+						{
+							'requested changes' => ' in',
+							'dismissed' => ' a review on',
+							default => '',
+						},
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 						$this->Payload->pull_request->title,
 						$this->FormatURL( $this->Payload->review->html_url )
@@ -584,6 +618,12 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatPullRequestReviewCommentEvent( ) : string
 	{
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'deleted' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		if( $this->Payload->action !== 'created' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
@@ -608,7 +648,6 @@ class IrcConverter extends BaseConverter
 		if( $Action === 'edited'
 		||  $Action === 'labeled'
 		||  $Action === 'unlabeled'
-		||  $Action === 'answered'
 		||  $Action === 'unanswered' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
@@ -626,6 +665,9 @@ class IrcConverter extends BaseConverter
 		&&  $Action !== 'locked'
 		&&  $Action !== 'unlocked'
 		&&  $Action !== 'transferred'
+		&&  $Action !== 'answered'
+		&&  $Action !== 'closed'
+		&&  $Action !== 'reopened'
 		&&  $Action !== 'changed category' )
 		{
 			throw new NotImplementedException( $this->EventType, $Action );
@@ -638,7 +680,7 @@ class IrcConverter extends BaseConverter
 			$this->FormatAction( $Action ),
 			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
 			$this->Payload->discussion->title,
-			$this->FormatURL( $this->Payload->discussion->html_url )
+			$this->FormatURL( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url )
 		);
 	}
 
@@ -847,6 +889,11 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatMemberEvent( ) : string
 	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		if( $this->Payload->action !== 'added' && $this->Payload->action !== 'removed' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );

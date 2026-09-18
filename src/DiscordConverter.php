@@ -45,7 +45,8 @@ class DiscordConverter extends BaseConverter
 			case 'issues'        : $Embed = $this->FormatIssuesEvent( ); break;
 			case 'member'        : $Embed = $this->FormatMemberEvent( ); break;
 			case 'gollum'        : $Embed = $this->FormatGollumEvent( ); break;
-			case 'package'       : $Embed = $this->FormatPackageEvent( ); break;
+			case 'package'       :
+			case 'registry_package': $Embed = $this->FormatPackageEvent( ); break;
 			case 'release'       : $Embed = $this->FormatReleaseEvent( ); break;
 			case 'milestone'     : $Embed = $this->FormatMilestoneEvent( ); break;
 			case 'repository'    : $Embed = $this->FormatRepositoryEvent( ); break;
@@ -364,7 +365,9 @@ class DiscordConverter extends BaseConverter
 		||  $Action === 'labeled'
 		||  $Action === 'unlabeled'
 		||  $Action === 'assigned'
-		||  $Action === 'unassigned' )
+		||  $Action === 'unassigned'
+		||  $Action === 'typed'
+		||  $Action === 'untyped' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
@@ -456,7 +459,12 @@ class DiscordConverter extends BaseConverter
 		||  $Action === 'assigned'
 		||  $Action === 'unassigned'
 		||  $Action === 'review_requested'
-		||  $Action === 'review_request_removed' )
+		||  $Action === 'review_request_removed'
+		||  $Action === 'milestoned'
+		||  $Action === 'demilestoned'
+		||  $Action === 'enqueued'
+		||  $Action === 'dequeued'
+		||  $Action === 'auto_merge_disabled' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
@@ -536,10 +544,15 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
+		// Both events have the same payload under a different name
+		$Package = $this->Payload->registry_package ?? $this->Payload->package;
+		$Body = $Package->package_version->body ?? null;
+
 		return [
-			'title' => "{$this->Payload->action} {$this->Payload->package->package_type} package: **" . self::Escape( $this->Payload->package->name ) . "** {$this->Payload->package->package_version->version}",
-			'description' => self::ShortDescription( $this->Payload->package->package_version->body ),
-			'url' => $this->Payload->package->html_url,
+			'title' => "{$this->Payload->action} {$Package->package_type} package: **" . self::Escape( $Package->name ) . "** " . self::Escape( $Package->package_version->version ?? 'unknown' ),
+			// Container packages have an empty object as their body
+			'description' => self::ShortDescription( is_string( $Body ) ? $Body : null ),
+			'url' => $Package->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
 		];
@@ -552,8 +565,17 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatReleaseEvent( ) : array
 	{
+		if( $this->Payload->action === 'created'
+		||  $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'released'
+		||  $this->Payload->action === 'prereleased' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		if( $this->Payload->action !== 'published'
-		&&  $this->Payload->action !== 'unpublished' )
+		&&  $this->Payload->action !== 'unpublished'
+		&&  $this->Payload->action !== 'deleted' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
@@ -567,7 +589,8 @@ class DiscordConverter extends BaseConverter
 
 		return [
 			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: " . self::Escape( $Name ),
-			'description' => self::ShortDescription( $this->Payload->release->body ),
+			// Release notes are only worth showing when the release appears
+			'description' => $this->Payload->action === 'published' ? self::ShortDescription( $this->Payload->release->body ) : '',
 			'url' => $this->Payload->release->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -640,26 +663,36 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatPullRequestReviewEvent( ) : array
 	{
-		if( $this->Payload->action !== 'submitted' )
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'submitted'
+		&&  $this->Payload->action !== 'dismissed' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
 		$State = $this->Payload->review->state;
 
-		if( $State === 'commented' )
+		if( $this->Payload->action === 'dismissed' )
+		{
+			$State = 'dismissed';
+		}
+		else if( $State === 'commented' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $State );
 		}
-
-		if( $State === 'changes_requested' )
+		else if( $State === 'changes_requested' )
 		{
 			$State = 'requested changes in';
 		}
 
 		return [
-			'title' => "{$State} PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
-			'description' => self::ShortDescription( $this->Payload->review->body ),
+			'title' => $State . ( $State === 'dismissed' ? ' a review on' : '' ) . " PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
+			'description' => $State === 'dismissed' ? '' : self::ShortDescription( $this->Payload->review->body ),
 			'url' => $this->Payload->review->html_url,
 			'color' => $this->FormatAction( $State ),
 			'author' => $this->FormatAuthor(),
@@ -673,6 +706,12 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatPullRequestReviewCommentEvent( ) : array
 	{
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'deleted' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		if( $this->Payload->action !== 'created' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
@@ -699,7 +738,6 @@ class DiscordConverter extends BaseConverter
 		if( $Action === 'edited'
 		||  $Action === 'labeled'
 		||  $Action === 'unlabeled'
-		||  $Action === 'answered'
 		||  $Action === 'unanswered' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
@@ -717,6 +755,9 @@ class DiscordConverter extends BaseConverter
 		&&  $Action !== 'locked'
 		&&  $Action !== 'unlocked'
 		&&  $Action !== 'transferred'
+		&&  $Action !== 'answered'
+		&&  $Action !== 'closed'
+		&&  $Action !== 'reopened'
 		&&  $Action !== 'changed category' )
 		{
 			throw new NotImplementedException( $this->EventType, $Action );
@@ -724,7 +765,7 @@ class DiscordConverter extends BaseConverter
 
 		$Embed = [
 			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$Action}: " . self::Escape( $this->Payload->discussion->title ),
-			'url' => $this->Payload->discussion->html_url,
+			'url' => $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
@@ -987,6 +1028,11 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatMemberEvent( ) : array
 	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		if( $this->Payload->action !== 'added' && $this->Payload->action !== 'removed' )
 		{
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );

@@ -40,6 +40,7 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 			'pull_request' => 'pull_request_merged',
 			'milestone' => 'milestone',
 			'package' => 'package',
+			'registry_package' => 'registry_package',
 			'release' => 'release',
 			'commit_comment' => 'commit_comment',
 			'issue_comment' => 'issue_comment',

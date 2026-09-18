@@ -80,6 +80,7 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - pull_request_review
 - pull_request_review_comment
 - push
+- registry_package
 - release
 - repository
 - repository_advisory
@@ -108,7 +109,6 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - projects_v2_item
 - projects_v2_status_update
 - pull_request_review_thread
-- registry_package
 - repository_import
 - repository_ruleset
 - secret_scanning_alert_location
