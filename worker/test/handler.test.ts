@@ -215,17 +215,7 @@ describe('worker', () => {
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 
-	it('accepts the config as a JSON variable instead of text', async () => {
-		const response = await worker.fetch(await buildRequest('push', fixture('push')), {
-			REPOSITORIES: { 'xPaw/*': { secret: EXACT_SECRET, webhooks: [WILDCARD_HOOK] } },
-		});
-
-		expect(response.status).toBe(202);
-		expect(fetchMock.mock.calls[0][0]).toBe(WILDCARD_HOOK);
-	});
-
 	it.each([
-		undefined,
 		'not json',
 		'["not an object"]',
 		'{"xPaw/*":["https://discord.com/api/webhooks/1/a"]}',

@@ -3,8 +3,9 @@
 	"name": "github-webhook-discord",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-09-01",
-	// REPOSITORIES is set in the dashboard (or with `wrangler secret put`), do not remove it when deploying
-	"keep_vars": true,
+	"secrets": {
+		"required": ["REPOSITORIES"]
+	},
 	"observability": {
 		"enabled": true
 	}

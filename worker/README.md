@@ -9,36 +9,26 @@ You need a [Cloudflare](https://dash.cloudflare.com/sign-up) account (the free p
 ```
 npm install
 npx wrangler login
+cp repositories.json.example repositories.json
+npx wrangler secret put REPOSITORIES < repositories.json
 npm run deploy
 ```
 
+Edit `repositories.json` before uploading it, see [Configuration](#configuration).
+
+Setting the secret offers to create the Worker if it does not exist yet, accept it.
 The deploy prints the url of the Worker, such as `https://github-webhook-discord.<account>.workers.dev`.
 To change the name, or to serve it from your own domain, edit `name` or add
 [`routes`](https://developers.cloudflare.com/workers/configuration/routing/) in `wrangler.jsonc`.
 
-Until it is configured the Worker answers every request with a 500.
-
 ### Configuration
-All configuration lives in a single variable, `REPOSITORIES`, which is set on the deployed Worker
-and not in `wrangler.jsonc`. It is a JSON object mapping repository patterns to the secret token
-of their GitHub webhook and the Discord webhooks their events are sent to,
-see `repositories.json.example`.
+All configuration lives in a single secret, `REPOSITORIES`. It is listed in `secrets.required`
+in `wrangler.jsonc`, the value itself is never stored in the config.
 
-In the Cloudflare dashboard open the Worker, go to Settings → Variables and Secrets and add
-`REPOSITORIES` with the type JSON (or Text). It can be viewed and edited there at any time,
-changes apply as soon as they are deployed from the dashboard. `keep_vars` in `wrangler.jsonc`
-keeps the variable in place when the code is deployed again.
+It is a JSON object mapping repository patterns to the secret token of their GitHub webhook
+and the Discord webhooks their events are sent to. Copy `repositories.json.example` to `repositories.json`
+and edit it, the copy is ignored by git because it contains secrets.
 
-The value contains the webhook secrets and the Discord webhook urls, and a variable is readable
-by everyone who has access to the Cloudflare account. To hide it, add it as the type Secret
-instead, which can be replaced but not viewed:
-
-```
-cp repositories.json.example repositories.json
-npx wrangler secret put REPOSITORIES < repositories.json
-```
-
-`repositories.json` is ignored by git.
 - `*` in a pattern is a wildcard. Events that have no repository (organization events)
   are matched as `<org>/repositories`, which `<org>/*` covers.
 - A request is only accepted by patterns whose `secret` matches its signature, so a secret
@@ -49,6 +39,7 @@ npx wrangler secret put REPOSITORIES < repositories.json
 
 Discord webhook urls are created in the channel settings, under Integrations → Webhooks.
 Treat them as passwords, anyone who has the url can post to the channel.
+Run `npx wrangler secret put REPOSITORIES < repositories.json` again to change the configuration, no deploy is needed.
 
 ### GitHub
 Add a webhook in the settings of a repository or an organization:
@@ -68,7 +59,7 @@ and `npx wrangler tail` streams the logs of the Worker.
 | 200 | The event is deliberately ignored, such as `star` or an edited comment |
 | 400 | Malformed request |
 | 401 | Missing or invalid signature, or no pattern matches the repository |
-| 500 | `REPOSITORIES` is not set or not valid, see `wrangler tail` |
+| 500 | `REPOSITORIES` is missing or not valid, see `wrangler tail` |
 | 501 | The event or its action is not supported |
 | 502 | Every Discord webhook failed |
 

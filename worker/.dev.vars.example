@@ -1,4 +1,4 @@
-# Copy to .dev.vars for `wrangler dev`. In production REPOSITORIES is set on the deployed Worker, see the README.
+# Copy to .dev.vars for `wrangler dev`. In production set it with `wrangler secret put REPOSITORIES`.
 
 # JSON object mapping repository patterns to the secret token of their GitHub webhook
 # and the Discord webhooks the events are sent to.
