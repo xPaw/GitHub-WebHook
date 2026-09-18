@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "PR **#6** unlocked: test pull request",
+            "title": "unlocked PR **#6**: test pull request",
             "url": "https:\/\/github.com\/xPaw\/GitHub-WebHook\/pull\/6",
             "color": 5025616,
             "author": {

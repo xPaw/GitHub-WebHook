@@ -1,9 +1,9 @@
 {
     "embeds": [
         {
-            "title": "PR **#328** enabled auto-merge: Fix white eyelashes",
+            "title": "enabled auto-merge on PR **#328**: Fix white eyelashes",
             "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/pull\/328",
-            "color": 16750592,
+            "color": 5025616,
             "author": {
                 "name": "xPaw",
                 "url": "https:\/\/github.com\/xPaw",

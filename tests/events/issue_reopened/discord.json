@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "Issue **#508** reopened: Particle rendering is busted",
+            "title": "reopened issue **#508**: Particle rendering is busted",
             "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/issues\/508",
             "color": 16750592,
             "author": {

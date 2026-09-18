@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "Issue **#5** closed: Add tests",
+            "title": "closed issue **#5**: Add tests",
             "url": "https:\/\/github.com\/xPaw\/GitHub-WebHook\/issues\/5",
             "color": 8540383,
             "author": {

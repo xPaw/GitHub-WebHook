@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "Code scanning alert **#10** reopened: Unsafe jQuery plugin",
+            "title": "\u26a0 Code scanning alert **#10** reopened: Unsafe jQuery plugin",
             "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/code-scanning\/10",
             "color": 16750592,
             "author": {

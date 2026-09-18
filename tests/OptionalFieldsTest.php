@@ -14,7 +14,7 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 	 * @param callable(stdClass): void $Change
 	 */
 	#[DataProvider('payloadProvider')]
-	public function testDiscord( string $Event, string $Fixture, callable $Change, string $Key, ?string $Expected ) : void
+	public function testConverters( string $Event, string $Fixture, callable $Change, string $Key, ?string $Expected ) : void
 	{
 		$Payload = self::LoadPayload( $Fixture );
 		$Change( $Payload );
@@ -24,19 +24,8 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 		self::assertIsArray( $Embed[ 'embeds' ] );
 		self::assertIsArray( $Embed[ 'embeds' ][ 0 ] );
 		self::assertSame( $Expected, $Embed[ 'embeds' ][ 0 ][ $Key ] ?? null );
-	}
 
-	/**
-	 * @param callable(stdClass): void $Change
-	 */
-	#[DataProvider('payloadProvider')]
-	public function testIrcDoesNotThrow( string $Event, string $Fixture, callable $Change, string $Key, ?string $Expected ) : void
-	{
-		unset( $Key, $Expected ); // Only the discord embed is compared
-
-		$Payload = self::LoadPayload( $Fixture );
-		$Change( $Payload );
-
+		// The irc message has no single part to compare, it only has to come out whole
 		$Message = ( new IrcConverter( $Event, $Payload ) )->GetMessage();
 
 		self::assertNotSame( '', $Message );
@@ -88,6 +77,16 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				'secret_scanning_alert', 'secret_scanning_alert_resolved',
 				static function( stdClass $Payload ) : void { $Payload->alert->resolution = ''; },
 				'description', null,
+			],
+			'code scanning alert without a severity or a tool' => [
+				'code_scanning_alert', 'code_scanning_alert_created',
+				static function( stdClass $Payload ) : void { $Payload->alert->rule->severity = null; $Payload->alert->tool = null; },
+				'description', 'Potential XSS vulnerability in the $.fn.position plugin.',
+			],
+			'secret scanning alert without a secret type' => [
+				'secret_scanning_alert', 'secret_scanning_alert_created',
+				static function( stdClass $Payload ) : void { unset( $Payload->alert->secret_type, $Payload->alert->secret_type_display_name ); },
+				'title', '⚠ Secret scanning alert **#3** created: unknown',
 			],
 			'package without a version' => [
 				'registry_package', 'registry_package',

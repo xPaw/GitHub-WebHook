@@ -71,28 +71,32 @@ class IrcConverter extends BaseConverter
 		return substr( $String, 0, 1 ) . "\u{200d}" . substr( $String, 1 );
 	}
 
-	private function FormatAction( ?string $Action = null ) : string
+	private function FormatAction( ?string $Action = null, ?string $Text = null ) : string
 	{
 		if( $Action === null )
 		{
 			$Action = $this->Payload->action;
 		}
 
+		$Text ??= $Action;
+
 		switch( $Action )
 		{
-			case 'created'    :
-			case 'resolved'   :
+			// Something needs attention again
 			case 'reopened'   :
 			case 'reintroduced':
-				return "\00307" . $Action . "\017";
+				return "\00307" . $Text . "\017";
+
+			case 'closed as not planned':
+				return "\00314" . $Text . "\017";
 
 			case 'closed'     :
-			case 'closed as not planned':
 			case 'merged'     :
-				return "\00313" . $Action . "\017";
+				return "\00313" . $Text . "\017";
 
 			case 'locked'     :
 			case 'deleted'    :
+			case 'removed'    :
 			case 'dismissed'  :
 			case 'auto-dismissed':
 			case 'publicly leaked':
@@ -100,10 +104,10 @@ class IrcConverter extends BaseConverter
 			case 'force-pushed':
 			case 'requested changes':
 			case 'closed without merging':
-				return "\00304" . $Action . "\017";
+				return "\00304" . $Text . "\017";
 
 			default           :
-				return "\00309" . $Action . "\017";
+				return "\00309" . $Text . "\017";
 		}
 	}
 
@@ -247,7 +251,7 @@ class IrcConverter extends BaseConverter
 		else if( $Num === 1 )
 		{
 			// If there's only one distinct commit, link to it directly
-			$URL = $this->Payload->head_commit->url;
+			$URL = $DistinctCommits[ 0 ]->url;
 		}
 		else
 		{
@@ -331,11 +335,14 @@ class IrcConverter extends BaseConverter
 			$Action = 'closed as not planned';
 		}
 
-		return sprintf( '[%s] %s %s issue %s: %s. %s',
+		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
+
+		return sprintf( '[%s] %s %s issue %s%s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( $Action ),
+						$this->FormatAction( $Action, $Verb ),
 						$this->FormatNumber( sprintf( '#%d', $this->Payload->issue->number ) ),
+						$Suffix,
 						$this->Payload->issue->title,
 						$this->FormatURL( $this->Payload->issue->html_url )
 		);
@@ -403,12 +410,15 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
-		return sprintf( '[%s] %s %s %spull request %s%s: %s. %s',
+		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
+
+		return sprintf( '[%s] %s %s %spull request %s%s%s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( $Action ),
-						$this->Payload->pull_request->draft ? 'draft ' : '',
+						$this->FormatAction( $Action, $Verb ),
+						$this->Payload->pull_request->draft && $Action !== 'converted to draft' ? 'draft ' : '',
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
+						$Suffix,
 						$Action === 'merged' ?
 							( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ?? 'ghost' ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
 							'',
@@ -435,10 +445,13 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
+		// A new milestone is "created", GitHub calls reopening a closed one "opened"
+		$Action = $this->Payload->action === 'opened' ? 'reopened' : $this->Payload->action;
+
 		return sprintf( '[%s] %s %s milestone %s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( ),
+						$this->FormatAction( $Action ),
 						$this->FormatNumber( sprintf( '#%d', $this->Payload->milestone->number ) ),
 						$this->Payload->milestone->title,
 						$this->FormatURL( $this->Payload->milestone->html_url )
@@ -673,12 +686,15 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
+		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
+
 		return sprintf(
-			'[%s] %s %s discussion %s: %s. %s',
+			'[%s] %s %s discussion %s%s: %s. %s',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->sender->login ),
-			$this->FormatAction( $Action ),
+			$this->FormatAction( $Action, $Verb ),
 			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
+			$Suffix,
 			$this->Payload->discussion->title,
 			$this->FormatURL( $Action === 'answered' ? ( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url ) : $this->Payload->discussion->html_url )
 		);
@@ -750,8 +766,9 @@ class IrcConverter extends BaseConverter
 			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
 		};
 
-		return sprintf( '[%s] Code scanning alert %s %s: %s %s',
+		return sprintf( '[%s] %sCode scanning alert %s %s: %s %s',
 						$this->FormatRepoName( ),
+						$Action === 'reopened' ? '⚠ ' : '',
 						$this->FormatNumber( '#' . $this->Payload->alert->number ),
 						$this->FormatAction( $Action ),
 						$this->ShortMessage( $this->Payload->alert->rule->description ),
@@ -779,21 +796,24 @@ class IrcConverter extends BaseConverter
 
 		if( $Action === 'created' )
 		{
-			return sprintf( '[%s] ⚠ New Dependabot alert %s for %s: %s (%s) %s',
+			return sprintf( '[%s] ⚠ New Dependabot alert %s for %s: %s (%s, %s) %s',
 							$this->FormatRepoName( ),
 							$this->FormatNumber( '#' . $this->Payload->alert->number ),
 							$this->FormatName( $this->Payload->alert->security_vulnerability->package->name ),
+							$this->ShortMessage( $Advisory->summary ),
 							$this->FormatNumber( $Advisory->cve_id ?? $Advisory->ghsa_id ),
 							$Advisory->severity,
 							$this->FormatURL( $this->Payload->alert->html_url )
 			);
 		}
 
-		return sprintf( '[%s] Dependabot alert %s %s for %s: %s %s',
+		return sprintf( '[%s] %sDependabot alert %s %s for %s: %s (%s) %s',
 						$this->FormatRepoName( ),
+						$Action === 'reopened' || $Action === 'reintroduced' ? '⚠ ' : '',
 						$this->FormatNumber( '#' . $this->Payload->alert->number ),
 						$this->FormatAction( $Action ),
 						$this->FormatName( $this->Payload->alert->security_vulnerability->package->name ),
+						$this->ShortMessage( $Advisory->summary ),
 						$this->FormatNumber( $Advisory->cve_id ?? $Advisory->ghsa_id ),
 						$this->FormatURL( $this->Payload->alert->html_url )
 		);
@@ -844,7 +864,7 @@ class IrcConverter extends BaseConverter
 
 		return sprintf( '[%s] %sSecret scanning alert %s %s: %s %s',
 						$this->FormatRepoName( ),
-						$Action === 'publicly leaked' ? '⚠ ' : '',
+						$Action === 'publicly leaked' || $Action === 'reopened' ? '⚠ ' : '',
 						$this->FormatNumber( '#' . $this->Payload->alert->number ),
 						$this->FormatAction( $Action ),
 						$SecretType,
@@ -873,7 +893,7 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		return sprintf( '[%s] %s %s a security advisory %s: %s (%s) %s',
+		return sprintf( '[%s] ⚠ %s %s a security advisory %s: %s (%s) %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
@@ -914,7 +934,7 @@ class IrcConverter extends BaseConverter
 	{
 		$Message = '';
 
-		foreach( $this->Payload->pages as $Page )
+		foreach( array_slice( $this->Payload->pages, 0, self::MAX_WIKI_PAGES ) as $Page )
 		{
 			if( $Message !== '' )
 			{
@@ -934,8 +954,21 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( $Page->action ),
 						$Page->title,
-						( $Page->summary ?? '' ) === '' ? '' : ( $Page->summary . ' ' ),
+						( $Page->summary ?? '' ) === '' ? '' : ( $this->ShortMessage( $Page->summary ) . ' ' ),
 						$this->FormatURL( $URL )
+			);
+		}
+
+		$Remaining = count( $this->Payload->pages ) - self::MAX_WIKI_PAGES;
+
+		if( $Remaining > 0 )
+		{
+			$Message .= sprintf( "\n[%s] %s updated %s more page%s %s",
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatNumber( (string)$Remaining ),
+						$Remaining === 1 ? '' : 's',
+						$this->FormatURL( $this->Payload->repository->html_url . '/wiki' )
 			);
 		}
 

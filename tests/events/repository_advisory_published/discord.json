@@ -1,10 +1,10 @@
 {
     "embeds": [
         {
-            "title": "published a security advisory: Path traversal in the static file handler",
+            "title": "\u26a0 published a security advisory: Path traversal in the static file handler",
             "description": "### Impact\nA crafted request path lets an attacker read files outside of the public directory.\n### Patches\nUpgrade to 1.4.2.",
             "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p",
-            "color": 5025616,
+            "color": 16750592,
             "author": {
                 "name": "Codertocat",
                 "url": "https:\/\/github.com\/Codertocat",

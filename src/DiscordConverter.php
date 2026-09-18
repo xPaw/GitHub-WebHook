@@ -12,12 +12,17 @@ class DiscordConverter extends BaseConverter
 	// A tag never contains another "<", which keeps text full of unclosed tags cheap to scan.
 	private const string HTML_TAG = '~</?[a-z](?:[^<>"\']|"[^"<]*"|\'[^\'<]*\')*>~i';
 
+	private const int COLOR_DEFAULT = 5025616;
+	private const int COLOR_ATTENTION = 16750592;
+	private const int COLOR_BAD = 16007990;
+	private const int COLOR_CLOSED = 8540383;
+	private const int COLOR_NOT_PLANNED = 7239297;
+
 	private const int MAX_TITLE_LENGTH = 256;
 	private const int MAX_DESCRIPTION_LENGTH = 4096;
 	private const int MAX_FIELD_NAME_LENGTH = 256;
 	private const int MAX_FIELD_VALUE_LENGTH = 1024;
 	private const int MAX_FOOTER_LENGTH = 2048;
-	private const int MAX_WIKI_PAGES = 5;
 
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.
@@ -114,10 +119,27 @@ class DiscordConverter extends BaseConverter
 		if( mb_strlen( $Message ) > $Limit )
 		{
 			// The ellipsis counts towards the limit
-			$Message = mb_substr( $Message, 0, $Limit - 1 ) . '…';
+			$Message = mb_substr( $Message, 0, $Limit - 1 );
+
+			// Do not leave half of an escaped character behind
+			if( ( strlen( $Message ) - strlen( rtrim( $Message, '\\' ) ) ) % 2 === 1 )
+			{
+				$Message = substr( $Message, 0, -1 );
+			}
+
+			$Message .= '…';
 		}
 
 		return $Message;
+	}
+
+	/** Whether an alert is open after this action, and so needs attention. */
+	private static function IsOpenAlert( string $Action ) : bool
+	{
+		return $Action === 'created'
+			|| $Action === 'reopened'
+			|| $Action === 'reintroduced'
+			|| $Action === 'publicly leaked';
 	}
 
 	private static function EscapeCode( string $Message ) : string
@@ -153,27 +175,27 @@ class DiscordConverter extends BaseConverter
 
 		switch( $Action )
 		{
-			case 'enabled auto-merge':
-			case 'created'    :
-			case 'resolved'   :
+			// Something needs attention again
 			case 'reintroduced':
-			case 'reopened'   : return 16750592;
+			case 'reopened'   : return self::COLOR_ATTENTION;
 
 			case 'locked'     :
 			case 'deleted'    :
+			case 'removed'    :
 			case 'dismissed'  :
 			case 'auto-dismissed':
 			case 'publicly leaked':
 			case 'unpublished':
 			case 'force-pushed':
 			case 'requested changes in':
-			case 'closed without merging': return 16007990;
+			case 'closed without merging': return self::COLOR_BAD;
 
-			case 'closed as not planned':
-			case 'closed'     : return 8540383;
-			case 'merged'     : return 7291585;
+			case 'closed as not planned': return self::COLOR_NOT_PLANNED;
 
-			default           : return 5025616;
+			case 'closed'     :
+			case 'merged'     : return self::COLOR_CLOSED;
+
+			default           : return self::COLOR_DEFAULT;
 		}
 	}
 
@@ -241,8 +263,8 @@ class DiscordConverter extends BaseConverter
 
 		$Embed = [
 			'title' => '',
-			'url' => $this->Payload->repository->html_url,
-			'color' => $this->FormatAction( 'pushed' ),
+			'url' => $this->Payload->compare,
+			'color' => self::COLOR_DEFAULT,
 			'author' => $this->FormatAuthor(),
 		];
 
@@ -251,7 +273,6 @@ class DiscordConverter extends BaseConverter
 			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
 			{
 				$Embed[ 'title' ] = "tagged " . self::EscapeCode( $this->RefName ) . " at " . self::EscapeCode( $this->BaseRefName ?? $this->AfterSHA() );
-				$Embed[ 'color' ] = $this->FormatAction( 'tagged' );
 			}
 			else
 			{
@@ -282,19 +303,18 @@ class DiscordConverter extends BaseConverter
 		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
 		{
 			$Embed[ 'title' ] = "force-pushed " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
-			$Embed[ 'color' ] = $this->FormatAction( 'force-pushed' );
+			$Embed[ 'color' ] = self::COLOR_BAD;
 		}
 		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
 		{
 			if( $this->BaseRefName !== null )
 			{
 				$Embed[ 'title' ] = "merged " . self::EscapeCode( $this->BaseRefName ) . " into " . self::EscapeCode( $this->RefName );
-				$Embed[ 'color' ] = $this->FormatAction( 'merged' );
+				$Embed[ 'color' ] = self::COLOR_CLOSED;
 			}
 			else
 			{
 				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
-				$Embed[ 'color' ] = $this->FormatAction( 'fast-forwarded' );
 			}
 		}
 		else
@@ -319,10 +339,6 @@ class DiscordConverter extends BaseConverter
 		{
 			// If there's only one distinct commit, link to it directly
 			$Embed[ 'url' ] = $DistinctCommits[ 0 ]->url;
-		}
-		else
-		{
-			$Embed[ 'url' ] = $this->Payload->compare;
 		}
 
 		if( $Num > 0 )
@@ -374,7 +390,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "deleted {$this->Payload->ref_type} " . self::EscapeCode( $this->Payload->ref ),
 			'url' => $this->Payload->repository->html_url,
-			'color' => $this->FormatAction( 'deleted' ),
+			'color' => self::COLOR_BAD,
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -414,16 +430,15 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
-		if( $Action === 'closed' )
+		if( $Action === 'closed' && $this->Payload->issue->state_reason === 'not_planned' )
 		{
-			if( $this->Payload->issue->state_reason === 'not_planned' )
-			{
-				$Action = 'closed as not planned';
-			}
+			$Action = 'closed as not planned';
 		}
 
+		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
+
 		$Embed = [
-			'title' => "Issue **#{$this->Payload->issue->number}** {$Action}: " . self::Escape( $this->Payload->issue->title ),
+			'title' => "{$Verb} issue **#{$this->Payload->issue->number}**{$Suffix}: " . self::Escape( $this->Payload->issue->title ),
 			'url' => $this->Payload->issue->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -442,7 +457,7 @@ class DiscordConverter extends BaseConverter
 					$Labels[] = $Label->name;
 				}
 
-				$Embed[ 'footer' ][ 'text' ] = implode( ' | ', $Labels );
+				$Embed[ 'footer' ][ 'text' ] = implode( ' · ', $Labels );
 			}
 		}
 
@@ -513,8 +528,11 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
+		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
+		$Draft = $this->Payload->pull_request->draft && $Action !== 'converted to draft' ? 'draft ' : '';
+
 		$Embed = [
-			'title' => ( $this->Payload->pull_request->draft && $Action !== 'converted to draft' ? 'Draft ' : '' ) . "PR **#{$this->Payload->pull_request->number}** {$Action}: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => "{$Verb} {$Draft}PR **#{$this->Payload->pull_request->number}**{$Suffix}: " . self::Escape( $this->Payload->pull_request->title ),
 			'url' => $this->Payload->pull_request->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -552,11 +570,14 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
+		// A new milestone is "created", GitHub calls reopening a closed one "opened"
+		$Action = $this->Payload->action === 'opened' ? 'reopened' : $this->Payload->action;
+
 		return [
-			'title' => "{$this->Payload->action} milestone **#{$this->Payload->milestone->number}**: " . self::Escape( $this->Payload->milestone->title ),
-			'description' => self::ShortDescription( $this->Payload->milestone->description ),
+			'title' => "{$Action} milestone **#{$this->Payload->milestone->number}**: " . self::Escape( $this->Payload->milestone->title ),
+			'description' => $Action === 'created' ? self::ShortDescription( $this->Payload->milestone->description ) : '',
 			'url' => $this->Payload->milestone->html_url,
-			'color' => $this->FormatAction(),
+			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -582,7 +603,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "{$this->Payload->action} " . self::Escape( strtolower( $Package->package_type ) ) . " package: **" . self::Escape( $Package->name ) . "**" . ( $Version === '' ? '' : ' ' . self::Escape( $Version ) ),
 			// Container packages have an empty object as their body
-			'description' => self::ShortDescription( is_string( $Body ) ? $Body : null ),
+			'description' => $this->Payload->action === 'published' && is_string( $Body ) ? self::ShortDescription( $Body ) : '',
 			'url' => $Package->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -794,8 +815,10 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
+		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
+
 		$Embed = [
-			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$Action}: " . self::Escape( $this->Payload->discussion->title ),
+			'title' => "{$Verb} discussion **#{$this->Payload->discussion->number}**{$Suffix}: {$this->Payload->discussion->category->emoji} " . self::Escape( $this->Payload->discussion->title ),
 			'url' => $Action === 'answered' ? ( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url ) : $this->Payload->discussion->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -870,13 +893,18 @@ class DiscordConverter extends BaseConverter
 		[
 			'title' => "Dependabot alert **#{$this->Payload->alert->number}** {$Action} for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
 			'url' => $this->Payload->alert->html_url,
-			'color' => $this->FormatAction( $Action ),
+			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
 
-		if( $Action === 'created' )
+		if( self::IsOpenAlert( $Action ) )
 		{
 			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
+		}
+
+		if( $Action === 'created' )
+		{
+			$Embed[ 'description' ] = self::ShortDescription( $Advisory->description ?? null );
 			$Embed[ 'fields' ] =
 			[
 				[
@@ -933,13 +961,17 @@ class DiscordConverter extends BaseConverter
 		[
 			'title' => "Code scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $this->Payload->alert->rule->description ),
 			'url' => $this->Payload->alert->html_url,
-			'color' => $this->FormatAction( $Action ),
+			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
 
-		if( $Action === 'created' )
+		if( self::IsOpenAlert( $Action ) )
 		{
 			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
+		}
+
+		if( $Action === 'created' )
+		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->alert->most_recent_instance->message->text ?? null );
 			$Embed[ 'fields' ] =
 			[
@@ -950,6 +982,10 @@ class DiscordConverter extends BaseConverter
 				[
 					'name' => 'Tool',
 					'value' => self::Escape( $this->Payload->alert->tool->name ?? 'unknown' )
+				],
+				[
+					'name' => 'Identifier',
+					'value' => self::Escape( $this->Payload->alert->rule->id )
 				],
 			];
 		}
@@ -986,11 +1022,11 @@ class DiscordConverter extends BaseConverter
 		[
 			'title' => "Secret scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $SecretType ),
 			'url' => $this->Payload->alert->html_url,
-			'color' => $this->FormatAction( $Action ),
+			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
 
-		if( $Action === 'created' || $Action === 'publicly leaked' )
+		if( self::IsOpenAlert( $Action ) )
 		{
 			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
 		}
@@ -1022,7 +1058,7 @@ class DiscordConverter extends BaseConverter
 			return [
 				'title' => "⚠ privately reported a vulnerability: **" . self::Escape( $Advisory->ghsa_id ) . "**",
 				'url' => $Advisory->html_url,
-				'color' => $this->FormatAction( 'created' ),
+				'color' => self::COLOR_ATTENTION,
 				'author' => $this->FormatAuthor(),
 			];
 		}
@@ -1033,10 +1069,10 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "published a security advisory: " . self::Escape( $Advisory->summary ),
+			'title' => "⚠ published a security advisory: " . self::Escape( $Advisory->summary ),
 			'description' => self::ShortDescription( $Advisory->description ),
 			'url' => $Advisory->html_url,
-			'color' => $this->FormatAction(),
+			'color' => self::COLOR_ATTENTION,
 			'author' => $this->FormatAuthor(),
 			'fields' =>
 			[
@@ -1112,7 +1148,7 @@ class DiscordConverter extends BaseConverter
 			'title' => "updated wiki",
 			'url' => $this->Payload->repository->html_url . '/wiki',
 			'description' => implode( "\n", $Messages ),
-			'color' => $this->FormatAction( 'updated' ),
+			'color' => self::COLOR_DEFAULT,
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -1127,7 +1163,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "Hook {$this->Payload->hook_id} worked!",
 			'description' => self::Escape( $this->Payload->zen ?? '' ),
-			'color' => 5025616,
+			'color' => self::COLOR_DEFAULT,
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -1142,7 +1178,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "**" . self::Escape( $this->Payload->repository->name ) . "** is now open source and available to everyone!",
 			'url' => $this->Payload->repository->html_url,
-			'color' => 5025616,
+			'color' => self::COLOR_DEFAULT,
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -1179,13 +1215,11 @@ class DiscordConverter extends BaseConverter
 		}
 		else if( $this->Payload->action === 'transferred' )
 		{
-			if( isset( $this->Payload->changes->owner->from->user ) )
+			$Owner = $this->Payload->changes->owner->from->user ?? $this->Payload->changes->owner->from->organization ?? null;
+
+			if( $Owner !== null )
 			{
-				$Title .= " (from **" . self::Escape( $this->Payload->changes->owner->from->user->login ) . "**)";
-			}
-			else if( isset( $this->Payload->changes->owner->from->organization ) )
-			{
-				$Title .= " (from **" . self::Escape( $this->Payload->changes->owner->from->organization->login ) . "**)";
+				$Title .= " (from **" . self::Escape( $Owner->login ) . "**)";
 			}
 		}
 

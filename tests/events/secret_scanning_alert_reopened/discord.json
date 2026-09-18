@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "Secret scanning alert **#3** reopened: GitHub Personal Access Token",
+            "title": "\u26a0 Secret scanning alert **#3** reopened: GitHub Personal Access Token",
             "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3",
             "color": 16750592,
             "author": {

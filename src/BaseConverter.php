@@ -30,10 +30,36 @@ class BaseConverter
 		}
 	}
 
-	/** Like trim(), but it also removes unicode spaces such as the no-break space. */
+	/** Wiki pages listed for a single update, the same as commits in a push. */
+	protected const int MAX_WIKI_PAGES = 5;
+
+	/**
+	 * Splits an action into the verb that goes before the thing it happened to, and what goes after it,
+	 * so that a sentence reads "closed issue #5 as not planned" rather than "closed as not planned issue #5".
+	 *
+	 * @return array{string, string}
+	 */
+	protected static function ActionPhrase( string $Action ) : array
+	{
+		return match( $Action )
+		{
+			'closed as not planned' => [ 'closed', ' as not planned' ],
+			'closed without merging' => [ 'closed', ' without merging' ],
+			'readied' => [ 'marked', ' as ready for review' ],
+			'enabled auto-merge' => [ 'enabled auto-merge on', '' ],
+			'converted to draft' => [ 'converted', ' to draft' ],
+			'changed category' => [ 'changed category of', '' ],
+			default => [ $Action, '' ],
+		};
+	}
+
+	/**
+	 * Like trim(), but it also removes unicode spaces such as the no-break space.
+	 * The lookbehind only lets the end match at the start of a run of spaces, which keeps long runs cheap.
+	 */
 	protected static function Trim( string $Message ) : string
 	{
-		return preg_replace( '/^[\s\p{Z}\x{FEFF}]+|[\s\p{Z}\x{FEFF}]+$/u', '', $Message ) ?? trim( $Message );
+		return preg_replace( '/^[\s\p{Z}\x{FEFF}]+|(?<![\s\p{Z}\x{FEFF}])[\s\p{Z}\x{FEFF}]+$/u', '', $Message ) ?? trim( $Message );
 	}
 
 	private static function GetRefName( string $Ref ) : string

@@ -1,18 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getEmbed } from '../src/discord/converter.js';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../src/errors.js';
-import { readFixture } from './fixtures.js';
-
-type Payload = Record<string, any>;
-
-/** Loads the payload of a fixture and applies changes to it. */
-function payload(fixture: string, change: (payload: Payload) => void = () => {}): Payload {
-	const loaded = JSON.parse(readFixture(fixture)) as Payload;
-
-	change(loaded);
-
-	return loaded;
-}
+import { loadPayload as payload, type Payload } from './fixtures.js';
 
 function withAction(fixture: string, action: string): Payload {
 	return payload(fixture, (p) => {
@@ -202,6 +191,25 @@ describe('optional fields', () => {
 		});
 
 		expect(result).not.toHaveProperty('description');
+	});
+
+	it('code scanning alert without a severity or a tool', () => {
+		const result = embed('code_scanning_alert', 'code_scanning_alert_created', (p) => {
+			p.alert.rule.severity = null;
+			p.alert.tool = null;
+		});
+
+		expect(result.fields).toContainEqual({ name: 'Severity', value: 'none' });
+		expect(result.fields).toContainEqual({ name: 'Tool', value: 'unknown' });
+	});
+
+	it('secret scanning alert without a secret type', () => {
+		const result = embed('secret_scanning_alert', 'secret_scanning_alert_created', (p) => {
+			delete p.alert.secret_type;
+			delete p.alert.secret_type_display_name;
+		});
+
+		expect(result.title).toBe('⚠ Secret scanning alert **#3** created: unknown');
 	});
 
 	it('transferred repository without a previous owner', () => {

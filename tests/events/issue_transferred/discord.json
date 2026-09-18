@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "Issue **#508** transferred: Particle rendering is busted",
+            "title": "transferred issue **#508**: Particle rendering is busted",
             "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/issues\/508",
             "color": 5025616,
             "author": {

@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "Issue **#508** opened: backslash \\`tick\\` \\*star\\* \\_u\\_ \\|pipe\\| \\[l\\]\\(u\\) \\<t\\> \\~strike\\~ #1 @everyone",
+            "title": "opened issue **#508**: backslash \\`tick\\` \\*star\\* \\_u\\_ \\|pipe\\| \\[l\\]\\(u\\) \\<t\\> \\~strike\\~ #1 @everyone",
             "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/issues\/508",
             "color": 5025616,
             "author": {
@@ -11,7 +11,7 @@
             },
             "description": "Seems like a combination of Valve updating some of the particle stuff, and our code not handling certain things.\nIt needs a loving pass to fix up the existing stuff we have. I committed a few fix which should ease the task.",
             "footer": {
-                "text": "bug | help wanted | a|b"
+                "text": "bug \u00b7 help wanted \u00b7 a|b"
             }
         }
     ]

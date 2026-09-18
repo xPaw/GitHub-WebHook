@@ -18,6 +18,10 @@
                 {
                     "name": "Tool",
                     "value": "CodeQL"
+                },
+                {
+                    "name": "Identifier",
+                    "value": "js\/unsafe-jquery-plugin"
                 }
             ]
         }

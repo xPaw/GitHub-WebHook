@@ -20,15 +20,41 @@ export function escapeCode(message: string): string {
 
 /** Truncates to a number of code points, so that emoji and other astral characters stay intact. */
 function truncate(text: string, limit: number): string {
+	// There are never more code points than code units
+	if (text.length <= limit) {
+		return text;
+	}
+
 	const characters = [...text];
 	return characters.length > limit ? characters.slice(0, limit).join('') : text;
 }
 
 /** Cuts text that is over a limit imposed by Discord, the ellipsis counts towards the limit. */
 export function limitLength(text: string, limit: number): string {
-	const truncated = truncate(text, limit - 1);
+	// There are never more code points than code units
+	if (text.length <= limit) {
+		return text;
+	}
 
-	return [...text].length > limit ? `${truncated}…` : text;
+	const characters = [...text];
+
+	if (characters.length <= limit) {
+		return text;
+	}
+
+	let end = limit - 1;
+	let backslashes = 0;
+
+	while (characters[end - 1 - backslashes] === '\\') {
+		backslashes++;
+	}
+
+	// Do not leave half of an escaped character behind
+	if (backslashes % 2 === 1) {
+		end--;
+	}
+
+	return `${characters.slice(0, end).join('')}…`;
 }
 
 /**

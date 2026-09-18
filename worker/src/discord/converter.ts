@@ -103,7 +103,7 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 		case 'discussion':
 			return formatDiscussion(payload as DiscussionEvent);
 		case 'discussion_comment':
-			return formatComment(eventType, payload as DiscussionCommentEvent, 'discussion', (payload as DiscussionCommentEvent).discussion);
+			return formatComment(eventType, payload as DiscussionCommentEvent);
 		case 'public':
 			return formatPublic(payload as PublicEvent);
 		case 'issues':
@@ -113,9 +113,9 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 		case 'gollum':
 			return formatGollum(payload as GollumEvent);
 		case 'package':
-			return formatPackage(eventType, (payload as PackageEvent).package, payload as PackageEvent);
+			return formatPackage(eventType, payload as PackageEvent);
 		case 'registry_package':
-			return formatPackage(eventType, (payload as RegistryPackageEvent).registry_package, payload as RegistryPackageEvent);
+			return formatPackage(eventType, payload as RegistryPackageEvent);
 		case 'release':
 			return formatRelease(payload as ReleaseEvent);
 		case 'milestone':
@@ -124,11 +124,8 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 			return formatRepository(payload as RepositoryEvent);
 		case 'pull_request':
 			return formatPullRequest(payload as PullRequestEvent);
-		case 'issue_comment': {
-			const { issue } = payload as IssueCommentEvent;
-
-			return formatComment(eventType, payload as IssueCommentEvent, issue.pull_request ? 'PR' : 'issue', issue);
-		}
+		case 'issue_comment':
+			return formatComment(eventType, payload as IssueCommentEvent);
 		case 'commit_comment':
 			return formatCommitComment(payload as CommitCommentEvent);
 		case 'pull_request_review':
@@ -163,7 +160,11 @@ function formatAuthor(sender: Sender): DiscordEmbed['author'] {
 	};
 }
 
-const DEFAULT_COLOR = 5025616;
+const COLOR_DEFAULT = 5025616;
+const COLOR_ATTENTION = 16750592;
+const COLOR_BAD = 16007990;
+const COLOR_CLOSED = 8540383;
+const COLOR_NOT_PLANNED = 7239297;
 
 /** Throws unless the action is one that gets formatted, ignored actions are checked first. */
 function assertAction(event: string, action: string, supported: readonly string[], ignored: readonly string[] = []): void {
@@ -178,15 +179,14 @@ function assertAction(event: string, action: string, supported: readonly string[
 
 function actionColor(action: string): number {
 	switch (action) {
-		case 'enabled auto-merge':
-		case 'created':
-		case 'resolved':
+		// Something needs attention again
 		case 'reopened':
 		case 'reintroduced':
-			return 16750592;
+			return COLOR_ATTENTION;
 
 		case 'locked':
 		case 'deleted':
+		case 'removed':
 		case 'dismissed':
 		case 'auto-dismissed':
 		case 'publicly leaked':
@@ -194,19 +194,45 @@ function actionColor(action: string): number {
 		case 'force-pushed':
 		case 'requested changes in':
 		case 'closed without merging':
-			return 16007990;
+			return COLOR_BAD;
 
 		case 'closed as not planned':
-		case 'closed':
-			return 8540383;
+			return COLOR_NOT_PLANNED;
 
+		case 'closed':
 		case 'merged':
-			return 7291585;
+			return COLOR_CLOSED;
 
 		default:
-			return DEFAULT_COLOR;
+			return COLOR_DEFAULT;
 	}
 }
+
+/**
+ * Splits an action into the verb that goes before the thing it happened to, and what goes after it,
+ * so that a title reads "closed issue #5 as not planned" rather than "closed as not planned issue #5".
+ */
+function actionPhrase(action: string): [verb: string, suffix: string] {
+	switch (action) {
+		case 'closed as not planned':
+			return ['closed', ' as not planned'];
+		case 'closed without merging':
+			return ['closed', ' without merging'];
+		case 'readied':
+			return ['marked', ' as ready for review'];
+		case 'enabled auto-merge':
+			return ['enabled auto-merge on', ''];
+		case 'converted to draft':
+			return ['converted', ' to draft'];
+		case 'changed category':
+			return ['changed category of', ''];
+		default:
+			return [action, ''];
+	}
+}
+
+/** Actions after which an alert is open, and so needs attention. */
+const OPEN_ALERT_ACTIONS = new Set(['created', 'reopened', 'reintroduced', 'publicly leaked']);
 
 /** `refs/heads/some/branch` -> `some/branch`. */
 function refName(ref: string): string {
@@ -221,7 +247,7 @@ function formatPing(payload: PingEvent): DiscordEmbed {
 	return {
 		title: `Hook ${payload.hook_id} worked!`,
 		description: escape(payload.zen ?? ''),
-		color: DEFAULT_COLOR,
+		color: COLOR_DEFAULT,
 		author: formatAuthor(payload.sender),
 	};
 }
@@ -235,14 +261,13 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	const embed: DiscordEmbed = {
 		title: '',
 		url: payload.compare,
-		color: DEFAULT_COLOR,
+		color: COLOR_DEFAULT,
 		author: formatAuthor(payload.sender),
 	};
 
 	if (payload.created) {
 		if (payload.ref.startsWith('refs/tags/')) {
 			embed.title = `tagged ${ref} at ${baseRef ?? escapeCode(shortSha(payload.after))}`;
-			embed.color = actionColor('tagged');
 		} else {
 			embed.title = `created ${ref}`;
 
@@ -260,14 +285,13 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 		throw new NotImplementedError('push', 'deleted (use DeleteEvent if needed)');
 	} else if (payload.forced) {
 		embed.title = `force-pushed ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
-		embed.color = actionColor('force-pushed');
+		embed.color = COLOR_BAD;
 	} else if (commits.length === 0 && payload.commits.length > 0) {
 		if (baseRef) {
 			embed.title = `merged ${baseRef} into ${ref}`;
-			embed.color = actionColor('merged');
+			embed.color = COLOR_CLOSED;
 		} else {
 			embed.title = `fast-forwarded ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
-			embed.color = actionColor('fast-forwarded');
 		}
 	} else {
 		embed.title = `pushed ${newCommits} to ${ref}`;
@@ -316,7 +340,7 @@ function formatDelete(payload: DeleteEvent): DiscordEmbed {
 	return {
 		title: `deleted ${payload.ref_type} ${escapeCode(payload.ref)}`,
 		url: payload.repository.html_url,
-		color: actionColor('deleted'),
+		color: COLOR_BAD,
 		author: formatAuthor(payload.sender),
 	};
 }
@@ -332,8 +356,10 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 	const action =
 		payload.action === 'closed' && payload.issue.state_reason === 'not_planned' ? 'closed as not planned' : payload.action;
 
+	const [verb, suffix] = actionPhrase(action);
+
 	const embed: DiscordEmbed = {
-		title: `Issue **#${payload.issue.number}** ${action}: ${escape(payload.issue.title)}`,
+		title: `${verb} issue **#${payload.issue.number}**${suffix}: ${escape(payload.issue.title)}`,
 		url: payload.issue.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -343,7 +369,7 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 		embed.description = shortDescription(payload.issue.body);
 
 		if (payload.issue.labels && payload.issue.labels.length > 0) {
-			embed.footer = { text: payload.issue.labels.map((label) => label.name).join(' | ') };
+			embed.footer = { text: payload.issue.labels.map((label) => label.name).join(' · ') };
 		}
 	}
 
@@ -395,8 +421,11 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 		],
 	);
 
+	const [verb, suffix] = actionPhrase(action);
+	const draft = payload.pull_request.draft && action !== 'converted to draft' ? 'draft ' : '';
+
 	const embed: DiscordEmbed = {
-		title: `${payload.pull_request.draft && action !== 'converted to draft' ? 'Draft ' : ''}PR **#${payload.pull_request.number}** ${action}: ${escape(payload.pull_request.title)}`,
+		title: `${verb} ${draft}PR **#${payload.pull_request.number}**${suffix}: ${escape(payload.pull_request.title)}`,
 		url: payload.pull_request.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -414,30 +443,30 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 function formatMilestone(payload: MilestoneEvent): DiscordEmbed {
 	assertAction('milestone', payload.action, ['opened', 'closed', 'created', 'deleted'], ['edited']);
 
+	// A new milestone is "created", GitHub calls reopening a closed one "opened"
+	const action = payload.action === 'opened' ? 'reopened' : payload.action;
+
 	return {
-		title: `${payload.action} milestone **#${payload.milestone.number}**: ${escape(payload.milestone.title)}`,
-		description: shortDescription(payload.milestone.description),
+		title: `${action} milestone **#${payload.milestone.number}**: ${escape(payload.milestone.title)}`,
+		description: action === 'created' ? shortDescription(payload.milestone.description) : '',
 		url: payload.milestone.html_url,
-		color: actionColor(payload.action),
+		color: actionColor(action),
 		author: formatAuthor(payload.sender),
 	};
 }
 
 /** Both `package` and `registry_package` have the same payload under a different name. */
-function formatPackage(
-	event: string,
-	pkg: PackageEvent['package'] | RegistryPackageEvent['registry_package'],
-	payload: PackageEvent | RegistryPackageEvent,
-): DiscordEmbed {
+function formatPackage(event: string, payload: PackageEvent | RegistryPackageEvent): DiscordEmbed {
 	assertAction(event, payload.action, ['published', 'updated']);
 
+	const pkg = 'registry_package' in payload ? payload.registry_package : payload.package;
 	const body = pkg.package_version?.body;
 	const version = pkg.package_version?.version;
 
 	return {
 		title: `${payload.action} ${escape(pkg.package_type.toLowerCase())} package: **${escape(pkg.name)}**${version ? ` ${escape(version)}` : ''}`,
 		// Container packages have an empty object as their body
-		description: shortDescription(typeof body === 'string' ? body : null),
+		description: payload.action === 'published' && typeof body === 'string' ? shortDescription(body) : '',
 		url: pkg.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -478,28 +507,22 @@ function formatCommitComment(payload: CommitCommentEvent): DiscordEmbed {
 }
 
 /** Comments on issues, pull requests and discussions. */
-function formatComment(
-	event: string,
-	payload: IssueCommentEvent | DiscussionCommentEvent,
-	kind: string,
-	subject: { number: number; title: string },
-): DiscordEmbed {
+function formatComment(event: string, payload: IssueCommentEvent | DiscussionCommentEvent): DiscordEmbed {
 	assertAction(event, payload.action, ['created', 'deleted'], ['edited']);
 
-	const embed: DiscordEmbed = {
-		title: `commented on ${kind} **#${subject.number}**: ${escape(subject.title)}`,
-		description: shortDescription(payload.comment.body),
+	const subject = 'discussion' in payload ? payload.discussion : payload.issue;
+	const kind = 'discussion' in payload ? 'discussion' : payload.issue.pull_request ? 'PR' : 'issue';
+	const deleted = payload.action === 'deleted';
+
+	return {
+		title: deleted
+			? `deleted comment in ${kind} **#${subject.number}** from **${escape(payload.comment.user?.login ?? 'ghost')}**`
+			: `commented on ${kind} **#${subject.number}**: ${escape(subject.title)}`,
+		description: deleted ? '' : shortDescription(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
 	};
-
-	if (payload.action === 'deleted') {
-		embed.title = `deleted comment in ${kind} **#${subject.number}** from **${escape(payload.comment.user?.login ?? 'ghost')}**`;
-		delete embed.description;
-	}
-
-	return embed;
 }
 
 function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed {
@@ -547,8 +570,10 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 		['edited', 'labeled', 'unlabeled', 'unanswered'],
 	);
 
+	const [verb, suffix] = actionPhrase(action);
+
 	const embed: DiscordEmbed = {
-		title: `${payload.discussion.category.emoji} Discussion **#${payload.discussion.number}** ${action}: ${escape(payload.discussion.title)}`,
+		title: `${verb} discussion **#${payload.discussion.number}**${suffix}: ${payload.discussion.category.emoji} ${escape(payload.discussion.title)}`,
 		url: payload.action === 'answered' ? (payload.answer?.html_url ?? payload.discussion.html_url) : payload.discussion.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -578,12 +603,16 @@ function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 	const embed: DiscordEmbed = {
 		title: `Dependabot alert **#${payload.alert.number}** ${action} for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
 		url: payload.alert.html_url,
-		color: actionColor(action),
+		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
 		author: formatAuthor(payload.sender),
 	};
 
-	if (action === 'created') {
+	if (OPEN_ALERT_ACTIONS.has(action)) {
 		embed.title = `⚠ ${embed.title}`;
+	}
+
+	if (action === 'created') {
+		embed.description = shortDescription(advisory.description);
 		embed.fields = [
 			{ name: 'Severity', value: escape(advisory.severity) },
 			{ name: 'Affected range', value: escape(vulnerability.vulnerable_version_range) },
@@ -613,16 +642,20 @@ function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed 
 	const embed: DiscordEmbed = {
 		title: `Code scanning alert **#${payload.alert.number}** ${action}: ${escape(payload.alert.rule.description)}`,
 		url: payload.alert.html_url,
-		color: actionColor(action),
+		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
 		author: formatAuthor(payload.sender),
 	};
 
-	if (action === 'created') {
+	if (OPEN_ALERT_ACTIONS.has(action)) {
 		embed.title = `⚠ ${embed.title}`;
+	}
+
+	if (action === 'created') {
 		embed.description = shortDescription(payload.alert.most_recent_instance?.message?.text);
 		embed.fields = [
 			{ name: 'Severity', value: escape(payload.alert.rule.severity ?? 'none') },
 			{ name: 'Tool', value: escape(payload.alert.tool?.name ?? 'unknown') },
+			{ name: 'Identifier', value: escape(payload.alert.rule.id) },
 		];
 	}
 
@@ -645,11 +678,11 @@ function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEm
 	const embed: DiscordEmbed = {
 		title: `Secret scanning alert **#${alert.number}** ${action}: ${escape(secretType)}`,
 		url: alert.html_url,
-		color: actionColor(action),
+		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
 		author: formatAuthor(payload.sender),
 	};
 
-	if (action === 'created' || action === 'publicly leaked') {
+	if (OPEN_ALERT_ACTIONS.has(action)) {
 		embed.title = `⚠ ${embed.title}`;
 	}
 
@@ -672,16 +705,16 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 		return {
 			title: `⚠ privately reported a vulnerability: **${escape(advisory.ghsa_id)}**`,
 			url: advisory.html_url,
-			color: actionColor('created'),
+			color: COLOR_ATTENTION,
 			author: formatAuthor(payload.sender),
 		};
 	}
 
 	return {
-		title: `published a security advisory: ${escape(advisory.summary)}`,
+		title: `⚠ published a security advisory: ${escape(advisory.summary)}`,
 		description: shortDescription(advisory.description),
 		url: advisory.html_url,
-		color: actionColor(payload.action),
+		color: COLOR_ATTENTION,
 		author: formatAuthor(payload.sender),
 		fields: [
 			{ name: 'Severity', value: escape(advisory.severity ?? 'unknown') },
@@ -723,7 +756,7 @@ function formatGollum(payload: GollumEvent): DiscordEmbed {
 		title: 'updated wiki',
 		description: lines.join('\n'),
 		url: `${payload.repository.html_url}/wiki`,
-		color: DEFAULT_COLOR,
+		color: COLOR_DEFAULT,
 		author: formatAuthor(payload.sender),
 	};
 }
@@ -732,7 +765,7 @@ function formatPublic(payload: PublicEvent): DiscordEmbed {
 	return {
 		title: `**${escape(payload.repository.name)}** is now open source and available to everyone!`,
 		url: payload.repository.html_url,
-		color: DEFAULT_COLOR,
+		color: COLOR_DEFAULT,
 		author: formatAuthor(payload.sender),
 	};
 }
@@ -752,10 +785,10 @@ function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 	} else if (payload.action === 'transferred') {
 		const from = payload.changes.owner.from;
 
-		if (from.user) {
-			title += ` (from **${escape(from.user.login)}**)`;
-		} else if (from.organization) {
-			title += ` (from **${escape(from.organization.login)}**)`;
+		const owner = from.user ?? from.organization;
+
+		if (owner) {
+			title += ` (from **${escape(owner.login)}**)`;
 		}
 	}
 

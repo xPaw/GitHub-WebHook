@@ -29,7 +29,11 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		$Parser = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 		$Message = $Parser->GetMessage();
 
-		//file_put_contents( $Path . '/expected.bin', $Message . "\n" );
+		if( self::ShouldUpdateFixtures() )
+		{
+			file_put_contents( $Path . '/expected.bin', $Message . "\n" );
+			$ExpectedMessage = $Message;
+		}
 
 		self::assertEquals( $ExpectedMessage, $Message, $Path );
 
@@ -40,13 +44,26 @@ class EventTest extends \PHPUnit\Framework\TestCase
 			$Parser = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 			$Discord = $Parser->GetEmbed();
 
-			//file_put_contents( $Path . '/discord.json', json_encode( $Discord, JSON_PRETTY_PRINT ) . "\n" );
+			if( self::ShouldUpdateFixtures() )
+			{
+				file_put_contents( $Path . '/discord.json', json_encode( $Discord, JSON_PRETTY_PRINT ) . "\n" );
+				$ExpectedDiscordArray = $Discord;
+			}
 
 			self::assertEquals( $ExpectedDiscordArray, $Discord, $Path );
 		}
 
 		// The converters must not modify the payload they were handed
 		self::assertEquals( $Original, $Hook->GetPayload(), $Path );
+	}
+
+	/**
+	 * Run the tests with UPDATE_FIXTURES=1 to write the current output as the expected one,
+	 * then review what changed with git.
+	 */
+	private static function ShouldUpdateFixtures() : bool
+	{
+		return getenv( 'UPDATE_FIXTURES' ) === '1';
 	}
 
 	/**

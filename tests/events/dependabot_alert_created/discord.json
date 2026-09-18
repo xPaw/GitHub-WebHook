@@ -9,6 +9,7 @@
                 "url": "https:\/\/github.com\/github",
                 "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
             },
+            "description": "There is a possible DoS vulnerability in the multipart parser in Rack before 2.0.6. Specially crafted requests can exploit this.",
             "fields": [
                 {
                     "name": "Severity",
