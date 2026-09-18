@@ -30,6 +30,12 @@ class BaseConverter
 		}
 	}
 
+	/** Like trim(), but it also removes unicode spaces such as the no-break space. */
+	protected static function Trim( string $Message ) : string
+	{
+		return preg_replace( '/^[\s\p{Z}\x{FEFF}]+|[\s\p{Z}\x{FEFF}]+$/u', '', $Message ) ?? trim( $Message );
+	}
+
 	private static function GetRefName( string $Ref ) : string
 	{
 		return explode( '/', $Ref, 3 )[ 2 ] ?? $Ref;

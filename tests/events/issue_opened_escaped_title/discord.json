@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "Issue **#508** opened: backslash \\`tick\\` \\*star\\* \\_u\\_ \\|pipe\\| \\[l\\]\\(u\\) \\<t\\> ~strike~ #1 @everyone",
+            "title": "Issue **#508** opened: backslash \\`tick\\` \\*star\\* \\_u\\_ \\|pipe\\| \\[l\\]\\(u\\) \\<t\\> \\~strike\\~ #1 @everyone",
             "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/issues\/508",
             "color": 5025616,
             "author": {

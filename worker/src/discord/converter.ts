@@ -50,6 +50,10 @@ export interface DiscordMessage {
 
 const MAX_TITLE_LENGTH = 256;
 const MAX_DESCRIPTION_LENGTH = 4096;
+const MAX_FIELD_NAME_LENGTH = 256;
+const MAX_FIELD_VALUE_LENGTH = 1024;
+const MAX_FOOTER_LENGTH = 2048;
+const MAX_WIKI_PAGES = 5;
 
 /** Events we deliberately never forward, new branches and tags are formatted from `push` which has the commits. */
 const IGNORED_EVENTS = new Set(['create', 'fork', 'watch', 'star', 'status']);
@@ -74,6 +78,15 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 		embed.description = limitLength(embed.description, MAX_DESCRIPTION_LENGTH);
 	} else {
 		delete embed.description;
+	}
+
+	if (embed.footer) {
+		embed.footer.text = limitLength(embed.footer.text, MAX_FOOTER_LENGTH);
+	}
+
+	for (const field of embed.fields ?? []) {
+		field.name = limitLength(field.name, MAX_FIELD_NAME_LENGTH);
+		field.value = limitLength(field.value, MAX_FIELD_VALUE_LENGTH);
 	}
 
 	return { embeds: [embed] };
@@ -206,7 +219,7 @@ function shortSha(sha: string): string {
 
 function formatPing(payload: PingEvent): DiscordEmbed {
 	return {
-		title: `Hook ${payload.hook?.id} worked!`,
+		title: `Hook ${payload.hook_id} worked!`,
 		description: escape(payload.zen ?? ''),
 		color: DEFAULT_COLOR,
 		author: formatAuthor(payload.sender),
@@ -222,6 +235,7 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	const embed: DiscordEmbed = {
 		title: '',
 		url: payload.compare,
+		color: DEFAULT_COLOR,
 		author: formatAuthor(payload.sender),
 	};
 
@@ -245,14 +259,14 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	} else if (payload.deleted) {
 		throw new NotImplementedError('push', 'deleted (use DeleteEvent if needed)');
 	} else if (payload.forced) {
-		embed.title = `force-pushed ${ref} from ${escape(shortSha(payload.before))} to ${escape(shortSha(payload.after))}`;
+		embed.title = `force-pushed ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
 		embed.color = actionColor('force-pushed');
 	} else if (commits.length === 0 && payload.commits.length > 0) {
 		if (baseRef) {
 			embed.title = `merged ${baseRef} into ${ref}`;
 			embed.color = actionColor('merged');
 		} else {
-			embed.title = `fast-forwarded ${ref} from ${escape(shortSha(payload.before))} to ${escape(shortSha(payload.after))}`;
+			embed.title = `fast-forwarded ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
 			embed.color = actionColor('fast-forwarded');
 		}
 	} else {
@@ -265,6 +279,9 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 		// the one in the payload. ".." instead of "..." makes GitHub display the changes between
 		// the commits rather than the entire diff of the force push.
 		embed.url = `${payload.repository.html_url}/compare/${payload.before}..${payload.after}`;
+	} else if (commits.length === 1) {
+		// If there's only one distinct commit, link to it directly
+		embed.url = commits[0].url;
 	}
 
 	if (commits.length > 0) {
@@ -379,7 +396,7 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 	);
 
 	const embed: DiscordEmbed = {
-		title: `${payload.pull_request.draft ? 'Draft ' : ''}PR **#${payload.pull_request.number}** ${action}: ${escape(payload.pull_request.title)}`,
+		title: `${payload.pull_request.draft && action !== 'converted to draft' ? 'Draft ' : ''}PR **#${payload.pull_request.number}** ${action}: ${escape(payload.pull_request.title)}`,
 		url: payload.pull_request.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -388,7 +405,7 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 	if (action === 'opened') {
 		embed.description = shortDescription(payload.pull_request.body);
 	} else if (action === 'merged') {
-		embed.description = `Merged from **${escape(payload.pull_request.user?.login ?? '')}** to ${escapeCode(payload.pull_request.base.ref)}`;
+		embed.description = `Merged from **${escape(payload.pull_request.user?.login ?? 'ghost')}** to ${escapeCode(payload.pull_request.base.ref)}`;
 	}
 
 	return embed;
@@ -415,9 +432,10 @@ function formatPackage(
 	assertAction(event, payload.action, ['published', 'updated']);
 
 	const body = pkg.package_version?.body;
+	const version = pkg.package_version?.version;
 
 	return {
-		title: `${payload.action} ${pkg.package_type} package: **${escape(pkg.name)}** ${escape(pkg.package_version?.version ?? 'unknown')}`,
+		title: `${payload.action} ${escape(pkg.package_type.toLowerCase())} package: **${escape(pkg.name)}**${version ? ` ${escape(version)}` : ''}`,
 		// Container packages have an empty object as their body
 		description: shortDescription(typeof body === 'string' ? body : null),
 		url: pkg.html_url,
@@ -477,7 +495,7 @@ function formatComment(
 	};
 
 	if (payload.action === 'deleted') {
-		embed.title = `deleted comment in ${kind} **#${subject.number}** from ${payload.comment.user?.login}`;
+		embed.title = `deleted comment in ${kind} **#${subject.number}** from **${escape(payload.comment.user?.login ?? 'ghost')}**`;
 		delete embed.description;
 	}
 
@@ -531,7 +549,7 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 
 	const embed: DiscordEmbed = {
 		title: `${payload.discussion.category.emoji} Discussion **#${payload.discussion.number}** ${action}: ${escape(payload.discussion.title)}`,
-		url: payload.action === 'answered' ? payload.answer.html_url : payload.discussion.html_url,
+		url: payload.action === 'answered' ? (payload.answer?.html_url ?? payload.discussion.html_url) : payload.discussion.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
 	};
@@ -676,7 +694,7 @@ function formatMember(payload: MemberEvent): DiscordEmbed {
 	assertAction('member', payload.action, ['added', 'removed'], ['edited']);
 
 	return {
-		title: `${payload.action} **${escape(payload.member?.login ?? '')}** as a collaborator`,
+		title: `${payload.action} **${escape(payload.member?.login ?? 'ghost')}** as a collaborator`,
 		url: payload.repository.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -684,17 +702,27 @@ function formatMember(payload: MemberEvent): DiscordEmbed {
 }
 
 function formatGollum(payload: GollumEvent): DiscordEmbed {
-	const lines = payload.pages.map((page) => {
+	// Never more than five pages, the same as commits in a push
+	const lines = payload.pages.slice(0, MAX_WIKI_PAGES).map((page) => {
+		// A page title with parentheses ends up in the url, where they would end the markdown link
+		const pageUrl = page.html_url.replaceAll('(', '%28').replaceAll(')', '%29');
 		// Append compare url since GitHub doesn't provide one
-		const url = page.action === 'edited' ? `${page.html_url}/_compare/${page.sha}` : page.html_url;
+		const url = page.action === 'edited' ? `${pageUrl}/_compare/${page.sha}` : pageUrl;
 		const summary = page.summary ? `: ${shortMessage(page.summary)}` : '';
 
 		return `[${page.action} ${escape(page.title)}](${url})${summary}`;
 	});
 
+	const remaining = payload.pages.length - MAX_WIKI_PAGES;
+
+	if (remaining > 0) {
+		lines.push(`and ${remaining} more page${remaining === 1 ? '' : 's'}`);
+	}
+
 	return {
 		title: 'updated wiki',
 		description: lines.join('\n'),
+		url: `${payload.repository.html_url}/wiki`,
 		color: DEFAULT_COLOR,
 		author: formatAuthor(payload.sender),
 	};
@@ -702,7 +730,7 @@ function formatGollum(payload: GollumEvent): DiscordEmbed {
 
 function formatPublic(payload: PublicEvent): DiscordEmbed {
 	return {
-		title: `${escape(payload.repository.name)} is now open source and available to everyone!`,
+		title: `**${escape(payload.repository.name)}** is now open source and available to everyone!`,
 		url: payload.repository.html_url,
 		color: DEFAULT_COLOR,
 		author: formatAuthor(payload.sender),
@@ -725,9 +753,9 @@ function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 		const from = payload.changes.owner.from;
 
 		if (from.user) {
-			title += ` (from *${escape(from.user.login)}*)`;
+			title += ` (from **${escape(from.user.login)}**)`;
 		} else if (from.organization) {
-			title += ` (from *${escape(from.organization.login)}*)`;
+			title += ` (from **${escape(from.organization.login)}**)`;
 		}
 	}
 

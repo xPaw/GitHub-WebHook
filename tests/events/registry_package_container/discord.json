@@ -1,7 +1,7 @@
 {
     "embeds": [
         {
-            "title": "published CONTAINER package: **hello-world-npm** sha256:9c1e2f",
+            "title": "published container package: **hello-world-npm** sha256:9c1e2f",
             "url": "https:\/\/github.com\/Codertocat\/hello-world-npm\/packages\/10696",
             "color": 5025616,
             "author": {

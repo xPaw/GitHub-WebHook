@@ -124,13 +124,13 @@ class IrcConverter extends BaseConverter
 
 	private function ShortMessage( string $Message, int $Limit = 100 ) : string
 	{
-		$Message = trim( $Message );
+		$Message = self::Trim( $Message );
 		$NewMessage = explode( "\n", $Message, 2 );
 		$NewMessage = $NewMessage[ 0 ];
 
 		if( mb_strlen( $NewMessage ) > $Limit )
 		{
-			$NewMessage = mb_substr( $Message, 0, $Limit );
+			$NewMessage = mb_substr( $NewMessage, 0, $Limit );
 		}
 
 		if( $NewMessage !== $Message )
@@ -410,7 +410,7 @@ class IrcConverter extends BaseConverter
 						$this->Payload->pull_request->draft ? 'draft ' : '',
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 						$Action === 'merged' ?
-							( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
+							( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ?? 'ghost' ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
 							'',
 						$this->Payload->pull_request->title,
 						$this->FormatURL( $this->Payload->pull_request->html_url )
@@ -460,13 +460,13 @@ class IrcConverter extends BaseConverter
 		$Package = $this->Payload->registry_package ?? $this->Payload->package;
 
 		return sprintf(
-			'[%s] %s %s %s package: %s %s. %s',
+			'[%s] %s %s %s package: %s%s. %s',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->sender->login ),
 			$this->FormatAction( ),
-			$Package->package_type,
+			strtolower( $Package->package_type ),
 			$Package->name,
-			$this->FormatBranch( $Package->package_version->version ?? 'unknown' ),
+			( $Package->package_version->version ?? '' ) === '' ? '' : ' ' . $this->FormatBranch( $Package->package_version->version ),
 			$this->FormatURL( $Package->html_url )
 		);
 	}
@@ -559,7 +559,7 @@ class IrcConverter extends BaseConverter
 				$this->FormatName( $this->Payload->sender->login ),
 				$this->FormatNumber( '#' . $this->Payload->issue->number ),
 				$this->FormatHash( '(' . $this->Payload->issue->title . ')' ),
-				$this->FormatName( $this->Payload->comment->user->login ),
+				$this->FormatName( $this->Payload->comment->user->login ?? 'ghost' ),
 			);
 		}
 
@@ -680,7 +680,7 @@ class IrcConverter extends BaseConverter
 			$this->FormatAction( $Action ),
 			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
 			$this->Payload->discussion->title,
-			$this->FormatURL( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url )
+			$this->FormatURL( $Action === 'answered' ? ( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url ) : $this->Payload->discussion->html_url )
 		);
 	}
 
@@ -714,7 +714,7 @@ class IrcConverter extends BaseConverter
 				$this->FormatRepoName( ),
 				$this->FormatName( $this->Payload->sender->login ),
 				$this->FormatNumber( '#' . $this->Payload->discussion->number ),
-				$this->FormatName( $this->Payload->comment->user->login ),
+				$this->FormatName( $this->Payload->comment->user->login ?? 'ghost' ),
 			);
 		}
 
@@ -837,7 +837,7 @@ class IrcConverter extends BaseConverter
 			);
 		}
 
-		if( $Action === 'resolved' && isset( $this->Payload->alert->resolution ) )
+		if( $Action === 'resolved' && ( $this->Payload->alert->resolution ?? '' ) !== '' )
 		{
 			$SecretType .= ' (' . str_replace( '_', ' ', $this->Payload->alert->resolution ) . ')';
 		}
@@ -903,7 +903,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
-						$this->FormatName( $this->Payload->member->login )
+						$this->FormatName( $this->Payload->member->login ?? 'ghost' )
 		);
 	}
 
@@ -949,8 +949,8 @@ class IrcConverter extends BaseConverter
 	{
 		return sprintf( '[%s] Hook %s worked! Zen: %s',
 						$this->FormatRepoName( ),
-						$this->FormatHash( (string)$this->Payload->hook->id ),
-						$this->FormatName( $this->Payload->zen )
+						$this->FormatHash( (string)$this->Payload->hook_id ),
+						$this->FormatName( $this->Payload->zen ?? '' )
 		);
 	}
 

@@ -62,6 +62,7 @@ describe('worker', () => {
 		expect((init.headers as Record<string, string>)['User-Agent']).toBe('https://github.com/xPaw/GitHub-WebHook');
 		expect(JSON.parse(init.body as string)).toEqual({
 			username: 'GitHub-WebHook',
+			allowed_mentions: { parse: [] },
 			embeds: [
 				expect.objectContaining({
 					title: 'pushed 1 new commit to `master`',

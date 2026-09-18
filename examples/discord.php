@@ -39,6 +39,9 @@ try
 	$DiscordConverter = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 	$DiscordMessage = $DiscordConverter->GetEmbed();
 
+	// Embeds never ping anyone, but make sure nothing else in the message can
+	$DiscordMessage[ 'allowed_mentions' ] = [ 'parse' => [] ];
+
 	if( empty( $DiscordMessage ) )
 	{
 		throw new Exception( 'Empty message, not sending.' );

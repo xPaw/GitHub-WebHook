@@ -14,6 +14,10 @@ class DiscordConverter extends BaseConverter
 
 	private const int MAX_TITLE_LENGTH = 256;
 	private const int MAX_DESCRIPTION_LENGTH = 4096;
+	private const int MAX_FIELD_NAME_LENGTH = 256;
+	private const int MAX_FIELD_VALUE_LENGTH = 1024;
+	private const int MAX_FOOTER_LENGTH = 2048;
+	private const int MAX_WIKI_PAGES = 5;
 
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.
@@ -81,6 +85,25 @@ class DiscordConverter extends BaseConverter
 			$Embed[ 'description' ] = self::LimitLength( $Embed[ 'description' ], self::MAX_DESCRIPTION_LENGTH );
 		}
 
+		if( is_array( $Embed[ 'footer' ] ?? null ) && is_string( $Embed[ 'footer' ][ 'text' ] ?? null ) )
+		{
+			$Embed[ 'footer' ][ 'text' ] = self::LimitLength( $Embed[ 'footer' ][ 'text' ], self::MAX_FOOTER_LENGTH );
+		}
+
+		if( is_array( $Embed[ 'fields' ] ?? null ) )
+		{
+			foreach( $Embed[ 'fields' ] as &$Field )
+			{
+				if( is_array( $Field ) && is_string( $Field[ 'name' ] ?? null ) && is_string( $Field[ 'value' ] ?? null ) )
+				{
+					$Field[ 'name' ] = self::LimitLength( $Field[ 'name' ], self::MAX_FIELD_NAME_LENGTH );
+					$Field[ 'value' ] = self::LimitLength( $Field[ 'value' ], self::MAX_FIELD_VALUE_LENGTH );
+				}
+			}
+
+			unset( $Field );
+		}
+
 		return [
 			'embeds' => [ $Embed ],
 		];
@@ -105,9 +128,9 @@ class DiscordConverter extends BaseConverter
 	private static function Escape( string $Message ) : string
 	{
 		return str_replace( [
-			'\\',   '*',  '|',  '`',  '[',  ']',  '(',  ')',  '<',  '>',  '_',
+			'\\',   '*',  '|',  '`',  '[',  ']',  '(',  ')',  '<',  '>',  '_',  '~',
 		], [
-			'\\\\', '\*', '\|', '\`', '\[', '\]', '\(', '\)', '\<', '\>', '\_',
+			'\\\\', '\*', '\|', '\`', '\[', '\]', '\(', '\)', '\<', '\>', '\_', '\~',
 		], $Message );
 	}
 
@@ -160,6 +183,7 @@ class DiscordConverter extends BaseConverter
 		$Message = preg_replace( self::HTML_COMMENT, '', $Message ) ?? $Message;
 		$Message = preg_replace( self::HTML_TAG, '', $Message ) ?? $Message;
 		$Message = str_replace( [ "\r", "\n\n" ], [ "", "\n" ], $Message );
+		$Message = self::Trim( $Message );
 
 		// Limit amount of new lines
 		$Lines = explode( "\n", $Message );
@@ -180,13 +204,13 @@ class DiscordConverter extends BaseConverter
 
 	private static function ShortMessage( string $Message, int $Limit = 100 ) : string
 	{
-		$Message = trim( $Message );
+		$Message = self::Trim( $Message );
 		$NewMessage = explode( "\n", $Message, 2 );
 		$NewMessage = $NewMessage[ 0 ];
 
 		if( mb_strlen( $NewMessage ) > $Limit )
 		{
-			$NewMessage = mb_substr( $Message, 0, $Limit );
+			$NewMessage = mb_substr( $NewMessage, 0, $Limit );
 		}
 
 		if( $NewMessage !== $Message )
@@ -218,6 +242,7 @@ class DiscordConverter extends BaseConverter
 		$Embed = [
 			'title' => '',
 			'url' => $this->Payload->repository->html_url,
+			'color' => $this->FormatAction( 'pushed' ),
 			'author' => $this->FormatAuthor(),
 		];
 
@@ -256,7 +281,7 @@ class DiscordConverter extends BaseConverter
 		}
 		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
 		{
-			$Embed[ 'title' ] = "force-pushed " . self::EscapeCode( $this->RefName ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
+			$Embed[ 'title' ] = "force-pushed " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
 			$Embed[ 'color' ] = $this->FormatAction( 'force-pushed' );
 		}
 		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
@@ -268,7 +293,7 @@ class DiscordConverter extends BaseConverter
 			}
 			else
 			{
-				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->RefName ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
+				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
 				$Embed[ 'color' ] = $this->FormatAction( 'fast-forwarded' );
 			}
 		}
@@ -289,6 +314,11 @@ class DiscordConverter extends BaseConverter
 			// Note: this uses ".." instead of "..." to force github to actually display changes between the commits
 			// and not the entire diff of the force push
 			$Embed[ 'url' ] = "{$this->Payload->repository->html_url}/compare/{$this->Payload->before}..{$this->Payload->after}";
+		}
+		else if( $Num === 1 )
+		{
+			// If there's only one distinct commit, link to it directly
+			$Embed[ 'url' ] = $DistinctCommits[ 0 ]->url;
 		}
 		else
 		{
@@ -484,7 +514,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		$Embed = [
-			'title' => ( $this->Payload->pull_request->draft ? 'Draft ' : '' ) . "PR **#{$this->Payload->pull_request->number}** {$Action}: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => ( $this->Payload->pull_request->draft && $Action !== 'converted to draft' ? 'Draft ' : '' ) . "PR **#{$this->Payload->pull_request->number}** {$Action}: " . self::Escape( $this->Payload->pull_request->title ),
 			'url' => $this->Payload->pull_request->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -496,7 +526,7 @@ class DiscordConverter extends BaseConverter
 		}
 		else if( $Action === 'merged' )
 		{
-			$Embed[ 'description' ] = "Merged from **" . self::Escape( $this->Payload->pull_request->user->login ) . "** to " . self::EscapeCode( $this->Payload->pull_request->base->ref );
+			$Embed[ 'description' ] = "Merged from **" . self::Escape( $this->Payload->pull_request->user->login ?? 'ghost' ) . "** to " . self::EscapeCode( $this->Payload->pull_request->base->ref );
 		}
 
 		return $Embed;
@@ -547,9 +577,10 @@ class DiscordConverter extends BaseConverter
 		// Both events have the same payload under a different name
 		$Package = $this->Payload->registry_package ?? $this->Payload->package;
 		$Body = $Package->package_version->body ?? null;
+		$Version = $Package->package_version->version ?? '';
 
 		return [
-			'title' => "{$this->Payload->action} {$Package->package_type} package: **" . self::Escape( $Package->name ) . "** " . self::Escape( $Package->package_version->version ?? 'unknown' ),
+			'title' => "{$this->Payload->action} " . self::Escape( strtolower( $Package->package_type ) ) . " package: **" . self::Escape( $Package->name ) . "**" . ( $Version === '' ? '' : ' ' . self::Escape( $Version ) ),
 			// Container packages have an empty object as their body
 			'description' => self::ShortDescription( is_string( $Body ) ? $Body : null ),
 			'url' => $Package->html_url,
@@ -646,7 +677,7 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'deleted' )
 		{
 			return [
-				'title' => "deleted comment in " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}** from {$this->Payload->comment->user->login}",
+				'title' => "deleted comment in " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}** from **" . self::Escape( $this->Payload->comment->user->login ?? 'ghost' ) . "**",
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -765,7 +796,7 @@ class DiscordConverter extends BaseConverter
 
 		$Embed = [
 			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$Action}: " . self::Escape( $this->Payload->discussion->title ),
-			'url' => $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url,
+			'url' => $Action === 'answered' ? ( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url ) : $this->Payload->discussion->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
@@ -804,7 +835,7 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'deleted' )
 		{
 			return [
-				'title' => "deleted comment in discussion **#{$this->Payload->discussion->number}** from {$this->Payload->comment->user->login}",
+				'title' => "deleted comment in discussion **#{$this->Payload->discussion->number}** from **" . self::Escape( $this->Payload->comment->user->login ?? 'ghost' ) . "**",
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -968,7 +999,7 @@ class DiscordConverter extends BaseConverter
 		{
 			$Embed[ 'description' ] = 'Push protection bypassed by **' . self::Escape( $this->Payload->alert->push_protection_bypassed_by->login ) . '**';
 		}
-		else if( $Action === 'resolved' && isset( $this->Payload->alert->resolution ) )
+		else if( $Action === 'resolved' && ( $this->Payload->alert->resolution ?? '' ) !== '' )
 		{
 			$Embed[ 'description' ] = 'Resolved as ' . self::Escape( str_replace( '_', ' ', $this->Payload->alert->resolution ) );
 		}
@@ -1039,7 +1070,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} **" . self::Escape( $this->Payload->member->login ) . "** as a collaborator",
+			'title' => "{$this->Payload->action} **" . self::Escape( $this->Payload->member->login ?? 'ghost' ) . "** as a collaborator",
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -1055,9 +1086,11 @@ class DiscordConverter extends BaseConverter
 	{
 		$Messages = [];
 
-		foreach( $this->Payload->pages as $Page )
+		// Never more than five pages, the same as commits in a push
+		foreach( array_slice( $this->Payload->pages, 0, self::MAX_WIKI_PAGES ) as $Page )
 		{
-			$URL = $Page->html_url;
+			// A page title with parentheses ends up in the url, where they would end the markdown link
+			$URL = str_replace( [ '(', ')' ], [ '%28', '%29' ], $Page->html_url );
 
 			// Append compare url since github doesn't provide one
 			if( $Page->action === 'edited' )
@@ -1068,8 +1101,16 @@ class DiscordConverter extends BaseConverter
 			$Messages[] = "[{$Page->action} " . self::Escape( $Page->title ) . "]({$URL})" . ( ( $Page->summary ?? '' ) === '' ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
 		}
 
+		$Remaining = count( $this->Payload->pages ) - self::MAX_WIKI_PAGES;
+
+		if( $Remaining > 0 )
+		{
+			$Messages[] = "and {$Remaining} more page" . ( $Remaining === 1 ? '' : 's' );
+		}
+
 		return [
 			'title' => "updated wiki",
+			'url' => $this->Payload->repository->html_url . '/wiki',
 			'description' => implode( "\n", $Messages ),
 			'color' => $this->FormatAction( 'updated' ),
 			'author' => $this->FormatAuthor(),
@@ -1084,8 +1125,8 @@ class DiscordConverter extends BaseConverter
 	private function FormatPingEvent( ) : array
 	{
 		return [
-			'title' => "Hook {$this->Payload->hook->id} worked!",
-			'description' => self::Escape( $this->Payload->zen ),
+			'title' => "Hook {$this->Payload->hook_id} worked!",
+			'description' => self::Escape( $this->Payload->zen ?? '' ),
 			'color' => 5025616,
 			'author' => $this->FormatAuthor(),
 		];
@@ -1099,7 +1140,7 @@ class DiscordConverter extends BaseConverter
 	private function FormatPublicEvent( ) : array
 	{
 		return [
-			'title' => self::Escape( $this->Payload->repository->name ) . " is now open source and available to everyone!",
+			'title' => "**" . self::Escape( $this->Payload->repository->name ) . "** is now open source and available to everyone!",
 			'url' => $this->Payload->repository->html_url,
 			'color' => 5025616,
 			'author' => $this->FormatAuthor(),
@@ -1140,11 +1181,11 @@ class DiscordConverter extends BaseConverter
 		{
 			if( isset( $this->Payload->changes->owner->from->user ) )
 			{
-				$Title .= " (from *" . self::Escape( $this->Payload->changes->owner->from->user->login ) . "*)";
+				$Title .= " (from **" . self::Escape( $this->Payload->changes->owner->from->user->login ) . "**)";
 			}
 			else if( isset( $this->Payload->changes->owner->from->organization ) )
 			{
-				$Title .= " (from *" . self::Escape( $this->Payload->changes->owner->from->organization->login ) . "*)";
+				$Title .= " (from **" . self::Escape( $this->Payload->changes->owner->from->organization->login ) . "**)";
 			}
 		}
 

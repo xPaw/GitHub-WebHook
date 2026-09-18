@@ -153,7 +153,7 @@ describe('optional fields', () => {
 			p.pull_request.user = null;
 		});
 
-		expect(result.description).toBe('Merged from **** to `master`');
+		expect(result.description).toBe('Merged from **ghost** to `master`');
 	});
 
 	it('member event without a member', () => {
@@ -161,7 +161,47 @@ describe('optional fields', () => {
 			p.member = null;
 		});
 
-		expect(result.title).toBe('added **** as a collaborator');
+		expect(result.title).toBe('added **ghost** as a collaborator');
+	});
+
+	it('deleted comment from a deleted user', () => {
+		const result = embed('issue_comment', 'issue_comment_delete', (p) => {
+			p.comment.user = null;
+		});
+
+		expect(result.title).toBe('deleted comment in PR **#502** from **ghost**');
+	});
+
+	it('ping without the id of the hook object', () => {
+		const result = embed('ping', 'ping', (p) => {
+			delete p.hook;
+		});
+
+		expect(result.title).toBe('Hook 7292732 worked!');
+	});
+
+	it('answered discussion without an answer links to the discussion', () => {
+		const result = embed('discussion', 'discussion_answered', (p) => {
+			delete p.answer;
+		});
+
+		expect(result.url).toBe('https://github.com/octo-org/octo-repo/discussions/90');
+	});
+
+	it('only an answered discussion links to the answer', () => {
+		const result = embed('discussion', 'discussion_answered', (p) => {
+			p.action = 'locked';
+		});
+
+		expect(result.url).toBe('https://github.com/octo-org/octo-repo/discussions/90');
+	});
+
+	it('resolved secret scanning alert with an empty resolution', () => {
+		const result = embed('secret_scanning_alert', 'secret_scanning_alert_resolved', (p) => {
+			p.alert.resolution = '';
+		});
+
+		expect(result).not.toHaveProperty('description');
 	});
 
 	it('transferred repository without a previous owner', () => {

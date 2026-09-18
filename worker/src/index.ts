@@ -78,7 +78,12 @@ async function handle(request: Request, config: RouteConfig): Promise<Response> 
 
 	// Several repositories usually share a webhook, the name and the avatar of the owner tell their messages apart.
 	// The sender is already shown as the author of the embed.
-	const message = { username: webhookUsername(displayName), avatar_url: avatarUrl, ...getEmbed(eventType, payload) };
+	const message = {
+		username: webhookUsername(displayName),
+		avatar_url: avatarUrl,
+		allowed_mentions: { parse: [] },
+		...getEmbed(eventType, payload),
+	};
 	const targets = [...new Set(verified.flatMap((pattern) => config[pattern].webhooks))];
 	const lines = [
 		`Received ${eventType} in repository ${repositoryName}`,

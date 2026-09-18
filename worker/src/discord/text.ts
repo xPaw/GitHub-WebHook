@@ -1,4 +1,4 @@
-const MARKDOWN_SPECIAL = /[\\*|`[\]()<>_]/g;
+const MARKDOWN_SPECIAL = /[\\*|`[\]()<>_~]/g;
 // An unclosed comment hides the rest of the text, which is also how GitHub renders it
 const HTML_COMMENT = /<!--[\s\S]*?(?:-->|$)/g;
 // Requires a tag name, so that a lone "<" in text such as "a < b" is left alone.
@@ -56,7 +56,7 @@ export function shortMessage(message: string, limit = 100): string {
  */
 export function shortDescription(message: string | null | undefined, limit = 250): string {
 	let text = (message ?? '').replace(HTML_COMMENT, '').replace(HTML_TAG, '');
-	text = text.replaceAll('\r', '').replaceAll('\n\n', '\n');
+	text = text.replaceAll('\r', '').replaceAll('\n\n', '\n').trim();
 
 	const lines = text.split('\n');
 

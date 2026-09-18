@@ -3,12 +3,12 @@
         {
             "title": "tagged `0.0.4` at `master`",
             "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/compare\/0000000000000000000000000000000000000000..291b9dd498f2e61f9e26981aef691166c23a80a4",
+            "color": 5025616,
             "author": {
                 "name": "xPaw",
                 "url": "https:\/\/github.com\/xPaw",
                 "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
-            },
-            "color": 5025616
+            }
         }
     ]
 }

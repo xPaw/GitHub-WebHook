@@ -1,14 +1,14 @@
 {
     "embeds": [
         {
-            "title": "force-pushed `master` from 14e514 to 8ddec6",
+            "title": "force-pushed `master` from `14e514` to `8ddec6`",
             "url": "https:\/\/github.com\/xPaw\/GitHub-WebHook\/compare\/14e514deb5f85f4de5e2ed24e85cfa038f36d60e..8ddec647cc7a5a819669ad55d08cfabe49925311",
+            "color": 16007990,
             "author": {
                 "name": "xPaw",
                 "url": "https:\/\/github.com\/xPaw",
                 "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
             },
-            "color": 16007990,
             "description": "[`8ddec6`](https:\/\/github.com\/xPaw\/GitHub-WebHook\/commit\/8ddec647cc7a5a819669ad55d08cfabe49925311) Add event tests that can be easily expanded to cover more events"
         }
     ]
