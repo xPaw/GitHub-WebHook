@@ -2,6 +2,8 @@
 A Cloudflare Worker that accepts GitHub webhook events and sends them to Discord.
 It validates the signature, converts the event into an embed
 and posts it to every matching Discord webhook.
+Messages are sent under the name of the repository and the avatar of its owner,
+so that repositories sharing a webhook can be told apart.
 
 ## Deploying
 You need a [Cloudflare](https://dash.cloudflare.com/sign-up) account (the free plan is enough) and Node.js.

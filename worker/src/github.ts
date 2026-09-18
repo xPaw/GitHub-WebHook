@@ -7,13 +7,18 @@ const EVENT_NAME = /^[a-z_]+$/;
 
 export interface WebhookRequest {
 	eventType: string;
+	/** Full name of the repository, which the patterns are matched against. */
 	repositoryName: string;
+	/** Short name of the repository, or of the organization for events that have no repository. */
+	displayName: string;
+	/** Avatar of the owner of the repository, or of the organization. */
+	avatarUrl?: string;
 	payload: unknown;
 }
 
 interface RawPayload {
-	repository?: { full_name?: string; name: string; owner: { name?: string | null; login: string } };
-	organization?: { login: string };
+	repository?: { full_name?: string; name: string; owner: { name?: string | null; login: string; avatar_url?: string } };
+	organization?: { login: string; avatar_url?: string };
 }
 
 /** Verifies the X-Hub-Signature-256 header against the raw request body. */
@@ -40,18 +45,26 @@ export function parseRequest(request: Request, body: string): WebhookRequest {
 
 	const payload = parsePayload(request.headers.get('Content-Type'), body);
 
-	return { eventType, repositoryName: repositoryName(payload), payload };
+	return { eventType, ...names(payload), payload };
 }
 
-function repositoryName({ repository, organization }: RawPayload): string {
+function names({ repository, organization }: RawPayload): Omit<WebhookRequest, 'eventType' | 'payload'> {
 	if (repository) {
-		return repository.full_name ?? `${repository.owner.name}/${repository.name}`;
+		return {
+			repositoryName: repository.full_name ?? `${repository.owner.name}/${repository.name}`,
+			displayName: repository.name,
+			avatarUrl: repository.owner.avatar_url ?? organization?.avatar_url,
+		};
 	}
 
 	if (organization) {
 		// Events of an organization have no repository, they are matched as "<org>/repositories"
 		// because patterns are written in the "<owner>/<repo>" format.
-		return `${organization.login}/repositories`;
+		return {
+			repositoryName: `${organization.login}/repositories`,
+			displayName: organization.login,
+			avatarUrl: organization.avatar_url,
+		};
 	}
 
 	throw new BadRequestError('Missing repository information.');

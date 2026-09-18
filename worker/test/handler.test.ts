@@ -61,6 +61,7 @@ describe('worker', () => {
 		expect(init.method).toBe('POST');
 		expect((init.headers as Record<string, string>)['User-Agent']).toBe('https://github.com/xPaw/GitHub-WebHook');
 		expect(JSON.parse(init.body as string)).toEqual({
+			username: 'GitHub-WebHook',
 			embeds: [
 				expect.objectContaining({
 					title: 'pushed 1 new commit to `master`',
@@ -75,6 +76,74 @@ describe('worker', () => {
 		expect(text).not.toContain('xPaw/*');
 		expect(text).toContain('Discord HTTP 204');
 		expect(text).not.toContain(EXACT_HOOK);
+	});
+
+	describe('username', () => {
+		async function sentUsername(eventType: string, body: string, secret = EXACT_SECRET): Promise<unknown> {
+			const response = await worker.fetch(await buildRequest(eventType, body, { secret }), env);
+
+			expect(response.status).toBe(202);
+
+			return JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string).username;
+		}
+
+		function pushTo(name: string): string {
+			const payload = JSON.parse(fixture('push'));
+			payload.repository.name = name;
+
+			return JSON.stringify(payload);
+		}
+
+		it('is the name of the repository', async () => {
+			expect(await sentUsername('push', fixture('push'))).toBe('GitHub-WebHook');
+		});
+
+		it('is the organization for events without a repository', async () => {
+			expect(await sentUsername('ping', fixture('ping_org'), ORG_SECRET)).toBe('SteamDatabase');
+		});
+
+		it.each(['DiscordBot', 'my-clyde', 'everyone', 'here', 'x'.repeat(81)])('is left out for %s, which Discord rejects', async (name) => {
+			expect(await sentUsername('push', pushTo(name))).toBeUndefined();
+		});
+
+		it('is kept for names that only resemble a reserved word', async () => {
+			expect(await sentUsername('push', pushTo('everyone-else'))).toBe('everyone-else');
+		});
+	});
+
+	describe('avatar', () => {
+		const everything: Env = { REPOSITORIES: JSON.stringify({ '*': { secret: EXACT_SECRET, webhooks: [EXACT_HOOK] } }) };
+
+		async function sentAvatar(eventType: string, body: string): Promise<unknown> {
+			const response = await worker.fetch(await buildRequest(eventType, body), everything);
+
+			expect(response.status).toBe(202);
+
+			return JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string).avatar_url;
+		}
+
+		it('is the avatar of the owner of the repository', async () => {
+			const payload = JSON.parse(fixture('issue_opened'));
+			payload.repository.owner.avatar_url = 'https://avatars.githubusercontent.com/u/1?v=4';
+			payload.sender.avatar_url = 'https://avatars.githubusercontent.com/u/2?v=4';
+
+			expect(await sentAvatar('issues', JSON.stringify(payload))).toBe('https://avatars.githubusercontent.com/u/1?v=4');
+		});
+
+		it('is the avatar of the organization for events without a repository', async () => {
+			expect(await sentAvatar('ping', fixture('ping_org'))).toBe(JSON.parse(fixture('ping_org')).organization.avatar_url);
+		});
+
+		it('falls back to the organization when the owner has no avatar', async () => {
+			const payload = JSON.parse(fixture('issue_opened'));
+			delete payload.repository.owner.avatar_url;
+
+			expect(await sentAvatar('issues', JSON.stringify(payload))).toBe(payload.organization.avatar_url);
+		});
+
+		it('is left out when the payload has none, so the avatar of the webhook is used', async () => {
+			expect(await sentAvatar('push', fixture('push'))).toBeUndefined();
+		});
 	});
 
 	it('matches wildcard patterns with their own secret', async () => {

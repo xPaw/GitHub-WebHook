@@ -38,6 +38,10 @@ export interface DiscordEmbed {
 }
 
 export interface DiscordMessage {
+	/** Overrides the name of the Discord webhook for this message. */
+	username?: string;
+	/** Overrides the avatar of the Discord webhook for this message. */
+	avatar_url?: string;
 	embeds: DiscordEmbed[];
 }
 

@@ -52,7 +52,7 @@ async function handle(request: Request, config: RouteConfig): Promise<Response> 
 
 	// Every repository has its own secret, so the payload has to be parsed to find out which one
 	// to verify against. Until a signature is verified it is only used to look up that secret.
-	const { eventType, repositoryName, payload } = parseRequest(request, body);
+	const { eventType, repositoryName, displayName, avatarUrl, payload } = parseRequest(request, body);
 	const checked = new Map<string, boolean>();
 	const verified: string[] = [];
 
@@ -75,7 +75,9 @@ async function handle(request: Request, config: RouteConfig): Promise<Response> 
 		return unauthorized();
 	}
 
-	const message = getEmbed(eventType, payload);
+	// Several repositories usually share a webhook, the name and the avatar of the owner tell their messages apart.
+	// The sender is already shown as the author of the embed.
+	const message = { username: webhookUsername(displayName), avatar_url: avatarUrl, ...getEmbed(eventType, payload) };
 	const targets = [...new Set(verified.flatMap((pattern) => config[pattern].webhooks))];
 	const lines = [
 		`Received ${eventType} in repository ${repositoryName}`,
@@ -96,6 +98,11 @@ async function handle(request: Request, config: RouteConfig): Promise<Response> 
 	}
 
 	return text(results.some((result) => result.ok) ? 202 : 502, lines.join('\n'));
+}
+
+/** Discord rejects messages whose username is empty, too long or contains one of its reserved words. */
+function webhookUsername(name: string): string | undefined {
+	return name === '' || name.length > 80 || /discord|clyde|^(everyone|here)$/i.test(name) ? undefined : name;
 }
 
 /** Deliberately the same response whether the signature is missing, wrong, or the repository is not configured. */
