@@ -18,7 +18,7 @@ describe('ignored events', () => {
 		['issues', 'issue_opened', ['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped']],
 		[
 			'pull_request',
-			'pull_request_merged',
+			'pull_request_closed_merged',
 			[
 				'edited',
 				'synchronize',
@@ -74,7 +74,7 @@ describe('unsupported events', () => {
 
 	const fixtures: [event: string, fixture: string][] = [
 		['issues', 'issue_opened'],
-		['pull_request', 'pull_request_merged'],
+		['pull_request', 'pull_request_closed_merged'],
 		['milestone', 'milestone'],
 		['package', 'package'],
 		['registry_package', 'registry_package'],

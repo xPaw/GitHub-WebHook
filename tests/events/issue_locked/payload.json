@@ -43,7 +43,7 @@
 			}
 		],
 		"state": "open",
-		"locked": false,
+		"locked": true,
 		"assignee": null,
 		"assignees": [],
 		"milestone": null,

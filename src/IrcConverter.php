@@ -412,7 +412,6 @@ class IrcConverter extends BaseConverter
 
 		if( $Action !== 'opened'
 		&&  $Action !== 'reopened'
-		&&  $Action !== 'deleted'
 		&&  $Action !== 'merged'
 		&&  $Action !== 'locked'
 		&&  $Action !== 'unlocked'

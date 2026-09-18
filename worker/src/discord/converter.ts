@@ -416,7 +416,6 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 		[
 			'opened',
 			'reopened',
-			'deleted',
 			'merged',
 			'locked',
 			'unlocked',

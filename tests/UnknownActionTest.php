@@ -37,7 +37,7 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 		$Events =
 		[
 			'issues' => 'issue_opened',
-			'pull_request' => 'pull_request_merged',
+			'pull_request' => 'pull_request_closed_merged',
 			'milestone' => 'milestone',
 			'package' => 'package',
 			'registry_package' => 'registry_package',

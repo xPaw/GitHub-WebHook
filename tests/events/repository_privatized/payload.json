@@ -23,7 +23,7 @@
 			"type": "Organization",
 			"site_admin": false
 		},
-		"private": false,
+		"private": true,
 		"html_url": "https://github.com/SteamDatabase/new-repository",
 		"description": "",
 		"fork": false,

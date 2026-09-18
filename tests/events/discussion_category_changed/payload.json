@@ -1,5 +1,20 @@
 {
 	"action": "category_changed",
+	"changes": {
+		"category": {
+			"from": {
+				"id": 32784362,
+				"repository_id": 17273051,
+				"emoji": ":bulb:",
+				"name": "Ideas",
+				"description": "Share ideas for new features",
+				"created_at": "2021-03-24T12:41:54.000-05:00",
+				"updated_at": "2021-03-24T12:41:54.000-05:00",
+				"slug": "ideas",
+				"is_answerable": false
+			}
+		}
+	},
 	"discussion": {
 		"repository_url": "https://api.github.com/repos/octo-org/octo-repo",
 		"category": {

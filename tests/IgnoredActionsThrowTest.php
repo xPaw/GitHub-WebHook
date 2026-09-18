@@ -36,7 +36,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Events =
 		[
 			[ 'issues', 'issue_opened', [ 'edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped' ] ],
-			[ 'pull_request', 'pull_request_merged', [ 'edited', 'synchronize', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'review_requested', 'review_request_removed', 'milestoned', 'demilestoned', 'enqueued', 'dequeued', 'auto_merge_disabled' ] ],
+			[ 'pull_request', 'pull_request_closed_merged', [ 'edited', 'synchronize', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'review_requested', 'review_request_removed', 'milestoned', 'demilestoned', 'enqueued', 'dequeued', 'auto_merge_disabled' ] ],
 			[ 'pull_request_review', 'pull_request_review', [ 'edited' ] ],
 			[ 'pull_request_review_comment', 'pull_request_review_comment', [ 'edited', 'deleted' ] ],
 			[ 'milestone', 'milestone', [ 'edited' ] ],

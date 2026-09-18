@@ -1,5 +1,5 @@
 {
-	"action": "published",
+	"action": "deleted",
 	"release": {
 		"url": "https://api.github.com/repos/SteamDatabase/ValveResourceFormat/releases/2588814",
 		"assets_url": "https://api.github.com/repos/SteamDatabase/ValveResourceFormat/releases/2588814/assets",
@@ -31,7 +31,7 @@
 		},
 		"prerelease": true,
 		"created_at": "2016-02-10T18:14:04Z",
-		"published_at": "2016-02-10T18:28:20Z",
+		"published_at": null,
 		"assets": [],
 		"tarball_url": "https://api.github.com/repos/SteamDatabase/ValveResourceFormat/tarball/0.0.4",
 		"zipball_url": "https://api.github.com/repos/SteamDatabase/ValveResourceFormat/zipball/0.0.4",
