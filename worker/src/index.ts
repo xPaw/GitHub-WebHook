@@ -1,6 +1,7 @@
 import { getEmbed } from './discord/converter.js';
 import { WebhookError } from './errors.js';
 import { parseRequest, verifySignature } from './github.js';
+import { assertNotNoise } from './ignored.js';
 import { matchPatterns, parseRouteConfig, sendAll, type RouteConfig } from './routing.js';
 
 // Lowercase only, which is what GitHub sends
@@ -75,6 +76,9 @@ async function handle(request: Request, config: RouteConfig): Promise<Response> 
 
 		return unauthorized();
 	}
+
+	// Only checked now that the request is known to be genuine
+	assertNotNoise(eventType, payload);
 
 	// Several repositories usually share a webhook, the name and the avatar of the owner tell their messages apart.
 	// The sender is already shown as the author of the embed.

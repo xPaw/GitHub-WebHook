@@ -318,6 +318,158 @@ describe('worker', () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
+	describe('noise', () => {
+		type Payload = Record<string, any>;
+
+		async function deliver(eventType: string, name: string, change: (payload: Payload) => void): Promise<Response> {
+			const payload = JSON.parse(fixture(name)) as Payload;
+
+			change(payload);
+
+			return worker.fetch(await buildRequest(eventType, JSON.stringify(payload)), env);
+		}
+
+		async function expectIgnored(response: Response, reason: string): Promise<void> {
+			expect(response.status).toBe(200);
+			expect(await response.text()).toBe(`Ignored GitHub event: ${reason}\n`);
+			expect(fetchMock).not.toHaveBeenCalled();
+		}
+
+		it('ignores every event sent by dependabot', async () => {
+			const response = await deliver('issues', 'issue_opened', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+				p.sender.id = 49699333;
+			});
+
+			await expectIgnored(response, 'issues - dependabot sender');
+		});
+
+		it.each(['renovate', 'dependabot'])('ignores pushes to %s branches', async (bot) => {
+			const response = await deliver('push', 'push', (p) => {
+				p.ref = `refs/heads/${bot}/npm/vitest-5.x`;
+			});
+
+			await expectIgnored(response, `push - dependency update in a ${bot} branch`);
+		});
+
+		it('ignores pushes to merge queue branches', async () => {
+			const response = await deliver('push', 'push', (p) => {
+				p.ref = 'refs/heads/gh-readonly-queue/master/pr-12-0123456789abcdef';
+			});
+
+			await expectIgnored(response, 'push - merge queue branch');
+		});
+
+		it('ignores the push of a pull request merged on github.com', async () => {
+			const response = await deliver('push', 'push', (p) => {
+				p.head_commit.committer.username = 'web-flow';
+				p.head_commit.message = 'Merge pull request #6 from xPaw/feature\n\ntest pull request';
+			});
+
+			await expectIgnored(response, 'push - web-flow pull request merge');
+		});
+
+		it('sends other commits made on github.com', async () => {
+			const response = await deliver('push', 'push', (p) => {
+				p.head_commit.committer.username = 'web-flow';
+				p.head_commit.message = 'Update README.md';
+			});
+
+			expect(response.status).toBe(202);
+		});
+
+		it('sends a push that has no head commit', async () => {
+			const response = await deliver('push', 'push', (p) => {
+				p.head_commit = null;
+			});
+
+			expect(response.status).toBe(202);
+		});
+
+		it('sends a push whose head commit has no message', async () => {
+			const response = await deliver('push', 'push', (p) => {
+				p.head_commit.committer.username = 'web-flow';
+				delete p.head_commit.message;
+			});
+
+			expect(response.status).toBe(202);
+		});
+
+		it('sends the alerts of dependabot', async () => {
+			const response = await deliver('dependabot_alert', 'dependabot_alert_created', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+				p.sender.id = 49699333;
+			});
+
+			expect(response.status).toBe(202);
+		});
+
+		it('sends the pull requests that dependabot merges itself', async () => {
+			const response = await deliver('pull_request', 'pull_request_closed_merged', (p) => {
+				p.sender.id = 49699333;
+			});
+
+			expect(response.status).toBe(202);
+		});
+
+		it('ignores pull requests that dependabot opens or closes without merging', async () => {
+			const opened = await deliver('pull_request', 'pull_request_dependabot', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+			});
+			const closed = await deliver('pull_request', 'pull_request_closed', (p) => {
+				p.sender.id = 49699333;
+			});
+			const mergedElsewhere = await deliver('issues', 'issue_closed', (p) => {
+				p.sender.id = 49699333;
+				p.pull_request = { merged: true };
+			});
+
+			await expectIgnored(opened, 'pull_request - dependabot sender');
+			await expectIgnored(closed, 'pull_request - dependabot sender');
+			await expectIgnored(mergedElsewhere, 'issues - dependabot sender');
+		});
+
+		it.each(['renovate', 'dependabot'])('ignores deletions of %s branches', async (bot) => {
+			const response = await deliver('delete', 'delete_branch', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+				p.ref = `${bot}/npm/vitest-5.x`;
+			});
+
+			await expectIgnored(response, `delete - dependency update in a ${bot} branch`);
+		});
+
+		it('ignores deletions of merge queue branches', async () => {
+			const response = await deliver('delete', 'delete_branch', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+				p.ref = 'gh-readonly-queue/master/pr-12-0123456789abcdef';
+			});
+
+			await expectIgnored(response, 'delete - merge queue branch');
+		});
+
+		it('sends deletions of other branches', async () => {
+			const response = await deliver('delete', 'delete_branch', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+			});
+
+			expect(response.status).toBe(202);
+		});
+
+		it('does not mistake a tag for a branch', async () => {
+			const pushed = await deliver('push', 'push_tag', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+				p.ref = 'refs/tags/dependabot/1.0';
+			});
+			const deleted = await deliver('delete', 'delete', (p) => {
+				p.repository.full_name = 'xPaw/GitHub-WebHook';
+				p.ref = 'gh-readonly-queue/1.0';
+			});
+
+			expect(pushed.status).toBe(202);
+			expect(deleted.status).toBe(202);
+		});
+	});
+
 	it('does not reveal whether an event is supported without a valid signature', async () => {
 		const ignored = await worker.fetch(await buildRequest('watch', fixture('push'), { secret: 'wrong' }), env);
 		const unsupported = await worker.fetch(await buildRequest('deployment', fixture('push'), { signature: null }), env);

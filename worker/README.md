@@ -70,6 +70,13 @@ and `npx wrangler tail` streams the logs of the Worker.
 | 501 | The event or its action is not supported |
 | 502 | Every Discord webhook failed |
 
+Some events are ignored because they would only be noise, see `src/ignored.ts`:
+
+- everything sent by Dependabot, except for its alerts and the pull requests it merges itself
+- pushes to and deletions of `renovate/` and `dependabot/` branches
+- pushes to and deletions of the temporary `gh-readonly-queue/` branches of a merge queue
+- the push GitHub makes when a pull request is merged on github.com, the merged pull request is announced already
+
 ## Development
 Copy `.dev.vars.example` to `.dev.vars` and run `npm run dev` to start the Worker locally.
 
