@@ -17,7 +17,6 @@ Accepts an event, throws `Exception` on error.
 
 #### GetEventType()
 Returns event type.
-See https://developer.github.com/webhooks/#events for a list of events.
 
 #### GetPayload()
 Returns decoded JSON payload as an object.
@@ -48,9 +47,9 @@ a string which can be sent to an IRC server.
 
 Throws `NotImplementedException` when you pass an event that
 is not parsed anyhow, and throws `IgnoredEventException` for
-`fork`, `watch` and `status` events which are ignored by design.
+`fork`, `watch`, `star` and `status` events which are ignored by design.
 
-## Events [\[ref\]](https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/webhook-events-and-payloads)
+## Events [\[ref\]](https://docs.github.com/en/webhooks/webhook-events-and-payloads)
 
 Track changes to GitHub webhook payloads documentation here: https://github.com/github/docs/commits/main/data/reusables/webhooks
 
@@ -69,7 +68,6 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - milestone
 - package
 - ping
-- project
 - public
 - pull_request
 - pull_request_review
@@ -78,28 +76,43 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - release
 - repository
 - repository_advisory
-- repository_vulnerability_alert
 - secret_scanning_alert
 
 ### Not yet supported events
 
+- branch_protection_configuration
+- branch_protection_rule
 - check_run
 - check_suite
+- custom_property
+- custom_property_values
 - deploy_key
 - deployment
 - deployment_status
+- issue_dependencies
 - label
 - membership
 - meta
 - org_block
 - organization
 - page_build
-- project_card
-- project_column
+- personal_access_token_request
+- projects_v2
+- projects_v2_item
+- projects_v2_status_update
+- pull_request_review_thread
+- registry_package
 - repository_import
+- repository_ruleset
+- secret_scanning_alert_location
+- secret_scanning_scan
+- security_and_analysis
 - sponsorship
+- sub_issues
 - team
 - team_add
+- workflow_job
+- workflow_run
 
 ### Events ignored by design
 
@@ -114,15 +127,26 @@ Push event ignores branch deletions (use delete event instead).
 
 ### Events that can not be supported
 
-- content_reference
+These are only sent to GitHub Apps or GitHub Marketplace, not to repository or organization webhooks.
+
+- deployment_protection_rule
+- deployment_review
 - github_app_authorization
 - installation
 - installation_repositories
+- installation_target
 - marketplace_purchase
+- merge_group
 - repository_dispatch
 - security_advisory
 - workflow_dispatch
-- workflow_run
+
+### Events that are no longer sent
+
+- project - Projects (classic) were removed
+- project_card
+- project_column
+- repository_vulnerability_alert - Replaced by dependabot_alert
 
 ## License
 [MIT](LICENSE)

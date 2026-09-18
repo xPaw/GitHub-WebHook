@@ -22,10 +22,8 @@ type DiscussionCommentEvent = Payload<'discussion-comment'>;
 type MemberEvent = Payload<'member'>;
 type MilestoneEvent = Payload<'milestone'>;
 type PackageEvent = Payload<'package'>;
-type ProjectEvent = Payload<'project'>;
 type ReleaseEvent = Payload<'release'>;
 type RepositoryEvent = Payload<'repository'>;
-type VulnerabilityAlertEvent = Payload<'repository-vulnerability-alert'>;
 type RepositoryAdvisoryEvent = Payload<'repository-advisory'>;
 type DependabotAlertEvent = Payload<'dependabot-alert'>;
 type CodeScanningAlertEvent = Payload<'code-scanning-alert'>;
@@ -94,8 +92,6 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 			return formatGollum(payload as GollumEvent);
 		case 'package':
 			return formatPackage(payload as PackageEvent);
-		case 'project':
-			return formatProject(payload as ProjectEvent);
 		case 'release':
 			return formatRelease(payload as ReleaseEvent);
 		case 'milestone':
@@ -115,8 +111,6 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 			return formatPullRequestReview(payload as PullRequestReviewEvent);
 		case 'pull_request_review_comment':
 			return formatPullRequestReviewComment(payload as PullRequestReviewCommentEvent);
-		case 'repository_vulnerability_alert':
-			return formatVulnerabilityAlert(payload as VulnerabilityAlertEvent);
 		case 'repository_advisory':
 			return formatRepositoryAdvisory(payload as RepositoryAdvisoryEvent);
 		case 'dependabot_alert':
@@ -199,9 +193,6 @@ function shortSha(sha: string): string {
 	return sha.slice(0, 6);
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#ping
- */
 function formatPing(payload: PingEvent): DiscordEmbed {
 	return {
 		title: `Hook ${payload.hook?.id} worked!`,
@@ -211,9 +202,6 @@ function formatPing(payload: PingEvent): DiscordEmbed {
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
- */
 function formatPush(payload: PushEvent): DiscordEmbed {
 	const commits = payload.commits.filter((commit) => commit.distinct !== false && commit.message);
 	const ref = escapeCode(refName(payload.ref));
@@ -292,9 +280,6 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#delete
- */
 function formatDelete(payload: DeleteEvent): DiscordEmbed {
 	if (payload.ref_type !== 'tag' && payload.ref_type !== 'branch') {
 		throw new NotImplementedError('delete', payload.ref_type);
@@ -308,9 +293,6 @@ function formatDelete(payload: DeleteEvent): DiscordEmbed {
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#issues
- */
 function formatIssues(payload: IssuesEvent): DiscordEmbed {
 	assertAction(
 		'issues',
@@ -340,9 +322,6 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request
- */
 function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 	let action: string = payload.action;
 
@@ -390,9 +369,6 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#milestone
- */
 function formatMilestone(payload: MilestoneEvent): DiscordEmbed {
 	assertAction('milestone', payload.action, ['opened', 'closed', 'created', 'deleted'], ['edited']);
 
@@ -405,9 +381,6 @@ function formatMilestone(payload: MilestoneEvent): DiscordEmbed {
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#package
- */
 function formatPackage(payload: PackageEvent): DiscordEmbed {
 	assertAction('package', payload.action, ['published', 'updated']);
 
@@ -420,24 +393,6 @@ function formatPackage(payload: PackageEvent): DiscordEmbed {
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#project
- */
-function formatProject(payload: ProjectEvent): DiscordEmbed {
-	assertAction('project', payload.action, ['created', 'closed', 'reopened', 'deleted'], ['edited']);
-
-	return {
-		title: `${payload.action} project **#${payload.project.number}**: ${escape(payload.project.name)}`,
-		description: shortDescription(payload.project.body),
-		url: payload.project.html_url,
-		color: actionColor(payload.action),
-		author: formatAuthor(payload.sender),
-	};
-}
-
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#release
- */
 function formatRelease(payload: ReleaseEvent): DiscordEmbed {
 	assertAction('release', payload.action, ['published', 'unpublished']);
 
@@ -458,9 +413,6 @@ function formatRelease(payload: ReleaseEvent): DiscordEmbed {
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#commit_comment
- */
 function formatCommitComment(payload: CommitCommentEvent): DiscordEmbed {
 	assertAction('commit_comment', payload.action, ['created']);
 
@@ -473,12 +425,7 @@ function formatCommitComment(payload: CommitCommentEvent): DiscordEmbed {
 	};
 }
 
-/**
- * Comments on issues, pull requests and discussions.
- *
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#issue_comment
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#discussion_comment
- */
+/** Comments on issues, pull requests and discussions. */
 function formatComment(
 	event: string,
 	payload: IssueCommentEvent | DiscussionCommentEvent,
@@ -503,9 +450,6 @@ function formatComment(
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request_review
- */
 function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed {
 	if (payload.action !== 'submitted') {
 		throw new NotImplementedError('pull_request_review', payload.action);
@@ -526,9 +470,6 @@ function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed 
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request_review_comment
- */
 function formatPullRequestReviewComment(payload: PullRequestReviewCommentEvent): DiscordEmbed {
 	assertAction('pull_request_review_comment', payload.action, ['created']);
 
@@ -541,9 +482,6 @@ function formatPullRequestReviewComment(payload: PullRequestReviewCommentEvent):
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#discussion
- */
 function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 	const action = payload.action === 'category_changed' ? 'changed category' : payload.action;
 
@@ -568,39 +506,6 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#repository_vulnerability_alert
- */
-function formatVulnerabilityAlert(payload: VulnerabilityAlertEvent): DiscordEmbed {
-	if (payload.action === 'create') {
-		return {
-			title: `⚠ New vulnerability for **${escape(payload.alert.affected_package_name)}**`,
-			url: payload.alert.external_reference ?? undefined,
-			color: actionColor(payload.action),
-			author: formatAuthor(payload.sender),
-			fields: [
-				{ name: 'Affected range', value: escape(payload.alert.affected_range) },
-				{ name: 'Fixed in', value: escape(payload.alert.fixed_in ?? '') },
-				{ name: 'Identifier', value: escape(payload.alert.external_identifier) },
-			],
-		};
-	}
-
-	assertAction('repository_vulnerability_alert', payload.action, ['resolve', 'dismiss']);
-
-	const action = payload.action === 'resolve' ? 'resolved' : 'dismissed';
-
-	return {
-		title: `Vulnerability for **${escape(payload.alert.affected_package_name)}** ${action}`,
-		url: payload.alert.external_reference ?? undefined,
-		color: actionColor(action),
-		author: formatAuthor(payload.sender),
-	};
-}
-
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#dependabot_alert
- */
 function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 	let action: string = payload.action;
 
@@ -639,9 +544,6 @@ function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#code_scanning_alert
- */
 function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed {
 	let action: string = payload.action;
 
@@ -672,9 +574,6 @@ function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed 
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#secret_scanning_alert
- */
 function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEmbed {
 	const action = payload.action === 'publicly_leaked' ? 'publicly leaked' : payload.action;
 
@@ -708,9 +607,6 @@ function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEm
 	return embed;
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#repository_advisory
- */
 function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbed {
 	assertAction('repository_advisory', payload.action, ['published', 'reported']);
 
@@ -739,9 +635,6 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#member
- */
 function formatMember(payload: MemberEvent): DiscordEmbed {
 	assertAction('member', payload.action, ['added', 'removed']);
 
@@ -753,9 +646,6 @@ function formatMember(payload: MemberEvent): DiscordEmbed {
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#gollum
- */
 function formatGollum(payload: GollumEvent): DiscordEmbed {
 	const lines = payload.pages.map((page) => {
 		// Append compare url since GitHub doesn't provide one
@@ -773,11 +663,6 @@ function formatGollum(payload: GollumEvent): DiscordEmbed {
 	};
 }
 
-/**
- * Without a doubt: the best GitHub event.
- *
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#public
- */
 function formatPublic(payload: PublicEvent): DiscordEmbed {
 	return {
 		title: `${escape(payload.repository.name)} is now open source and available to everyone!`,
@@ -787,9 +672,6 @@ function formatPublic(payload: PublicEvent): DiscordEmbed {
 	};
 }
 
-/**
- * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#repository
- */
 function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 	assertAction(
 		'repository',

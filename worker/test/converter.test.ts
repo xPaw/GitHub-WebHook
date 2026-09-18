@@ -33,7 +33,6 @@ describe('ignored events', () => {
 			['edited', 'synchronize', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'review_requested', 'review_request_removed'],
 		],
 		['milestone', 'milestone', ['edited']],
-		['project', 'project', ['edited']],
 		['issue_comment', 'issue_comment', ['edited']],
 		['discussion', 'discussion_created', ['edited', 'labeled', 'unlabeled', 'answered', 'unanswered']],
 		['discussion_comment', 'discussion_comment_created', ['edited']],
@@ -71,7 +70,6 @@ describe('unsupported events', () => {
 		['pull_request', 'pull_request_merged'],
 		['milestone', 'milestone'],
 		['package', 'package'],
-		['project', 'project'],
 		['release', 'release'],
 		['commit_comment', 'commit_comment'],
 		['issue_comment', 'issue_comment'],
@@ -79,7 +77,6 @@ describe('unsupported events', () => {
 		['pull_request_review_comment', 'pull_request_review_comment'],
 		['discussion', 'discussion_created'],
 		['discussion_comment', 'discussion_comment_created'],
-		['repository_vulnerability_alert', 'repository_vulnerability_alert'],
 		['code_scanning_alert', 'code_scanning_alert_created'],
 		['repository_advisory', 'repository_advisory_published'],
 		['dependabot_alert', 'dependabot_alert_created'],
@@ -138,24 +135,6 @@ describe('optional fields', () => {
 		});
 
 		expect(result.description).toBe('Merged from **** to `master`');
-	});
-
-	it('vulnerability alert without a fix or a reference', () => {
-		const result = embed('repository_vulnerability_alert', 'repository_vulnerability_alert', (p) => {
-			p.alert.fixed_in = null;
-			p.alert.external_reference = null;
-		});
-
-		expect(JSON.parse(JSON.stringify(result))).not.toHaveProperty('url');
-		expect(result.fields).toContainEqual({ name: 'Fixed in', value: '' });
-	});
-
-	it('resolved vulnerability alert without a reference', () => {
-		const result = embed('repository_vulnerability_alert', 'repository_vulnerability_alert_resolve', (p) => {
-			p.alert.external_reference = null;
-		});
-
-		expect(JSON.parse(JSON.stringify(result))).not.toHaveProperty('url');
 	});
 
 	it('member event without a member', () => {
