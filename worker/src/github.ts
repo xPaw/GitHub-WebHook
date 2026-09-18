@@ -7,7 +7,7 @@ const EVENT_NAME = /^[a-z0-9_]+$/;
 
 export interface WebhookRequest {
 	eventType: string;
-	/** Full name of the repository, which the patterns are matched against. */
+	/** Full name of the repository, or `<org>/repositories` for events that have no repository. */
 	repositoryName: string;
 	/** Short name of the repository, or of the organization for events that have no repository. */
 	displayName: string;
@@ -58,8 +58,7 @@ function names({ repository, organization }: RawPayload): Omit<WebhookRequest, '
 	}
 
 	if (organization) {
-		// Events of an organization have no repository, they are matched as "<org>/repositories"
-		// because patterns are written in the "<owner>/<repo>" format.
+		// Events of an organization have no repository, they are reported as "<org>/repositories"
 		return {
 			repositoryName: `${organization.login}/repositories`,
 			displayName: organization.login,

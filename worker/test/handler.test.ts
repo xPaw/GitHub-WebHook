@@ -3,38 +3,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../src/index.js';
 import { readFixture as fixture } from './fixtures.js';
 
-const EXACT_SECRET = 'exact secret';
-const WILDCARD_SECRET = 'wildcard secret';
-const ORG_SECRET = 'org secret';
-const EXACT_HOOK = 'https://discord.com/api/webhooks/1/exact';
-const WILDCARD_HOOK = 'https://discord.com/api/webhooks/2/wildcard';
-const ORG_HOOK = 'https://discord.com/api/webhooks/3/org';
+const SECRET = 'correct horse';
+const ID = '123456789012345678';
+const TOKEN = 'aBc-123_xYz';
+const THREAD = '987654321098765432';
+const WORKER = 'https://example.workers.dev';
+const PATH = `/discordhook/${ID}/${TOKEN}`;
+const HOOK = `https://discord.com/api/webhooks/${ID}/${TOKEN}`;
 
-const env: Env = {
-	REPOSITORIES: JSON.stringify({
-		'xPaw/GitHub-WebHook': { secret: EXACT_SECRET, webhooks: [EXACT_HOOK] },
-		'xPaw/*': { secret: WILDCARD_SECRET, webhooks: [WILDCARD_HOOK] },
-		'SteamDatabase/repositories': { secret: ORG_SECRET, webhooks: [ORG_HOOK] },
-	}),
-};
+const env: Env = { SECRET };
 
 async function buildRequest(
 	eventType: string,
 	body: string,
-	options: { contentType?: string; secret?: string; signature?: string | null; method?: string } = {},
+	options: { contentType?: string; secret?: string; signature?: string | null; path?: string } = {},
 ): Promise<Request> {
 	const headers = new Headers({
 		'X-GitHub-Event': eventType,
 		'Content-Type': options.contentType ?? 'application/json',
 	});
 
-	const signature = options.signature === undefined ? await sign(options.secret ?? EXACT_SECRET, body) : options.signature;
+	const signature = options.signature === undefined ? await sign(options.secret ?? SECRET, body) : options.signature;
 
 	if (signature !== null) {
 		headers.set('X-Hub-Signature-256', signature);
 	}
 
-	return new Request('https://example.workers.dev/', { method: options.method ?? 'POST', headers, body });
+	return new Request(`${WORKER}${options.path ?? PATH}`, { method: 'POST', headers, body });
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -49,13 +44,13 @@ afterEach(() => {
 });
 
 describe('worker', () => {
-	it('sends the converted embed to the pattern whose secret signed the request', async () => {
+	it('sends the converted embed to the Discord webhook of the url', async () => {
 		const body = fixture('push');
 		const response = await worker.fetch(await buildRequest('push', body), env);
 
 		expect(response.status).toBe(202);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(fetchMock.mock.calls[0][0]).toBe(EXACT_HOOK);
+		expect(fetchMock.mock.calls[0][0]).toBe(HOOK);
 
 		const init = fetchMock.mock.calls[0][1] as RequestInit;
 		expect(init.method).toBe('POST');
@@ -73,15 +68,13 @@ describe('worker', () => {
 
 		const text = await response.text();
 		expect(text).toContain('Received push in repository xPaw/GitHub-WebHook');
-		expect(text).toContain('Matched "xPaw/GitHub-WebHook" as "xPaw/GitHub-WebHook"');
-		expect(text).not.toContain('xPaw/*');
 		expect(text).toContain('Discord HTTP 204');
-		expect(text).not.toContain(EXACT_HOOK);
+		expect(text).not.toContain(TOKEN);
 	});
 
 	describe('username', () => {
-		async function sentUsername(eventType: string, body: string, secret = EXACT_SECRET): Promise<unknown> {
-			const response = await worker.fetch(await buildRequest(eventType, body, { secret }), env);
+		async function sentUsername(eventType: string, body: string): Promise<unknown> {
+			const response = await worker.fetch(await buildRequest(eventType, body), env);
 
 			expect(response.status).toBe(202);
 
@@ -100,7 +93,7 @@ describe('worker', () => {
 		});
 
 		it('is the organization for events without a repository', async () => {
-			expect(await sentUsername('ping', fixture('ping_org'), ORG_SECRET)).toBe('SteamDatabase');
+			expect(await sentUsername('ping', fixture('ping_org'))).toBe('SteamDatabase');
 		});
 
 		it.each(['DiscordBot', 'my-clyde', 'everyone', 'here', 'x'.repeat(81)])('is left out for %s, which Discord rejects', async (name) => {
@@ -113,10 +106,8 @@ describe('worker', () => {
 	});
 
 	describe('avatar', () => {
-		const everything: Env = { REPOSITORIES: JSON.stringify({ '*': { secret: EXACT_SECRET, webhooks: [EXACT_HOOK] } }) };
-
 		async function sentAvatar(eventType: string, body: string): Promise<unknown> {
-			const response = await worker.fetch(await buildRequest(eventType, body), everything);
+			const response = await worker.fetch(await buildRequest(eventType, body), env);
 
 			expect(response.status).toBe(202);
 
@@ -147,42 +138,49 @@ describe('worker', () => {
 		});
 	});
 
-	it('matches wildcard patterns with their own secret', async () => {
-		const response = await worker.fetch(await buildRequest('push', fixture('push'), { secret: WILDCARD_SECRET }), env);
+	describe('url', () => {
+		it('posts into the thread of the url', async () => {
+			const response = await worker.fetch(await buildRequest('push', fixture('push'), { path: `${PATH}?thread_id=${THREAD}` }), env);
 
-		expect(response.status).toBe(202);
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(fetchMock.mock.calls[0][0]).toBe(WILDCARD_HOOK);
+			expect(response.status).toBe(202);
+			expect(fetchMock.mock.calls[0][0]).toBe(`${HOOK}?thread_id=${THREAD}`);
+		});
+
+		it('does not forward any other query parameter', async () => {
+			const response = await worker.fetch(await buildRequest('push', fixture('push'), { path: `${PATH}?wait=true&thread_name=x` }), env);
+
+			expect(response.status).toBe(202);
+			expect(fetchMock.mock.calls[0][0]).toBe(HOOK);
+		});
+
+		it.each([
+			['no webhook', '/'],
+			['no prefix', `/${ID}/${TOKEN}`],
+			['the path of Discord', `/api/webhooks/${ID}/${TOKEN}`],
+			['an extra segment', `${PATH}/github`],
+			['an invalid id', `/discordhook/123/${TOKEN}`],
+			['an invalid token', `/discordhook/${ID}/abc%2Fdef`],
+			['a token that leaves the path', `/discordhook/${ID}/..%2F..%2F..%2Fevil`],
+			['an invalid thread', `${PATH}?thread_id=general`],
+		])('rejects a url with %s', async (_, path) => {
+			const response = await worker.fetch(await buildRequest('push', fixture('push'), { path }), env);
+
+			expect(response.status).toBe(400);
+			expect(fetchMock).not.toHaveBeenCalled();
+		});
+
+		it('does not reveal whether the url is valid without a valid signature', async () => {
+			const response = await worker.fetch(await buildRequest('push', fixture('push'), { path: '/', secret: 'wrong' }), env);
+
+			expect(response.status).toBe(401);
+			expect(fetchMock).not.toHaveBeenCalled();
+		});
 	});
 
-	it('fans out to every matching pattern that shares the secret, once per webhook', async () => {
-		const shared: Env = {
-			REPOSITORIES: JSON.stringify({
-				'xPaw/GitHub-WebHook': { secret: EXACT_SECRET, webhooks: [EXACT_HOOK, WILDCARD_HOOK] },
-				'xPaw/*': { secret: EXACT_SECRET, webhooks: [WILDCARD_HOOK] },
-			}),
-		};
-
-		const response = await worker.fetch(await buildRequest('push', fixture('push')), shared);
-
-		expect(response.status).toBe(202);
-		expect(fetchMock.mock.calls.map((call) => call[0]).sort()).toEqual([EXACT_HOOK, WILDCARD_HOOK].sort());
-	});
-
-	it('rejects the secret of a different repository', async () => {
-		const response = await worker.fetch(await buildRequest('push', fixture('push'), { secret: ORG_SECRET }), env);
+	it('rejects a different secret', async () => {
+		const response = await worker.fetch(await buildRequest('push', fixture('push'), { secret: 'wrong' }), env);
 
 		expect(response.status).toBe(401);
-		expect(fetchMock).not.toHaveBeenCalled();
-	});
-
-	it('rejects repositories that are not configured the same way as a bad secret', async () => {
-		// issue_opened is a SteamDatabase repository, no pattern matches it
-		const unknown = await worker.fetch(await buildRequest('issues', fixture('issue_opened')), env);
-		const invalid = await worker.fetch(await buildRequest('push', fixture('push'), { secret: 'wrong' }), env);
-
-		expect(unknown.status).toBe(401);
-		expect(await unknown.text()).toBe(await invalid.text());
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -214,7 +212,7 @@ describe('worker', () => {
 	});
 
 	it('rejects a body that was changed after it was signed', async () => {
-		const signature = await sign(EXACT_SECRET, fixture('push'));
+		const signature = await sign(SECRET, fixture('push'));
 		const tampered = fixture('push').replace('"pusher"', '"pusher" ');
 
 		const response = await worker.fetch(await buildRequest('push', tampered, { signature }), env);
@@ -224,8 +222,7 @@ describe('worker', () => {
 	});
 
 	it('verifies bodies that contain multibyte text', async () => {
-		const all: Env = { REPOSITORIES: JSON.stringify({ '*': { secret: EXACT_SECRET, webhooks: [EXACT_HOOK] } }) };
-		const response = await worker.fetch(await buildRequest('issues', fixture('issue_opened_unicode')), all);
+		const response = await worker.fetch(await buildRequest('issues', fixture('issue_opened_unicode')), env);
 
 		expect(response.status).toBe(202);
 	});
@@ -245,7 +242,7 @@ describe('worker', () => {
 	});
 
 	it.each(['GET', 'HEAD', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])('rejects %s requests', async (method) => {
-		const response = await worker.fetch(new Request('https://example.workers.dev/', { method }), env);
+		const response = await worker.fetch(new Request(`${WORKER}${PATH}`, { method }), env);
 
 		expect(response.status).toBe(405);
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -255,14 +252,14 @@ describe('worker', () => {
 		const signature = `sha256=${'0'.repeat(64)}`;
 		const response = await worker.fetch(await buildRequest('push', '', { signature }), env);
 
-		expect(response.status).toBe(400);
+		expect(response.status).toBe(401);
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it('rejects a signature header that was sent twice', async () => {
 		const body = fixture('push');
 		const request = await buildRequest('push', body);
-		request.headers.append('X-Hub-Signature-256', await sign(EXACT_SECRET, body));
+		request.headers.append('X-Hub-Signature-256', await sign(SECRET, body));
 
 		expect((await worker.fetch(request, env)).status).toBe(401);
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -270,13 +267,13 @@ describe('worker', () => {
 
 	it('reads the headers case insensitively', async () => {
 		const body = fixture('push');
-		const request = new Request('https://example.workers.dev/', {
+		const request = new Request(`${WORKER}${PATH}`, {
 			method: 'POST',
 			body,
 			headers: {
 				'x-github-event': 'push',
 				'content-type': 'APPLICATION/JSON',
-				'x-hub-signature-256': await sign(EXACT_SECRET, body),
+				'x-hub-signature-256': await sign(SECRET, body),
 			},
 		});
 
@@ -285,7 +282,7 @@ describe('worker', () => {
 
 	it('rejects a signature in uppercase, which GitHub never sends', async () => {
 		const body = fixture('push');
-		const signature = (await sign(EXACT_SECRET, body)).toUpperCase().replace('SHA256=', 'sha256=');
+		const signature = (await sign(SECRET, body)).toUpperCase().replace('SHA256=', 'sha256=');
 		const request = await buildRequest('push', body, { signature });
 
 		expect((await worker.fetch(request, env)).status).toBe(401);
@@ -492,38 +489,35 @@ describe('worker', () => {
 		expect(await response.text()).toContain('Unsupported GitHub event: projects_v2_item');
 	});
 
-	it('routes org-only payloads as <org>/repositories', async () => {
-		const response = await worker.fetch(await buildRequest('ping', fixture('ping_org'), { secret: ORG_SECRET }), env);
+	it('reports org-only payloads as <org>/repositories', async () => {
+		const response = await worker.fetch(await buildRequest('ping', fixture('ping_org')), env);
 
 		expect(response.status).toBe(202);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(fetchMock.mock.calls[0][0]).toBe(ORG_HOOK);
 		expect(await response.text()).toContain('Received ping in repository SteamDatabase/repositories');
 	});
 
-	it('returns 502 when every send fails', async () => {
+	it('returns 502 when Discord rejects the message', async () => {
 		fetchMock.mockImplementation(async () => new Response('nope', { status: 500 }));
 
 		const response = await worker.fetch(await buildRequest('push', fixture('push')), env);
 
 		expect(response.status).toBe(502);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(await response.text()).toContain('Discord HTTP 500');
 	});
 
 	it.each([
-		'not json',
-		'["not an object"]',
-		'{"xPaw/*":["https://discord.com/api/webhooks/1/a"]}',
-		'{"xPaw/*":{"secret":"","webhooks":[]}}',
-		'{"xPaw/*":{"secret":"s"}}',
-		'{"xPaw/*":{"secret":"s","webhooks":[1]}}',
-	])('returns 500 when the config is %s', async (config) => {
+		['missing', {} as Env],
+		['empty', { SECRET: '' }],
+	])('returns 500 when the secret is %s', async (_, unconfigured) => {
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-		const response = await worker.fetch(await buildRequest('push', fixture('push')), { REPOSITORIES: config });
+		const response = await worker.fetch(await buildRequest('push', fixture('push')), unconfigured);
 
 		expect(response.status).toBe(500);
 		expect(await response.text()).toBe('Worker is not configured.\n');
 		expect(consoleError).toHaveBeenCalledTimes(1);
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it('rejects a missing event header', async () => {
@@ -572,18 +566,6 @@ describe('worker', () => {
 		expect(await response.text()).toContain('Received push in repository xPaw/GitHub-WebHook');
 	});
 
-	it('returns 202 without sending when the pattern has no webhooks', async () => {
-		const empty: Env = {
-			REPOSITORIES: JSON.stringify({ 'xPaw/*': { secret: EXACT_SECRET, webhooks: [] } }),
-		};
-
-		const response = await worker.fetch(await buildRequest('push', fixture('push')), empty);
-
-		expect(response.status).toBe(202);
-		expect(await response.text()).toContain('nothing was sent');
-		expect(fetchMock).not.toHaveBeenCalled();
-	});
-
 	it('returns 500 without details when the payload can not be converted', async () => {
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const payload = JSON.parse(fixture('push'));
@@ -615,21 +597,6 @@ describe('worker', () => {
 		expect(await response.text()).toContain('Discord request failed: connection reset');
 	});
 
-	it('returns 202 when only some of the sends fail', async () => {
-		const both: Env = {
-			REPOSITORIES: JSON.stringify({ 'xPaw/*': { secret: EXACT_SECRET, webhooks: [EXACT_HOOK, WILDCARD_HOOK] } }),
-		};
-
-		fetchMock.mockImplementation(async (url: string) => new Response(null, { status: url === EXACT_HOOK ? 204 : 404 }));
-
-		const response = await worker.fetch(await buildRequest('push', fixture('push')), both);
-		const text = await response.text();
-
-		expect(response.status).toBe(202);
-		expect(text).toContain('Discord HTTP 204');
-		expect(text).toContain('Discord HTTP 404');
-	});
-
 	describe('rate limits', () => {
 		it('retries once after the delay Discord asks for', async () => {
 			fetchMock
@@ -640,7 +607,7 @@ describe('worker', () => {
 
 			expect(response.status).toBe(202);
 			expect(fetchMock).toHaveBeenCalledTimes(2);
-			expect(fetchMock.mock.calls[1][0]).toBe(EXACT_HOOK);
+			expect(fetchMock.mock.calls[1][0]).toBe(HOOK);
 			expect(await response.text()).toContain('Discord HTTP 204');
 		});
 

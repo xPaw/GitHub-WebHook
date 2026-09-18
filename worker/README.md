@@ -1,7 +1,7 @@
 # Cloudflare Worker
 A Cloudflare Worker that accepts GitHub webhook events and sends them to Discord.
 It validates the signature, converts the event into an embed
-and posts it to every matching Discord webhook.
+and posts it to the Discord webhook that is named in the url.
 Messages are sent under the name of the repository and the avatar of its owner,
 so that repositories sharing a webhook can be told apart.
 
@@ -11,50 +11,52 @@ You need a [Cloudflare](https://dash.cloudflare.com/sign-up) account (the free p
 ```
 npm install
 npx wrangler login
-cp repositories.json.example repositories.json
-npx wrangler secret put REPOSITORIES < repositories.json
+npx wrangler secret put SECRET
 npm run deploy
 ```
 
-Edit `repositories.json` before uploading it, see [Configuration](#configuration).
-PowerShell has no `<` redirection, pipe the file instead:
-
-```
-Get-Content repositories.json -Raw | npx wrangler secret put REPOSITORIES
-```
+`SECRET` is the secret token that every GitHub webhook has to be signed with, pick a long random string.
+Without it anyone could use the Worker to post to Discord, so requests are refused until it is set.
+It is listed in `secrets.required` in `wrangler.jsonc`, the value itself is never stored in the config.
 
 Setting the secret offers to create the Worker if it does not exist yet, accept it.
 The deploy prints the url of the Worker, such as `https://github-webhook.<account>.workers.dev`.
 To change the name, or to serve it from your own domain, edit `name` or add
 [`routes`](https://developers.cloudflare.com/workers/configuration/routing/) in `wrangler.jsonc`.
 
-### Configuration
-All configuration lives in a single secret, `REPOSITORIES`. It is listed in `secrets.required`
-in `wrangler.jsonc`, the value itself is never stored in the config.
+### Url format
+The Worker stores no Discord webhooks, the one to send to is part of the url that GitHub calls:
 
-It is a JSON object mapping repository patterns to the secret token of their GitHub webhook
-and the Discord webhooks their events are sent to. Copy `repositories.json.example` to `repositories.json`
-and edit it, the copy is ignored by git because it contains secrets.
+```
+https://<worker>/discordhook/<webhook id>/<webhook token>
+https://<worker>/discordhook/<webhook id>/<webhook token>?thread_id=<thread id>
+```
 
-- `*` in a pattern is a wildcard. Events that have no repository (organization events)
-  are matched as `<org>/repositories`, which `<org>/*` covers.
-- A request is only accepted by patterns whose `secret` matches its signature, so a secret
-  can not be used to send events for a repository it was not configured for.
-- Every matching pattern with a valid secret fires. To send a repository to the webhooks of
-  both its own pattern and a wildcard one, give both patterns the same secret.
-- Requests for repositories that match no pattern are rejected the same way as an invalid secret.
+Discord webhooks are created in the channel settings, under Integrations → Webhooks.
+Copy the url of the webhook and move its last two parts over to the Worker:
 
-Discord webhook urls are created in the channel settings, under Integrations → Webhooks.
-Treat them as passwords, anyone who has the url can post to the channel.
-Run `npx wrangler secret put REPOSITORIES < repositories.json` again to change the configuration, no deploy is needed.
+```
+https://discord.com/api/webhooks/123456789012345678/aBcDeF-123
+https://github-webhook.<account>.workers.dev/discordhook/123456789012345678/aBcDeF-123
+```
+
+- Add `?thread_id=` to post in a thread of the channel. Enable Developer Mode in the advanced settings
+  of Discord, then right click the thread and copy its id. Webhooks of forum and media channels
+  can only post in a thread, Discord rejects them without a `thread_id`.
+- One url is one destination. To send a repository to several channels, add a GitHub webhook for each of them.
+  To send every repository of an organization to one channel, add the webhook to the organization instead.
+- Treat the url as a password: it contains the token of the Discord webhook, so anyone who can see
+  the settings of the GitHub webhook can post to the channel.
 
 ### GitHub
 Add a webhook in the settings of a repository or an organization:
 
-- **Payload URL**: the url of the Worker
+- **Payload URL**: the url from above
 - **Content type**: either one works
-- **Secret**: the `secret` of the pattern that matches the repository, requests without a valid signature are rejected
-- **Events**: pick the ones you want, see the [supported events](../README.md#supported-events)
+- **Secret**: the `SECRET` of the Worker, requests without a valid signature are rejected
+- **Events**: choose "Let me select individual events." and tick the [supported events](../README.md#supported-events) you want.
+  Do not choose "Send me everything.", events that are not supported are answered with a 501
+  and fill Recent Deliveries with failures.
 
 After saving, GitHub sends a `ping` event which should show up in Discord.
 The response to every delivery is visible under Recent Deliveries in the webhook settings,
@@ -64,11 +66,11 @@ and `npx wrangler tail` streams the logs of the Worker.
 |--------|---------|
 | 202 | Sent to Discord |
 | 200 | The event is deliberately ignored, such as `star` or an edited comment |
-| 400 | Malformed request |
-| 401 | Missing or invalid signature, or no pattern matches the repository |
-| 500 | `REPOSITORIES` is missing or not valid, see `wrangler tail` |
+| 400 | Malformed request, or the url is not a valid `/discordhook/` url |
+| 401 | Missing or invalid signature |
+| 500 | `SECRET` is not set, see `wrangler tail` |
 | 501 | The event or its action is not supported |
-| 502 | Every Discord webhook failed |
+| 502 | Discord did not accept the message, the response has its status |
 
 Some events are ignored because they would only be noise, see `src/ignored.ts`:
 
