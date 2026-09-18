@@ -16,7 +16,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php }}
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Install dependencies
       run: composer install --no-interaction --no-progress
     - name: Run tests
@@ -30,13 +30,7 @@ jobs:
       run:
         working-directory: worker
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: npm
-        cache-dependency-path: worker/package-lock.json
+    - uses: actions/checkout@v7
     - name: Install dependencies
       run: npm ci
     - name: Run tests
