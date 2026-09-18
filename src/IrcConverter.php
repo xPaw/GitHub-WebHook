@@ -232,10 +232,11 @@ class IrcConverter extends BaseConverter
 		}
 		else
 		{
-			$Message .= sprintf( 'pushed %s new commit%s to %s',
+			// Most pushes go to the default branch, so only other branches are worth naming
+			$Message .= sprintf( 'pushed %s new commit%s%s',
 				$this->FormatNumber( (string)$Num ),
 				$Num === 1 ? '' : 's',
-				$this->FormatBranch( $this->RefName )
+				$this->IsDefaultBranch() ? '' : ' to ' . $this->FormatBranch( $this->RefName )
 			);
 		}
 

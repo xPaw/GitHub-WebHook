@@ -319,10 +319,11 @@ class DiscordConverter extends BaseConverter
 		}
 		else
 		{
-			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s to %s',
+			// Most pushes go to the default branch, so only other branches are worth naming
+			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s%s',
 				$Num,
 				$Num === 1 ? '' : 's',
-				self::EscapeCode( $this->RefName )
+				$this->IsDefaultBranch() ? '' : ' to ' . self::EscapeCode( $this->RefName )
 			);
 		}
 

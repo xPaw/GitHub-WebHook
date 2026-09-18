@@ -65,7 +65,7 @@ describe('worker', () => {
 			allowed_mentions: { parse: [] },
 			embeds: [
 				expect.objectContaining({
-					title: 'pushed 1 new commit to `master`',
+					title: 'pushed 1 new commit',
 					author: expect.objectContaining({ name: 'xPaw' }),
 				}),
 			],

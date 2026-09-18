@@ -33,6 +33,13 @@ class BaseConverter
 	/** Wiki pages listed for a single update, the same as commits in a push. */
 	protected const int MAX_WIKI_PAGES = 5;
 
+	/** Whether the pushed ref is the default branch of the repository. */
+	protected function IsDefaultBranch( ) : bool
+	{
+		return isset( $this->Payload->repository->default_branch )
+			&& ( $this->Payload->ref ?? '' ) === 'refs/heads/' . $this->Payload->repository->default_branch;
+	}
+
 	/**
 	 * Splits an action into the verb that goes before the thing it happened to, and what goes after it,
 	 * so that a sentence reads "closed issue #5 as not planned" rather than "closed as not planned issue #5".

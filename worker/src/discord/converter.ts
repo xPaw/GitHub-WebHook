@@ -294,7 +294,10 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 			embed.title = `fast-forwarded ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
 		}
 	} else {
-		embed.title = `pushed ${newCommits} to ${ref}`;
+		// Most pushes go to the default branch, so only other branches are worth naming
+		const isDefaultBranch = payload.ref === `refs/heads/${payload.repository.default_branch}`;
+
+		embed.title = `pushed ${newCommits}${isDefaultBranch ? '' : ` to ${ref}`}`;
 	}
 
 	if (payload.forced) {
