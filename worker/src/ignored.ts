@@ -18,7 +18,8 @@ interface Payload {
  * @throws {IgnoredEventError}
  */
 export function assertNotNoise(eventType: string, payload: unknown): void {
-	const { action, pull_request: pullRequest, sender, head_commit: headCommit } = payload as Payload;
+	const event = payload as Payload;
+	const { action, pull_request: pullRequest, sender, head_commit: headCommit } = event;
 
 	// Its alerts, and the pull requests it merges itself when asked to, are all it sends that is worth reading
 	const isMergedPullRequest = eventType === 'pull_request' && action === 'closed' && pullRequest?.merged === true;
@@ -27,7 +28,7 @@ export function assertNotNoise(eventType: string, payload: unknown): void {
 		throw new IgnoredEventError(`${eventType} - dependabot sender`);
 	}
 
-	const branch = branchName(eventType, payload as Payload);
+	const branch = branchName(eventType, event);
 
 	if (branch === null) {
 		return;

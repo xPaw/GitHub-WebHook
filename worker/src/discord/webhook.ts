@@ -65,18 +65,12 @@ export function targetUrl({ id, token, threadId }: Target): string {
 
 /** Discord ids are 64-bit integers, which are 17 to 20 digits long. */
 function isSnowflake(value: string): boolean {
-	return value.length >= 17 && value.length <= 20 && [...value].every((char) => char >= '0' && char <= '9');
+	return /^[0-9]{17,20}$/.test(value);
 }
 
 /** Tokens are url safe base64, which also rules out dots and percent encoded characters. */
 function isToken(value: string): boolean {
-	return (
-		value !== '' &&
-		[...value].every(
-			(char) =>
-				(char >= '0' && char <= '9') || (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '-' || char === '_',
-		)
-	);
+	return /^[A-Za-z0-9_-]+$/.test(value);
 }
 
 /** Posts the message to a Discord webhook, retrying once when rate limited. */

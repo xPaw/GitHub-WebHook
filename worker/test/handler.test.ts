@@ -1,7 +1,7 @@
 import { sign } from '@octokit/webhooks-methods';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../src/index.js';
-import { readFixture as fixture } from './fixtures.js';
+import { readFixture as fixture, loadPayload, type Payload } from './fixtures.js';
 
 const SECRET = 'correct horse';
 const ID = '123456789012345678';
@@ -72,13 +72,18 @@ describe('worker', () => {
 		expect(text).not.toContain(TOKEN);
 	});
 
+	/** Delivers an event and returns the message that was sent to Discord. */
+	async function sentMessage(eventType: string, body: string): Promise<Payload> {
+		const response = await worker.fetch(await buildRequest(eventType, body), env);
+
+		expect(response.status).toBe(202);
+
+		return JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+	}
+
 	describe('username', () => {
 		async function sentUsername(eventType: string, body: string): Promise<unknown> {
-			const response = await worker.fetch(await buildRequest(eventType, body), env);
-
-			expect(response.status).toBe(202);
-
-			return JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string).username;
+			return (await sentMessage(eventType, body)).username;
 		}
 
 		function pushTo(name: string): string {
@@ -107,11 +112,7 @@ describe('worker', () => {
 
 	describe('avatar', () => {
 		async function sentAvatar(eventType: string, body: string): Promise<unknown> {
-			const response = await worker.fetch(await buildRequest(eventType, body), env);
-
-			expect(response.status).toBe(202);
-
-			return JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string).avatar_url;
+			return (await sentMessage(eventType, body)).avatar_url;
 		}
 
 		it('is the avatar of the owner of the repository', async () => {
@@ -316,14 +317,8 @@ describe('worker', () => {
 	});
 
 	describe('noise', () => {
-		type Payload = Record<string, any>;
-
-		async function deliver(eventType: string, name: string, change: (payload: Payload) => void): Promise<Response> {
-			const payload = JSON.parse(fixture(name)) as Payload;
-
-			change(payload);
-
-			return worker.fetch(await buildRequest(eventType, JSON.stringify(payload)), env);
+		async function deliver(eventType: string, name: string, change?: (payload: Payload) => void): Promise<Response> {
+			return worker.fetch(await buildRequest(eventType, JSON.stringify(loadPayload(name, change))), env);
 		}
 
 		async function expectIgnored(response: Response, reason: string): Promise<void> {
@@ -334,7 +329,6 @@ describe('worker', () => {
 
 		it('ignores every event sent by dependabot', async () => {
 			const response = await deliver('issues', 'issue_opened', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
 				p.sender.id = 49699333;
 			});
 
@@ -394,7 +388,6 @@ describe('worker', () => {
 
 		it('sends the alerts of dependabot', async () => {
 			const response = await deliver('dependabot_alert', 'dependabot_alert_created', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
 				p.sender.id = 49699333;
 			});
 
@@ -410,9 +403,7 @@ describe('worker', () => {
 		});
 
 		it('ignores pull requests that dependabot opens or closes without merging', async () => {
-			const opened = await deliver('pull_request', 'pull_request_dependabot', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
-			});
+			const opened = await deliver('pull_request', 'pull_request_dependabot');
 			const closed = await deliver('pull_request', 'pull_request_closed', (p) => {
 				p.sender.id = 49699333;
 			});
@@ -428,7 +419,6 @@ describe('worker', () => {
 
 		it.each(['renovate', 'dependabot'])('ignores deletions of %s branches', async (bot) => {
 			const response = await deliver('delete', 'delete_branch', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
 				p.ref = `${bot}/npm/vitest-5.x`;
 			});
 
@@ -437,7 +427,6 @@ describe('worker', () => {
 
 		it('ignores deletions of merge queue branches', async () => {
 			const response = await deliver('delete', 'delete_branch', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
 				p.ref = 'gh-readonly-queue/master/pr-12-0123456789abcdef';
 			});
 
@@ -445,20 +434,16 @@ describe('worker', () => {
 		});
 
 		it('sends deletions of other branches', async () => {
-			const response = await deliver('delete', 'delete_branch', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
-			});
+			const response = await deliver('delete', 'delete_branch');
 
 			expect(response.status).toBe(202);
 		});
 
 		it('does not mistake a tag for a branch', async () => {
 			const pushed = await deliver('push', 'push_tag', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
 				p.ref = 'refs/tags/dependabot/1.0';
 			});
 			const deleted = await deliver('delete', 'delete', (p) => {
-				p.repository.full_name = 'xPaw/GitHub-WebHook';
 				p.ref = 'gh-readonly-queue/1.0';
 			});
 

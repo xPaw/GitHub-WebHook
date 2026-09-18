@@ -2,4 +2,3 @@ node_modules/
 .wrangler/
 coverage/
 .dev.vars
-repositories.json
