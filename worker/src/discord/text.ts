@@ -1,7 +1,9 @@
 const MARKDOWN_SPECIAL = /[\\*|`[\]()<>_]/g;
-const HTML_COMMENT = /<!--[\s\S]*?-->/g;
-// Requires a tag name, so that a lone "<" in text such as "a < b" is left alone
-const HTML_TAG = /<\/?[a-z](?:[^>"']|"[^"]*"|'[^']*')*>/gi;
+// An unclosed comment hides the rest of the text, which is also how GitHub renders it
+const HTML_COMMENT = /<!--[\s\S]*?(?:-->|$)/g;
+// Requires a tag name, so that a lone "<" in text such as "a < b" is left alone.
+// A tag never contains another "<", which keeps text full of unclosed tags cheap to scan.
+const HTML_TAG = /<\/?[a-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>/gi;
 
 /** Maximum number of newlines kept by {@link shortDescription}; the rest become spaces. */
 const MAX_NEWLINES = 10;

@@ -177,6 +177,19 @@ describe('optional fields', () => {
 	});
 });
 
+describe('html stripping', () => {
+	it.each(['<a ', '<!--', '<a "', "<a '"])('stays fast on a large body of unclosed %s', (opener) => {
+		const issue = payload('issue_opened', (p) => {
+			p.issue.body = opener.repeat(20000);
+		});
+
+		const start = performance.now();
+		getEmbed('issues', issue);
+
+		expect(performance.now() - start).toBeLessThan(250);
+	});
+});
+
 describe('malformed payloads', () => {
 	it('rejects a payload without a sender', () => {
 		const push = payload('push', (p) => {
