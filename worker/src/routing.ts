@@ -20,9 +20,9 @@ export interface SendResult {
 	error?: string;
 }
 
-/** Parses and validates the REPOSITORIES secret. */
-export function parseRouteConfig(raw: string): RouteConfig {
-	const parsed: unknown = JSON.parse(raw);
+/** Parses and validates REPOSITORIES, which is json text, or an object when it is set as a JSON variable. */
+export function parseRouteConfig(raw: unknown): RouteConfig {
+	const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
 	if (!isObject(parsed)) {
 		throw new Error('REPOSITORIES must be a JSON object.');
