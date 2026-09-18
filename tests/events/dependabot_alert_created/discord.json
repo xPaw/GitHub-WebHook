@@ -10,24 +10,9 @@
                 "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
             },
             "description": "There is a possible DoS vulnerability in the multipart parser in Rack before 2.0.6. Specially crafted requests can exploit this.",
-            "fields": [
-                {
-                    "name": "Severity",
-                    "value": "high"
-                },
-                {
-                    "name": "Affected range",
-                    "value": "\\>= 2.0.4, \\< 2.0.6"
-                },
-                {
-                    "name": "Fixed in",
-                    "value": "2.0.6"
-                },
-                {
-                    "name": "Identifier",
-                    "value": "CVE-2018-16470"
-                }
-            ]
+            "footer": {
+                "text": "high \u00b7 CVE-2018-16470"
+            }
         }
     ]
 }

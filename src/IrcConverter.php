@@ -82,11 +82,17 @@ class IrcConverter extends BaseConverter
 
 		switch( $Action )
 		{
-			// Something needs attention again
+			// Something needs attention
+			case 'alert created':
 			case 'reopened'   :
 			case 'reintroduced':
 				return "\00307" . $Text . "\017";
 
+			// Something was set aside
+			case 'dismissed'  :
+			case 'auto-dismissed':
+			case 'converted to draft':
+			case 'archived'   :
 			case 'closed as not planned':
 				return "\00314" . $Text . "\017";
 
@@ -94,11 +100,9 @@ class IrcConverter extends BaseConverter
 			case 'merged'     :
 				return "\00313" . $Text . "\017";
 
-			case 'locked'     :
 			case 'deleted'    :
 			case 'removed'    :
-			case 'dismissed'  :
-			case 'auto-dismissed':
+			case 'review dismissed':
 			case 'publicly leaked':
 			case 'unpublished':
 			case 'force-pushed':
@@ -625,7 +629,7 @@ class IrcConverter extends BaseConverter
 		return sprintf( '[%s] %s %s%s pull request %s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( $State ),
+						$this->FormatAction( $State === 'dismissed' ? 'review dismissed' : $State, $State ),
 						match( $State )
 						{
 							'requested changes' => ' in',
@@ -654,7 +658,7 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		return sprintf( '[%s] %s commented on a review of pull request %s %s: %s %s',
+		return sprintf( '[%s] %s commented on the code of pull request %s %s: %s %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
@@ -762,9 +766,10 @@ class IrcConverter extends BaseConverter
 
 		if( $this->Payload->action === 'created' )
 		{
-			return sprintf( '[%s] ⚠ New code scanning alert %s: %s (%s) %s',
+			return sprintf( '[%s] ⚠ Code scanning alert %s %s: %s (%s) %s',
 							$this->FormatRepoName( ),
 							$this->FormatNumber( '#' . $this->Payload->alert->number ),
+							$this->FormatAction( 'alert created', 'created' ),
 							$this->ShortMessage( $this->Payload->alert->rule->description ),
 							$this->Payload->alert->rule->severity ?? 'none',
 							$this->FormatURL( $this->Payload->alert->html_url )
@@ -809,9 +814,10 @@ class IrcConverter extends BaseConverter
 
 		if( $Action === 'created' )
 		{
-			return sprintf( '[%s] ⚠ New Dependabot alert %s for %s: %s (%s, %s) %s',
+			return sprintf( '[%s] ⚠ Dependabot alert %s %s for %s: %s (%s, %s) %s',
 							$this->FormatRepoName( ),
 							$this->FormatNumber( '#' . $this->Payload->alert->number ),
+							$this->FormatAction( 'alert created', 'created' ),
 							$this->FormatName( $this->Payload->alert->security_vulnerability->package->name ),
 							$this->ShortMessage( $Advisory->summary ),
 							$this->FormatNumber( $Advisory->cve_id ?? $Advisory->ghsa_id ),
@@ -862,9 +868,10 @@ class IrcConverter extends BaseConverter
 				$SecretType .= ' (push protection bypassed by ' . $this->FormatName( $this->Payload->alert->push_protection_bypassed_by->login ?? 'ghost' ) . ')';
 			}
 
-			return sprintf( '[%s] ⚠ New secret scanning alert %s: %s %s',
+			return sprintf( '[%s] ⚠ Secret scanning alert %s %s: %s %s',
 							$this->FormatRepoName( ),
 							$this->FormatNumber( '#' . $this->Payload->alert->number ),
+							$this->FormatAction( 'alert created', 'created' ),
 							$SecretType,
 							$this->FormatURL( $this->Payload->alert->html_url )
 			);

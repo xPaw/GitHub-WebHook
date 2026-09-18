@@ -193,14 +193,12 @@ describe('optional fields', () => {
 		expect(result).not.toHaveProperty('description');
 	});
 
-	it('code scanning alert without a severity or a tool', () => {
+	it('code scanning alert without a severity', () => {
 		const result = embed('code_scanning_alert', 'code_scanning_alert_created', (p) => {
 			p.alert.rule.severity = null;
-			p.alert.tool = null;
 		});
 
-		expect(result.fields).toContainEqual({ name: 'Severity', value: 'none' });
-		expect(result.fields).toContainEqual({ name: 'Tool', value: 'unknown' });
+		expect(result.footer).toEqual({ text: 'none · js/unsafe-jquery-plugin' });
 	});
 
 	it('secret scanning alert without a secret type', () => {

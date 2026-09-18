@@ -10,20 +10,9 @@
                 "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
             },
             "description": "Potential XSS vulnerability in the $.fn.position plugin.",
-            "fields": [
-                {
-                    "name": "Severity",
-                    "value": "warning"
-                },
-                {
-                    "name": "Tool",
-                    "value": "CodeQL"
-                },
-                {
-                    "name": "Identifier",
-                    "value": "js\/unsafe-jquery-plugin"
-                }
-            ]
+            "footer": {
+                "text": "warning \u00b7 js\/unsafe-jquery-plugin"
+            }
         }
     ]
 }

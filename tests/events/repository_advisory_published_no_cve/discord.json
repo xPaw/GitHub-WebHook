@@ -10,16 +10,9 @@
                 "url": "https:\/\/github.com\/Codertocat",
                 "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
             },
-            "fields": [
-                {
-                    "name": "Severity",
-                    "value": "unknown"
-                },
-                {
-                    "name": "Identifier",
-                    "value": "GHSA-4f7x-2q9m-8c3p"
-                }
-            ]
+            "footer": {
+                "text": "GHSA-4f7x-2q9m-8c3p"
+            }
         }
     ]
 }

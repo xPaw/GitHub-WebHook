@@ -10,16 +10,9 @@
                 "url": "https:\/\/github.com\/Codertocat",
                 "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
             },
-            "fields": [
-                {
-                    "name": "Severity",
-                    "value": "high"
-                },
-                {
-                    "name": "Identifier",
-                    "value": "CVE-2023-31415"
-                }
-            ]
+            "footer": {
+                "text": "high \u00b7 CVE-2023-31415"
+            }
         }
     ]
 }

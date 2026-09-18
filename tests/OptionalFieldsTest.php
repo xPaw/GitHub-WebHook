@@ -78,9 +78,9 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { $Payload->alert->resolution = ''; },
 				'description', null,
 			],
-			'code scanning alert without a severity or a tool' => [
+			'code scanning alert without a severity' => [
 				'code_scanning_alert', 'code_scanning_alert_created',
-				static function( stdClass $Payload ) : void { $Payload->alert->rule->severity = null; $Payload->alert->tool = null; },
+				static function( stdClass $Payload ) : void { $Payload->alert->rule->severity = null; },
 				'description', 'Potential XSS vulnerability in the $.fn.position plugin.',
 			],
 			'secret scanning alert without a secret type' => [

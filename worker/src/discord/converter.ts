@@ -37,7 +37,6 @@ export interface DiscordEmbed {
 	color?: number;
 	author: { name: string; url: string; icon_url: string };
 	footer?: { text: string };
-	fields?: { name: string; value: string }[];
 }
 
 export interface DiscordMessage {
@@ -50,8 +49,6 @@ export interface DiscordMessage {
 
 const MAX_TITLE_LENGTH = 256;
 const MAX_DESCRIPTION_LENGTH = 4096;
-const MAX_FIELD_NAME_LENGTH = 256;
-const MAX_FIELD_VALUE_LENGTH = 1024;
 const MAX_FOOTER_LENGTH = 2048;
 const MAX_WIKI_PAGES = 5;
 
@@ -84,11 +81,6 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 		embed.footer.text = limitLength(embed.footer.text, MAX_FOOTER_LENGTH);
 	} else {
 		delete embed.footer;
-	}
-
-	for (const field of embed.fields ?? []) {
-		field.name = limitLength(field.name, MAX_FIELD_NAME_LENGTH);
-		field.value = limitLength(field.value, MAX_FIELD_VALUE_LENGTH);
 	}
 
 	return { embeds: [embed] };
@@ -162,11 +154,18 @@ function formatAuthor(sender: Sender): DiscordEmbed['author'] {
 	};
 }
 
+/** Something new, or something that went well. */
 const COLOR_DEFAULT = 5025616;
+/** Something changed, which is neither good nor bad. */
+const COLOR_NEUTRAL = 3113463;
+/** Something needs attention. */
 const COLOR_ATTENTION = 16750592;
+/** Something was removed or rejected. */
 const COLOR_BAD = 16007990;
+/** Something was finished. */
 const COLOR_CLOSED = 8540383;
-const COLOR_NOT_PLANNED = 7239297;
+/** Something was set aside. */
+const COLOR_SET_ASIDE = 7239297;
 
 /** Throws unless the action is one that gets formatted, ignored actions are checked first. */
 function assertAction(event: string, action: string, supported: readonly string[], ignored: readonly string[] = []): void {
@@ -181,25 +180,38 @@ function assertAction(event: string, action: string, supported: readonly string[
 
 function actionColor(action: string): number {
 	switch (action) {
-		// Something needs attention again
 		case 'reopened':
 		case 'reintroduced':
 			return COLOR_ATTENTION;
 
-		case 'locked':
 		case 'deleted':
 		case 'removed':
-		case 'dismissed':
-		case 'auto-dismissed':
 		case 'publicly leaked':
 		case 'unpublished':
-		case 'force-pushed':
 		case 'requested changes in':
 		case 'closed without merging':
 			return COLOR_BAD;
 
+		case 'dismissed':
+		case 'auto-dismissed':
+		case 'converted to draft':
+		case 'archived':
 		case 'closed as not planned':
-			return COLOR_NOT_PLANNED;
+			return COLOR_SET_ASIDE;
+
+		case 'pinned':
+		case 'unpinned':
+		case 'locked':
+		case 'unlocked':
+		case 'transferred':
+		case 'renamed':
+		case 'changed category':
+		case 'publicized':
+		case 'privatized':
+		case 'unarchived':
+		case 'enabled auto-merge':
+		case 'updated':
+			return COLOR_NEUTRAL;
 
 		case 'closed':
 		case 'merged':
@@ -254,7 +266,7 @@ function formatPing(payload: PingEvent): DiscordEmbed {
 	return {
 		title: `Hook ${payload.hook_id} worked!`,
 		description: escape(payload.zen ?? ''),
-		color: COLOR_DEFAULT,
+		color: COLOR_NEUTRAL,
 		author: formatAuthor(payload.sender),
 	};
 }
@@ -299,6 +311,7 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 			embed.color = COLOR_CLOSED;
 		} else {
 			embed.title = `fast-forwarded ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
+			embed.color = COLOR_NEUTRAL;
 		}
 	} else {
 		// Most pushes go to the default branch, so only other branches are worth naming
@@ -552,7 +565,7 @@ function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed 
 		// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
 		description: state === 'dismissed' ? '' : shortDescription(payload.review.body),
 		url: payload.review.html_url,
-		color: actionColor(state),
+		color: state === 'dismissed' ? COLOR_BAD : actionColor(state),
 		author: formatAuthor(payload.sender),
 	};
 }
@@ -561,7 +574,7 @@ function formatPullRequestReviewComment(payload: PullRequestReviewCommentEvent):
 	assertAction('pull_request_review_comment', payload.action, ['created'], ['edited', 'deleted']);
 
 	return {
-		title: `commented on a review of PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
+		title: `commented on the code of PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
 		description: shortDescription(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
@@ -623,16 +636,7 @@ function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 
 	if (action === 'created') {
 		embed.description = shortDescription(advisory.description);
-		embed.fields = [
-			{ name: 'Severity', value: escape(advisory.severity) },
-			{ name: 'Affected range', value: escape(vulnerability.vulnerable_version_range) },
-		];
-
-		if (vulnerability.first_patched_version) {
-			embed.fields.push({ name: 'Fixed in', value: escape(vulnerability.first_patched_version.identifier) });
-		}
-
-		embed.fields.push({ name: 'Identifier', value: escape(advisory.cve_id ?? advisory.ghsa_id) });
+		embed.footer = { text: `${advisory.severity} · ${advisory.cve_id ?? advisory.ghsa_id}` };
 	}
 
 	return embed;
@@ -662,11 +666,7 @@ function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed 
 
 	if (action === 'created') {
 		embed.description = shortDescription(payload.alert.most_recent_instance?.message?.text);
-		embed.fields = [
-			{ name: 'Severity', value: escape(payload.alert.rule.severity ?? 'none') },
-			{ name: 'Tool', value: escape(payload.alert.tool?.name ?? 'unknown') },
-			{ name: 'Identifier', value: escape(payload.alert.rule.id) },
-		];
+		embed.footer = { text: `${payload.alert.rule.severity ?? 'none'} · ${payload.alert.rule.id}` };
 	}
 
 	return embed;
@@ -726,10 +726,8 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 		url: advisory.html_url,
 		color: COLOR_ATTENTION,
 		author: formatAuthor(payload.sender),
-		fields: [
-			{ name: 'Severity', value: escape(advisory.severity ?? 'unknown') },
-			{ name: 'Identifier', value: escape(advisory.cve_id ?? advisory.ghsa_id) },
-		],
+		// Not every advisory has a severity
+		footer: { text: [advisory.severity, advisory.cve_id ?? advisory.ghsa_id].filter(Boolean).join(' · ') },
 	};
 }
 
@@ -766,7 +764,7 @@ function formatGollum(payload: GollumEvent): DiscordEmbed {
 		title: 'updated wiki',
 		description: lines.join('\n'),
 		url: `${payload.repository.html_url}/wiki`,
-		color: COLOR_DEFAULT,
+		color: COLOR_NEUTRAL,
 		author: formatAuthor(payload.sender),
 	};
 }

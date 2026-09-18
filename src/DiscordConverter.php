@@ -12,16 +12,21 @@ class DiscordConverter extends BaseConverter
 	// A tag never contains another "<", which keeps text full of unclosed tags cheap to scan.
 	private const string HTML_TAG = '~</?[a-z](?:[^<>"\']|"[^"<]*"|\'[^\'<]*\')*>~i';
 
+	// Something new, or something that went well
 	private const int COLOR_DEFAULT = 5025616;
+	// Something changed, which is neither good nor bad
+	private const int COLOR_NEUTRAL = 3113463;
+	// Something needs attention
 	private const int COLOR_ATTENTION = 16750592;
+	// Something was removed or rejected
 	private const int COLOR_BAD = 16007990;
+	// Something was finished
 	private const int COLOR_CLOSED = 8540383;
-	private const int COLOR_NOT_PLANNED = 7239297;
+	// Something was set aside
+	private const int COLOR_SET_ASIDE = 7239297;
 
 	private const int MAX_TITLE_LENGTH = 256;
 	private const int MAX_DESCRIPTION_LENGTH = 4096;
-	private const int MAX_FIELD_NAME_LENGTH = 256;
-	private const int MAX_FIELD_VALUE_LENGTH = 1024;
 	private const int MAX_FOOTER_LENGTH = 2048;
 
 	/**
@@ -97,20 +102,6 @@ class DiscordConverter extends BaseConverter
 		else if( is_array( $Embed[ 'footer' ] ) && is_string( $Embed[ 'footer' ][ 'text' ] ?? null ) )
 		{
 			$Embed[ 'footer' ][ 'text' ] = self::LimitLength( $Embed[ 'footer' ][ 'text' ], self::MAX_FOOTER_LENGTH );
-		}
-
-		if( is_array( $Embed[ 'fields' ] ?? null ) )
-		{
-			foreach( $Embed[ 'fields' ] as &$Field )
-			{
-				if( is_array( $Field ) && is_string( $Field[ 'name' ] ?? null ) && is_string( $Field[ 'value' ] ?? null ) )
-				{
-					$Field[ 'name' ] = self::LimitLength( $Field[ 'name' ], self::MAX_FIELD_NAME_LENGTH );
-					$Field[ 'value' ] = self::LimitLength( $Field[ 'value' ], self::MAX_FIELD_VALUE_LENGTH );
-				}
-			}
-
-			unset( $Field );
 		}
 
 		return [
@@ -202,22 +193,34 @@ class DiscordConverter extends BaseConverter
 
 		switch( $Action )
 		{
-			// Something needs attention again
 			case 'reintroduced':
 			case 'reopened'   : return self::COLOR_ATTENTION;
 
-			case 'locked'     :
 			case 'deleted'    :
 			case 'removed'    :
-			case 'dismissed'  :
-			case 'auto-dismissed':
 			case 'publicly leaked':
 			case 'unpublished':
-			case 'force-pushed':
 			case 'requested changes in':
 			case 'closed without merging': return self::COLOR_BAD;
 
-			case 'closed as not planned': return self::COLOR_NOT_PLANNED;
+			case 'dismissed'  :
+			case 'auto-dismissed':
+			case 'converted to draft':
+			case 'archived'   :
+			case 'closed as not planned': return self::COLOR_SET_ASIDE;
+
+			case 'pinned'     :
+			case 'unpinned'   :
+			case 'locked'     :
+			case 'unlocked'   :
+			case 'transferred':
+			case 'renamed'    :
+			case 'changed category':
+			case 'publicized' :
+			case 'privatized' :
+			case 'unarchived' :
+			case 'enabled auto-merge':
+			case 'updated'    : return self::COLOR_NEUTRAL;
 
 			case 'closed'     :
 			case 'merged'     : return self::COLOR_CLOSED;
@@ -342,6 +345,7 @@ class DiscordConverter extends BaseConverter
 			else
 			{
 				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
+				$Embed[ 'color' ] = self::COLOR_NEUTRAL;
 			}
 		}
 		else
@@ -765,7 +769,7 @@ class DiscordConverter extends BaseConverter
 			// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
 			'description' => $State === 'dismissed' ? '' : self::ShortDescription( $this->Payload->review->body ),
 			'url' => $this->Payload->review->html_url,
-			'color' => $this->FormatAction( $State ),
+			'color' => $State === 'dismissed' ? self::COLOR_BAD : $this->FormatAction( $State ),
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -789,7 +793,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "commented on a review of PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => "commented on the code of PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
 			'description' => self::ShortDescription( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
@@ -925,32 +929,7 @@ class DiscordConverter extends BaseConverter
 		if( $Action === 'created' )
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $Advisory->description ?? null );
-			$Embed[ 'fields' ] =
-			[
-				[
-					'name' => 'Severity',
-					'value' => self::Escape( $Advisory->severity )
-				],
-				[
-					'name' => 'Affected range',
-					'value' => self::Escape( $Vulnerability->vulnerable_version_range )
-				],
-			];
-
-			if( isset( $Vulnerability->first_patched_version ) )
-			{
-				$Embed[ 'fields' ][] =
-				[
-					'name' => 'Fixed in',
-					'value' => self::Escape( $Vulnerability->first_patched_version->identifier )
-				];
-			}
-
-			$Embed[ 'fields' ][] =
-			[
-				'name' => 'Identifier',
-				'value' => self::Escape( $Advisory->cve_id ?? $Advisory->ghsa_id )
-			];
+			$Embed[ 'footer' ] = [ 'text' => $Advisory->severity . ' · ' . ( $Advisory->cve_id ?? $Advisory->ghsa_id ) ];
 		}
 
 		return $Embed;
@@ -993,21 +972,7 @@ class DiscordConverter extends BaseConverter
 		if( $Action === 'created' )
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->alert->most_recent_instance->message->text ?? null );
-			$Embed[ 'fields' ] =
-			[
-				[
-					'name' => 'Severity',
-					'value' => self::Escape( $this->Payload->alert->rule->severity ?? 'none' )
-				],
-				[
-					'name' => 'Tool',
-					'value' => self::Escape( $this->Payload->alert->tool->name ?? 'unknown' )
-				],
-				[
-					'name' => 'Identifier',
-					'value' => self::Escape( $this->Payload->alert->rule->id )
-				],
-			];
+			$Embed[ 'footer' ] = [ 'text' => ( $this->Payload->alert->rule->severity ?? 'none' ) . ' · ' . $this->Payload->alert->rule->id ];
 		}
 
 		return $Embed;
@@ -1094,17 +1059,8 @@ class DiscordConverter extends BaseConverter
 			'url' => $Advisory->html_url,
 			'color' => self::COLOR_ATTENTION,
 			'author' => $this->FormatAuthor(),
-			'fields' =>
-			[
-				[
-					'name' => 'Severity',
-					'value' => self::Escape( $Advisory->severity ?? 'unknown' )
-				],
-				[
-					'name' => 'Identifier',
-					'value' => self::Escape( $Advisory->cve_id ?? $Advisory->ghsa_id )
-				],
-			],
+			// Not every advisory has a severity
+			'footer' => [ 'text' => implode( ' · ', array_filter( [ $Advisory->severity ?? null, $Advisory->cve_id ?? $Advisory->ghsa_id ], static fn( ?string $Part ) : bool => $Part !== null ) ) ],
 		];
 	}
 
@@ -1168,7 +1124,7 @@ class DiscordConverter extends BaseConverter
 			'title' => "updated wiki",
 			'url' => $this->Payload->repository->html_url . '/wiki',
 			'description' => implode( "\n", $Messages ),
-			'color' => self::COLOR_DEFAULT,
+			'color' => self::COLOR_NEUTRAL,
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -1183,7 +1139,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "Hook {$this->Payload->hook_id} worked!",
 			'description' => self::Escape( $this->Payload->zen ?? '' ),
-			'color' => self::COLOR_DEFAULT,
+			'color' => self::COLOR_NEUTRAL,
 			'author' => $this->FormatAuthor(),
 		];
 	}
