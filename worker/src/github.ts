@@ -3,7 +3,7 @@
 import { verify } from '@octokit/webhooks-methods';
 import { BadRequestError } from './errors.js';
 
-const EVENT_NAME = /^[a-z_]+$/;
+const EVENT_NAME = /^[a-z0-9_]+$/;
 
 export interface WebhookRequest {
 	eventType: string;

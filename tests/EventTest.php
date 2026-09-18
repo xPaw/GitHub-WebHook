@@ -23,6 +23,8 @@ class EventTest extends \PHPUnit\Framework\TestCase
 
 		self::assertEquals( $EventType, $Hook->GetEventType() );
 
+		$Original = unserialize( serialize( $Hook->GetPayload() ) );
+
 		// Convert processed event into an irc string
 		$Parser = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 		$Message = $Parser->GetMessage();
@@ -35,7 +37,6 @@ class EventTest extends \PHPUnit\Framework\TestCase
 		{
 			$ExpectedDiscordArray = json_decode( $ExpectedDiscord, true );
 
-			$Hook->ProcessRequest( ); // parse again because irc formatter can mutate the payload
 			$Parser = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 			$Discord = $Parser->GetEmbed();
 
@@ -43,6 +44,9 @@ class EventTest extends \PHPUnit\Framework\TestCase
 
 			self::assertEquals( $ExpectedDiscordArray, $Discord, $Path );
 		}
+
+		// The converters must not modify the payload they were handed
+		self::assertEquals( $Original, $Hook->GetPayload(), $Path );
 	}
 
 	/**

@@ -21,7 +21,7 @@ function withAction(fixture: string, action: string): Payload {
 }
 
 describe('ignored events', () => {
-	it.each(['fork', 'watch', 'star', 'status'])('%s', (eventType) => {
+	it.each(['create', 'fork', 'watch', 'star', 'status'])('%s', (eventType) => {
 		expect(() => getEmbed(eventType, {})).toThrow(new IgnoredEventError(eventType));
 	});
 

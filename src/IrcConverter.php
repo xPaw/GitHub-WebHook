@@ -37,6 +37,9 @@ class IrcConverter extends BaseConverter
 			case 'code_scanning_alert': return $this->FormatCodeScanningAlertEvent( );
 			case 'secret_scanning_alert': return $this->FormatSecretScanningAlertEvent( );
 
+			// New branches and tags are formatted from the push event, which has the commits
+			case 'create'        :
+
 			// Spammy events that we do not care about
 			case 'fork'          :
 			case 'watch'         :
@@ -124,17 +127,17 @@ class IrcConverter extends BaseConverter
 		$NewMessage = explode( "\n", $Message, 2 );
 		$NewMessage = $NewMessage[ 0 ];
 
-		if( strlen( $NewMessage ) > $Limit )
+		if( mb_strlen( $NewMessage ) > $Limit )
 		{
-			$NewMessage = substr( $Message, 0, $Limit );
+			$NewMessage = mb_substr( $Message, 0, $Limit );
 		}
 
 		if( $NewMessage !== $Message )
 		{
 			// Tidy ellipsis
-			if( substr( $NewMessage, -3 ) === '...' )
+			if( mb_substr( $NewMessage, -3 ) === '...' )
 			{
-				$NewMessage = substr( $NewMessage, 0, -3 ) . '…';
+				$NewMessage = mb_substr( $NewMessage, 0, -3 ) . '…';
 			}
 			else if( !str_ends_with( $NewMessage, '…' ) )
 			{
@@ -163,19 +166,19 @@ class IrcConverter extends BaseConverter
 			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
 			{
 				$Message .= sprintf( 'tagged %s at %s',
-					$this->FormatBranch( $this->Payload->ref_name ),
-					isset( $this->Payload->base_ref ) ?
-						$this->FormatBranch( $this->Payload->base_ref_name ) :
+					$this->FormatBranch( $this->RefName ),
+					$this->BaseRefName !== null ?
+						$this->FormatBranch( $this->BaseRefName ) :
 						$this->FormatHash( $this->AfterSHA( ) )
 				);
 			}
 			else
 			{
-				$Message .= sprintf( 'created %s', $this->FormatBranch( $this->Payload->ref_name ) );
+				$Message .= sprintf( 'created %s', $this->FormatBranch( $this->RefName ) );
 
-				if( isset( $this->Payload->base_ref ) )
+				if( $this->BaseRefName !== null )
 				{
-					$Message .= sprintf( ' from %s', $this->FormatBranch( $this->Payload->base_ref_name ) );
+					$Message .= sprintf( ' from %s', $this->FormatBranch( $this->BaseRefName ) );
 				}
 				else if( $Num > 0 )
 				{
@@ -197,28 +200,26 @@ class IrcConverter extends BaseConverter
 		}
 		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
 		{
-			$this->Payload->action = 'force-pushed'; // Don't tell anyone!
-
 			$Message .= sprintf( '%s %s from %s to %s',
-				$this->FormatAction( ),
-				$this->FormatBranch( $this->Payload->ref_name ),
+				$this->FormatAction( 'force-pushed' ),
+				$this->FormatBranch( $this->RefName ),
 				$this->FormatHash( $this->BeforeSHA( ) ),
 				$this->FormatHash( $this->AfterSHA( ) )
 			);
 		}
 		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
 		{
-			if( isset( $this->Payload->base_ref ) )
+			if( $this->BaseRefName !== null )
 			{
 				$Message .= sprintf( 'merged %s into %s',
-					$this->FormatBranch( $this->Payload->base_ref_name ),
-					$this->FormatBranch( $this->Payload->ref_name )
+					$this->FormatBranch( $this->BaseRefName ),
+					$this->FormatBranch( $this->RefName )
 				);
 			}
 			else
 			{
 				$Message .= sprintf( 'fast-forwarded %s from %s to %s',
-					$this->FormatBranch( $this->Payload->ref_name ),
+					$this->FormatBranch( $this->RefName ),
 					$this->FormatHash( $this->BeforeSHA( ) ),
 					$this->FormatHash( $this->AfterSHA( ) )
 				);
@@ -229,7 +230,7 @@ class IrcConverter extends BaseConverter
 			$Message .= sprintf( 'pushed %s new commit%s to %s',
 				$this->FormatNumber( (string)$Num ),
 				$Num === 1 ? '' : 's',
-				$this->FormatBranch( $this->Payload->ref_name )
+				$this->FormatBranch( $this->RefName )
 			);
 		}
 
@@ -282,12 +283,10 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->ref_type );
 		}
 
-		$this->Payload->action = 'deleted';
-
 		return sprintf( '[%s] %s %s %s %s',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->sender->login ),
-			$this->FormatAction( ),
+			$this->FormatAction( 'deleted' ),
 			$this->Payload->ref_type,
 			$this->FormatBranch( $this->Payload->ref )
 		);
@@ -344,63 +343,65 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatPullRequestEvent( ) : string
 	{
-		if( $this->Payload->action === 'closed' )
+		$Action = $this->Payload->action;
+
+		if( $Action === 'closed' )
 		{
 			if( $this->Payload->pull_request->merged === true )
 			{
-				$this->Payload->action = 'merged';
+				$Action = 'merged';
 			}
 			else
 			{
-				$this->Payload->action = 'closed without merging';
+				$Action = 'closed without merging';
 			}
 		}
-		else if( $this->Payload->action === 'ready_for_review' )
+		else if( $Action === 'ready_for_review' )
 		{
-			$this->Payload->action = 'readied';
+			$Action = 'readied';
 		}
-		else if( $this->Payload->action === 'auto_merge_enabled' )
+		else if( $Action === 'auto_merge_enabled' )
 		{
-			$this->Payload->action = 'enabled auto-merge';
+			$Action = 'enabled auto-merge';
 		}
-		else if( $this->Payload->action === 'converted_to_draft' )
+		else if( $Action === 'converted_to_draft' )
 		{
-			$this->Payload->action = 'converted to draft';
-		}
-
-		if( $this->Payload->action === 'edited'
-		||  $this->Payload->action === 'synchronize'
-		||  $this->Payload->action === 'labeled'
-		||  $this->Payload->action === 'unlabeled'
-		||  $this->Payload->action === 'assigned'
-		||  $this->Payload->action === 'unassigned'
-		||  $this->Payload->action === 'review_requested'
-		||  $this->Payload->action === 'review_request_removed' )
-		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			$Action = 'converted to draft';
 		}
 
-		if( $this->Payload->action !== 'opened'
-		&&  $this->Payload->action !== 'reopened'
-		&&  $this->Payload->action !== 'deleted'
-		&&  $this->Payload->action !== 'merged'
-		&&  $this->Payload->action !== 'locked'
-		&&  $this->Payload->action !== 'unlocked'
-		&&  $this->Payload->action !== 'readied'
-		&&  $this->Payload->action !== 'enabled auto-merge'
-		&&  $this->Payload->action !== 'converted to draft'
-		&&  $this->Payload->action !== 'closed without merging' )
+		if( $Action === 'edited'
+		||  $Action === 'synchronize'
+		||  $Action === 'labeled'
+		||  $Action === 'unlabeled'
+		||  $Action === 'assigned'
+		||  $Action === 'unassigned'
+		||  $Action === 'review_requested'
+		||  $Action === 'review_request_removed' )
 		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
+		}
+
+		if( $Action !== 'opened'
+		&&  $Action !== 'reopened'
+		&&  $Action !== 'deleted'
+		&&  $Action !== 'merged'
+		&&  $Action !== 'locked'
+		&&  $Action !== 'unlocked'
+		&&  $Action !== 'readied'
+		&&  $Action !== 'enabled auto-merge'
+		&&  $Action !== 'converted to draft'
+		&&  $Action !== 'closed without merging' )
+		{
+			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
 		return sprintf( '[%s] %s %s %spull request %s%s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( ),
+						$this->FormatAction( $Action ),
 						$this->Payload->pull_request->draft ? 'draft ' : '',
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
-						$this->Payload->action === 'merged' ?
+						$Action === 'merged' ?
 							( ' from ' . $this->FormatName( $this->Payload->pull_request->user->login ) . ' to ' . $this->FormatBranch( $this->Payload->pull_request->base->ref ) ) :
 							'',
 						$this->Payload->pull_request->title,
@@ -555,21 +556,23 @@ class IrcConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		if( $this->Payload->review->state === 'commented' )
+		$State = $this->Payload->review->state;
+
+		if( $State === 'commented' )
 		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->review->state );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $State );
 		}
 
-		if( $this->Payload->review->state === 'changes_requested' )
+		if( $State === 'changes_requested' )
 		{
-			$this->Payload->review->state = 'requested changes';
+			$State = 'requested changes';
 		}
 
 		return sprintf( '[%s] %s %s%s pull request %s: %s. %s',
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( $this->Payload->review->state ),
-						$this->Payload->review->state === 'requested changes' ? ' in' : '',
+						$this->FormatAction( $State ),
+						$State === 'requested changes' ? ' in' : '',
 						$this->FormatNumber( '#' . $this->Payload->pull_request->number ),
 						$this->Payload->pull_request->title,
 						$this->FormatURL( $this->Payload->review->html_url )
@@ -600,37 +603,39 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatDiscussionEvent( ) : string
 	{
-		if( $this->Payload->action === 'edited'
-		||  $this->Payload->action === 'labeled'
-		||  $this->Payload->action === 'unlabeled'
-		||  $this->Payload->action === 'answered'
-		||  $this->Payload->action === 'unanswered' )
+		$Action = $this->Payload->action;
+
+		if( $Action === 'edited'
+		||  $Action === 'labeled'
+		||  $Action === 'unlabeled'
+		||  $Action === 'answered'
+		||  $Action === 'unanswered' )
 		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
 
-		if( $this->Payload->action === 'category_changed' )
+		if( $Action === 'category_changed' )
 		{
-			$this->Payload->action = 'changed category';
+			$Action = 'changed category';
 		}
 
-		if( $this->Payload->action !== 'created'
-		&&  $this->Payload->action !== 'deleted'
-		&&  $this->Payload->action !== 'pinned'
-		&&  $this->Payload->action !== 'unpinned'
-		&&  $this->Payload->action !== 'locked'
-		&&  $this->Payload->action !== 'unlocked'
-		&&  $this->Payload->action !== 'transferred'
-		&&  $this->Payload->action !== 'changed category' )
+		if( $Action !== 'created'
+		&&  $Action !== 'deleted'
+		&&  $Action !== 'pinned'
+		&&  $Action !== 'unpinned'
+		&&  $Action !== 'locked'
+		&&  $Action !== 'unlocked'
+		&&  $Action !== 'transferred'
+		&&  $Action !== 'changed category' )
 		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
 		return sprintf(
 			'[%s] %s %s discussion %s: %s. %s',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->sender->login ),
-			$this->FormatAction( ),
+			$this->FormatAction( $Action ),
 			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
 			$this->Payload->discussion->title,
 			$this->FormatURL( $this->Payload->discussion->html_url )
@@ -869,10 +874,12 @@ class IrcConverter extends BaseConverter
 				$Message .= "\n";
 			}
 
+			$URL = $Page->html_url;
+
 			// Append compare url since github doesn't provide one
 			if( $Page->action === 'edited' )
 			{
-				$Page->html_url .= '/_compare/' . $Page->sha;
+				$URL .= '/_compare/' . $Page->sha;
 			}
 
 			$Message .= sprintf( "[%s] %s %s %s: %s%s",
@@ -881,7 +888,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatAction( $Page->action ),
 						$Page->title,
 						( $Page->summary ?? '' ) === '' ? '' : ( $Page->summary . ' ' ),
-						$this->FormatURL( $Page->html_url )
+						$this->FormatURL( $URL )
 			);
 		}
 

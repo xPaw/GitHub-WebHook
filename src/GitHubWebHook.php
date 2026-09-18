@@ -22,7 +22,7 @@ class GitHubWebHook
 
 		$this->EventType = $_SERVER[ 'HTTP_X_GITHUB_EVENT' ];
 
-		if ( preg_match( '/^[a-z_]+$/', $this->EventType ) !== 1 )
+		if ( preg_match( '/^[a-z0-9_]+$/', $this->EventType ) !== 1 )
 		{
 			throw new Exception( 'Invalid event header.' );
 		}
@@ -61,9 +61,7 @@ class GitHubWebHook
 
 		if( !is_object( $Decoded ) )
 		{
-			throw new Exception( 'Failed to decode JSON: ' .
-				( function_exists( 'json_last_error_msg' ) ? json_last_error_msg() : json_last_error() )
-			);
+			throw new Exception( 'Failed to decode JSON: ' . json_last_error_msg() );
 		}
 
 		$this->Payload = $Decoded;
@@ -116,7 +114,7 @@ class GitHubWebHook
 	/**
 	 * Returns event type.
 	 *
-	 * @see https://developer.github.com/webhooks/#events
+	 * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads
 	 */
 	public function GetEventType( ) : string
 	{

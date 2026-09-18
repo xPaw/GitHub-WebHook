@@ -1,6 +1,6 @@
 import type { operations } from '@octokit/openapi-webhooks-types';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../errors.js';
-import { escape, escapeCode, shortDescription, shortMessage } from './text.js';
+import { escape, escapeCode, limitLength, shortDescription, shortMessage } from './text.js';
 
 /** Every payload of an event, the operations are keyed as `event` or `event/action`. */
 type Payload<Event extends string> =
@@ -47,8 +47,11 @@ export interface DiscordMessage {
 	embeds: DiscordEmbed[];
 }
 
-/** Events we deliberately never forward. */
-const IGNORED_EVENTS = new Set(['fork', 'watch', 'star', 'status']);
+const MAX_TITLE_LENGTH = 256;
+const MAX_DESCRIPTION_LENGTH = 4096;
+
+/** Events we deliberately never forward, new branches and tags are formatted from `push` which has the commits. */
+const IGNORED_EVENTS = new Set(['create', 'fork', 'watch', 'star', 'status']);
 
 /**
  * Converts a GitHub webhook payload into a Discord webhook message.
@@ -63,7 +66,12 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 
 	const embed = format(eventType, payload);
 
-	if (!embed.description) {
+	// Discord rejects the whole message when an embed is over its limits
+	embed.title = limitLength(embed.title, MAX_TITLE_LENGTH);
+
+	if (embed.description) {
+		embed.description = limitLength(embed.description, MAX_DESCRIPTION_LENGTH);
+	} else {
 		delete embed.description;
 	}
 

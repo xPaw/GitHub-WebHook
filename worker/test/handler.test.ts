@@ -332,6 +332,13 @@ describe('worker', () => {
 		expect(await response.text()).toContain('Unsupported GitHub event: deployment');
 	});
 
+	it('accepts event names that have digits in them', async () => {
+		const response = await worker.fetch(await buildRequest('projects_v2_item', fixture('push')), env);
+
+		expect(response.status).toBe(501);
+		expect(await response.text()).toContain('Unsupported GitHub event: projects_v2_item');
+	});
+
 	it('routes org-only payloads as <org>/repositories', async () => {
 		const response = await worker.fetch(await buildRequest('ping', fixture('ping_org'), { secret: ORG_SECRET }), env);
 

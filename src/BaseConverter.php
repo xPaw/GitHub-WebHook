@@ -8,31 +8,31 @@ class BaseConverter
 	protected string $EventType;
 	protected object $Payload;
 
+	/** Name of the pushed ref without the refs/heads/ or refs/tags/ prefix. */
+	protected string $RefName = '';
+
+	/** Name of the ref that the pushed ref was based on, if there was one. */
+	protected ?string $BaseRefName = null;
+
 	public function __construct( string $EventType, object $Payload )
 	{
 		$this->EventType = $EventType;
 		$this->Payload = $Payload;
 
-		// ref_name is not always available, apparently, we make sure it is
-		if( !isset( $this->Payload->ref_name ) && isset( $this->Payload->ref ) )
+		if( isset( $this->Payload->ref ) )
 		{
-			$Ref = explode( '/', $this->Payload->ref, 3 );
-
-			if( isset( $Ref[ 2 ] ) )
-			{
-				$this->Payload->ref_name = $Ref[ 2 ];
-			}
+			$this->RefName = self::GetRefName( $this->Payload->ref );
 		}
 
-		if( !isset( $this->Payload->base_ref_name ) && isset( $this->Payload->base_ref ) )
+		if( isset( $this->Payload->base_ref ) )
 		{
-			$Ref = explode( '/', $this->Payload->base_ref, 3 );
-
-			if( isset( $Ref[ 2 ] ) )
-			{
-				$this->Payload->base_ref_name = $Ref[ 2 ];
-			}
+			$this->BaseRefName = self::GetRefName( $this->Payload->base_ref );
 		}
+	}
+
+	private static function GetRefName( string $Ref ) : string
+	{
+		return explode( '/', $Ref, 3 )[ 2 ] ?? $Ref;
 	}
 
 	/**

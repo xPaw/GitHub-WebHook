@@ -12,6 +12,9 @@ class DiscordConverter extends BaseConverter
 	// A tag never contains another "<", which keeps text full of unclosed tags cheap to scan.
 	private const string HTML_TAG = '~</?[a-z](?:[^<>"\']|"[^"<]*"|\'[^\'<]*\')*>~i';
 
+	private const int MAX_TITLE_LENGTH = 256;
+	private const int MAX_DESCRIPTION_LENGTH = 4096;
+
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.
 	 *
@@ -19,7 +22,9 @@ class DiscordConverter extends BaseConverter
 	 */
 	public function GetEmbed( ) : array
 	{
-		if( $this->EventType === 'fork'
+		// New branches and tags are formatted from the push event, which has the commits
+		if( $this->EventType === 'create'
+		||  $this->EventType === 'fork'
 		||  $this->EventType === 'watch'
 		||  $this->EventType === 'star'
 		||  $this->EventType === 'status' )
@@ -60,14 +65,35 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType );
 		}
 
-		if( ( $Embed[ 'description' ] ?? '' ) === '' )
+		// Discord rejects the whole message when an embed is over its limits
+		if( is_string( $Embed[ 'title' ] ) )
+		{
+			$Embed[ 'title' ] = self::LimitLength( $Embed[ 'title' ], self::MAX_TITLE_LENGTH );
+		}
+
+		if( !is_string( $Embed[ 'description' ] ?? null ) || $Embed[ 'description' ] === '' )
 		{
 			unset( $Embed[ 'description' ] );
+		}
+		else
+		{
+			$Embed[ 'description' ] = self::LimitLength( $Embed[ 'description' ], self::MAX_DESCRIPTION_LENGTH );
 		}
 
 		return [
 			'embeds' => [ $Embed ],
 		];
+	}
+
+	private static function LimitLength( string $Message, int $Limit ) : string
+	{
+		if( mb_strlen( $Message ) > $Limit )
+		{
+			// The ellipsis counts towards the limit
+			$Message = mb_substr( $Message, 0, $Limit - 1 ) . '…';
+		}
+
+		return $Message;
 	}
 
 	private static function EscapeCode( string $Message ) : string
@@ -198,16 +224,16 @@ class DiscordConverter extends BaseConverter
 		{
 			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
 			{
-				$Embed[ 'title' ] = "tagged " . self::EscapeCode( $this->Payload->ref_name ) . " at " . self::EscapeCode( $this->Payload->base_ref_name ?? $this->AfterSHA() );
+				$Embed[ 'title' ] = "tagged " . self::EscapeCode( $this->RefName ) . " at " . self::EscapeCode( $this->BaseRefName ?? $this->AfterSHA() );
 				$Embed[ 'color' ] = $this->FormatAction( 'tagged' );
 			}
 			else
 			{
-				$Embed[ 'title' ] = "created " . self::EscapeCode( $this->Payload->ref_name );
+				$Embed[ 'title' ] = "created " . self::EscapeCode( $this->RefName );
 
-				if( isset( $this->Payload->base_ref ) )
+				if( $this->BaseRefName !== null )
 				{
-					$Embed[ 'title' ] .= " from " . self::EscapeCode( $this->Payload->base_ref_name );
+					$Embed[ 'title' ] .= " from " . self::EscapeCode( $this->BaseRefName );
 				}
 				else if( $Num > 0 )
 				{
@@ -229,21 +255,19 @@ class DiscordConverter extends BaseConverter
 		}
 		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
 		{
-			$this->Payload->action = 'force-pushed'; // Don't tell anyone!
-
-			$Embed[ 'title' ] = "{$this->Payload->action} " . self::EscapeCode( $this->Payload->ref_name ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
-			$Embed[ 'color' ] = $this->FormatAction();
+			$Embed[ 'title' ] = "force-pushed " . self::EscapeCode( $this->RefName ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
+			$Embed[ 'color' ] = $this->FormatAction( 'force-pushed' );
 		}
 		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
 		{
-			if( isset( $this->Payload->base_ref ) )
+			if( $this->BaseRefName !== null )
 			{
-				$Embed[ 'title' ] = "merged " . self::EscapeCode( $this->Payload->base_ref_name ) . " into " . self::EscapeCode( $this->Payload->ref_name );
+				$Embed[ 'title' ] = "merged " . self::EscapeCode( $this->BaseRefName ) . " into " . self::EscapeCode( $this->RefName );
 				$Embed[ 'color' ] = $this->FormatAction( 'merged' );
 			}
 			else
 			{
-				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->Payload->ref_name ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
+				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->RefName ) . " from " . self::Escape( $this->BeforeSHA() ) . " to " . self::Escape( $this->AfterSHA() );
 				$Embed[ 'color' ] = $this->FormatAction( 'fast-forwarded' );
 			}
 		}
@@ -252,7 +276,7 @@ class DiscordConverter extends BaseConverter
 			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s to %s',
 				$Num,
 				$Num === 1 ? '' : 's',
-				self::EscapeCode( $this->Payload->ref_name )
+				self::EscapeCode( $this->RefName )
 			);
 		}
 
@@ -331,46 +355,48 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatIssuesEvent( ) : array
 	{
-		if( $this->Payload->action === 'edited'
-		||  $this->Payload->action === 'unpinned'
-		||  $this->Payload->action === 'milestoned'
-		||  $this->Payload->action === 'demilestoned'
-		||  $this->Payload->action === 'labeled'
-		||  $this->Payload->action === 'unlabeled'
-		||  $this->Payload->action === 'assigned'
-		||  $this->Payload->action === 'unassigned' )
+		$Action = $this->Payload->action;
+
+		if( $Action === 'edited'
+		||  $Action === 'unpinned'
+		||  $Action === 'milestoned'
+		||  $Action === 'demilestoned'
+		||  $Action === 'labeled'
+		||  $Action === 'unlabeled'
+		||  $Action === 'assigned'
+		||  $Action === 'unassigned' )
 		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
 
-		if( $this->Payload->action !== 'opened'
-		&&  $this->Payload->action !== 'closed'
-		&&  $this->Payload->action !== 'reopened'
-		&&  $this->Payload->action !== 'deleted'
-		&&  $this->Payload->action !== 'pinned'
-		&&  $this->Payload->action !== 'locked'
-		&&  $this->Payload->action !== 'unlocked'
-		&&  $this->Payload->action !== 'transferred' )
+		if( $Action !== 'opened'
+		&&  $Action !== 'closed'
+		&&  $Action !== 'reopened'
+		&&  $Action !== 'deleted'
+		&&  $Action !== 'pinned'
+		&&  $Action !== 'locked'
+		&&  $Action !== 'unlocked'
+		&&  $Action !== 'transferred' )
 		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
-		if( $this->Payload->action === 'closed' )
+		if( $Action === 'closed' )
 		{
 			if( $this->Payload->issue->state_reason === 'not_planned' )
 			{
-				$this->Payload->action = 'closed as not planned';
+				$Action = 'closed as not planned';
 			}
 		}
 
 		$Embed = [
-			'title' => "Issue **#{$this->Payload->issue->number}** {$this->Payload->action}: " . self::Escape( $this->Payload->issue->title ),
+			'title' => "Issue **#{$this->Payload->issue->number}** {$Action}: " . self::Escape( $this->Payload->issue->title ),
 			'url' => $this->Payload->issue->html_url,
-			'color' => $this->FormatAction(),
+			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
 
-		if( $this->Payload->action === 'opened' )
+		if( $Action === 'opened' )
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->issue->body );
 
@@ -397,68 +423,70 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatPullRequestEvent( ) : array
 	{
-		if( $this->Payload->action === 'closed' )
+		$Action = $this->Payload->action;
+
+		if( $Action === 'closed' )
 		{
 			if( $this->Payload->pull_request->merged === true )
 			{
-				$this->Payload->action = 'merged';
+				$Action = 'merged';
 			}
 			else
 			{
-				$this->Payload->action = 'closed without merging';
+				$Action = 'closed without merging';
 			}
 		}
-		else if( $this->Payload->action === 'ready_for_review' )
+		else if( $Action === 'ready_for_review' )
 		{
-			$this->Payload->action = 'readied';
+			$Action = 'readied';
 		}
-		else if( $this->Payload->action === 'auto_merge_enabled' )
+		else if( $Action === 'auto_merge_enabled' )
 		{
-			$this->Payload->action = 'enabled auto-merge';
+			$Action = 'enabled auto-merge';
 		}
-		else if( $this->Payload->action === 'converted_to_draft' )
+		else if( $Action === 'converted_to_draft' )
 		{
-			$this->Payload->action = 'converted to draft';
-		}
-
-		if( $this->Payload->action === 'edited'
-		||  $this->Payload->action === 'synchronize'
-		||  $this->Payload->action === 'labeled'
-		||  $this->Payload->action === 'unlabeled'
-		||  $this->Payload->action === 'assigned'
-		||  $this->Payload->action === 'unassigned'
-		||  $this->Payload->action === 'review_requested'
-		||  $this->Payload->action === 'review_request_removed' )
-		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			$Action = 'converted to draft';
 		}
 
-		if( $this->Payload->action !== 'opened'
-		&&  $this->Payload->action !== 'reopened'
-		&&  $this->Payload->action !== 'deleted'
-		&&  $this->Payload->action !== 'merged'
-		&&  $this->Payload->action !== 'locked'
-		&&  $this->Payload->action !== 'unlocked'
-		&&  $this->Payload->action !== 'readied'
-		&&  $this->Payload->action !== 'enabled auto-merge'
-		&&  $this->Payload->action !== 'converted to draft'
-		&&  $this->Payload->action !== 'closed without merging' )
+		if( $Action === 'edited'
+		||  $Action === 'synchronize'
+		||  $Action === 'labeled'
+		||  $Action === 'unlabeled'
+		||  $Action === 'assigned'
+		||  $Action === 'unassigned'
+		||  $Action === 'review_requested'
+		||  $Action === 'review_request_removed' )
 		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
+		}
+
+		if( $Action !== 'opened'
+		&&  $Action !== 'reopened'
+		&&  $Action !== 'deleted'
+		&&  $Action !== 'merged'
+		&&  $Action !== 'locked'
+		&&  $Action !== 'unlocked'
+		&&  $Action !== 'readied'
+		&&  $Action !== 'enabled auto-merge'
+		&&  $Action !== 'converted to draft'
+		&&  $Action !== 'closed without merging' )
+		{
+			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
 		$Embed = [
-			'title' => ( $this->Payload->pull_request->draft ? 'Draft ' : '' ) . "PR **#{$this->Payload->pull_request->number}** {$this->Payload->action}: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => ( $this->Payload->pull_request->draft ? 'Draft ' : '' ) . "PR **#{$this->Payload->pull_request->number}** {$Action}: " . self::Escape( $this->Payload->pull_request->title ),
 			'url' => $this->Payload->pull_request->html_url,
-			'color' => $this->FormatAction(),
+			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
 
-		if( $this->Payload->action === 'opened' )
+		if( $Action === 'opened' )
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->pull_request->body );
 		}
-		else if( $this->Payload->action === 'merged' )
+		else if( $Action === 'merged' )
 		{
 			$Embed[ 'description' ] = "Merged from **" . self::Escape( $this->Payload->pull_request->user->login ) . "** to " . self::EscapeCode( $this->Payload->pull_request->base->ref );
 		}
@@ -617,21 +645,23 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		if( $this->Payload->review->state === 'commented' )
+		$State = $this->Payload->review->state;
+
+		if( $State === 'commented' )
 		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->review->state );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $State );
 		}
 
-		if( $this->Payload->review->state === 'changes_requested' )
+		if( $State === 'changes_requested' )
 		{
-			$this->Payload->review->state = 'requested changes in';
+			$State = 'requested changes in';
 		}
 
 		return [
-			'title' => "{$this->Payload->review->state} PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => "{$State} PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
 			'description' => self::ShortDescription( $this->Payload->review->body ),
 			'url' => $this->Payload->review->html_url,
-			'color' => $this->FormatAction( $this->Payload->review->state ),
+			'color' => $this->FormatAction( $State ),
 			'author' => $this->FormatAuthor(),
 		];
 	}
@@ -664,40 +694,42 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatDiscussionEvent( ) : array
 	{
-		if( $this->Payload->action === 'edited'
-		||  $this->Payload->action === 'labeled'
-		||  $this->Payload->action === 'unlabeled'
-		||  $this->Payload->action === 'answered'
-		||  $this->Payload->action === 'unanswered' )
+		$Action = $this->Payload->action;
+
+		if( $Action === 'edited'
+		||  $Action === 'labeled'
+		||  $Action === 'unlabeled'
+		||  $Action === 'answered'
+		||  $Action === 'unanswered' )
 		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
 
-		if( $this->Payload->action === 'category_changed' )
+		if( $Action === 'category_changed' )
 		{
-			$this->Payload->action = 'changed category';
+			$Action = 'changed category';
 		}
 
-		if( $this->Payload->action !== 'created'
-		&&  $this->Payload->action !== 'deleted'
-		&&  $this->Payload->action !== 'pinned'
-		&&  $this->Payload->action !== 'unpinned'
-		&&  $this->Payload->action !== 'locked'
-		&&  $this->Payload->action !== 'unlocked'
-		&&  $this->Payload->action !== 'transferred'
-		&&  $this->Payload->action !== 'changed category' )
+		if( $Action !== 'created'
+		&&  $Action !== 'deleted'
+		&&  $Action !== 'pinned'
+		&&  $Action !== 'unpinned'
+		&&  $Action !== 'locked'
+		&&  $Action !== 'unlocked'
+		&&  $Action !== 'transferred'
+		&&  $Action !== 'changed category' )
 		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+			throw new NotImplementedException( $this->EventType, $Action );
 		}
 
 		$Embed = [
-			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$this->Payload->action}: " . self::Escape( $this->Payload->discussion->title ),
+			'title' => "{$this->Payload->discussion->category->emoji} Discussion **#{$this->Payload->discussion->number}** {$Action}: " . self::Escape( $this->Payload->discussion->title ),
 			'url' => $this->Payload->discussion->html_url,
-			'color' => $this->FormatAction(),
+			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
 		];
 
-		if( $this->Payload->action === 'created' )
+		if( $Action === 'created' )
 		{
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->discussion->body );
 		}
@@ -979,13 +1011,15 @@ class DiscordConverter extends BaseConverter
 
 		foreach( $this->Payload->pages as $Page )
 		{
+			$URL = $Page->html_url;
+
 			// Append compare url since github doesn't provide one
 			if( $Page->action === 'edited' )
 			{
-				$Page->html_url .= '/_compare/' . $Page->sha;
+				$URL .= '/_compare/' . $Page->sha;
 			}
 
-			$Messages[] = "[{$Page->action} " . self::Escape( $Page->title ) . "]({$Page->html_url})" . ( ( $Page->summary ?? '' ) === '' ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
+			$Messages[] = "[{$Page->action} " . self::Escape( $Page->title ) . "]({$URL})" . ( ( $Page->summary ?? '' ) === '' ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
 		}
 
 		return [

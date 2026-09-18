@@ -24,6 +24,13 @@ function truncate(text: string, limit: number): string {
 	return characters.length > limit ? characters.slice(0, limit).join('') : text;
 }
 
+/** Cuts text that is over a limit imposed by Discord, the ellipsis counts towards the limit. */
+export function limitLength(text: string, limit: number): string {
+	const truncated = truncate(text, limit - 1);
+
+	return [...text].length > limit ? `${truncated}…` : text;
+}
+
 /**
  * Formats the first line of a commit or wiki message, truncated and markdown escaped.
  */

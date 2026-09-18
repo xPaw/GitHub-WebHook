@@ -25,29 +25,36 @@ Returns decoded JSON payload as an object.
 Returns full name of the repository for which an event was sent for.
 
 #### ValidateHubSignature( $SecretKey )
-Retuns true if HMAC hex digest of the payload matches GitHub's, false otherwise.
+Returns true if HMAC hex digest of the payload matches GitHub's, false otherwise.
+Throws `Exception` if the signature header is missing.
 
-## IrcConverter
-`IrcConverter.php` accepts input from previous script and outputs
-a colored string which can be sent to IRC.
+## Converters
+Both converters take the data parsed by `GitHubWebHook`, and neither of them modifies the payload,
+so the same payload can be given to both:
 
-#### __construct( $EventType, $Payload )
-`IrcConverter` constructor takes 3 paramaters (last one is optional).
-All you need to do is pass data after parsing the message with `GitHubWebHook`
-like so: `new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );`
+```php
+$Hook = new GitHubWebHook( );
+$Hook->ProcessRequest( );
 
-URL shortener paramater takes a function, and that function should accept
-a single string argument containing an url. If your function fails to
-shorten an url or do anything with it, your function must return the
-original url back.
+$Irc = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
+$Discord = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
+```
+
+Both of them throw `NotImplementedException` for an event or an action that is not formatted,
+and `IgnoredEventException` for the ones that are ignored by design, see the lists of events below.
+
+### IrcConverter
 
 #### GetMessage()
-After calling the constructor, using this function will return
-a string which can be sent to an IRC server.
+Returns a colored string which can be sent to an IRC server.
+Some events, such as wiki updates, return multiple lines separated by a new line.
 
-Throws `NotImplementedException` when you pass an event that
-is not parsed anyhow, and throws `IgnoredEventException` for
-`fork`, `watch`, `star` and `status` events which are ignored by design.
+### DiscordConverter
+
+#### GetEmbed()
+Returns an array which can be encoded as JSON and sent to a Discord webhook as is.
+It contains a single embed whose author is the GitHub user that triggered the event.
+Titles and descriptions are cut to fit within the limits of Discord.
 
 ## Events [\[ref\]](https://docs.github.com/en/webhooks/webhook-events-and-payloads)
 
@@ -116,7 +123,7 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 
 ### Events ignored by design
 
-- create - Formatted from push event instead
+- create - New branches and tags are formatted from the push event instead, which has the commits
 - fork
 - star
 - status
