@@ -1,0 +1,6 @@
+# Copy to .dev.vars for `wrangler dev`. In production set it with `wrangler secret put REPOSITORIES`.
+
+# JSON object mapping repository patterns to the secret token of their GitHub webhook
+# and the Discord webhooks the events are sent to.
+# Patterns may contain "*" wildcards, and every matching pattern with a valid secret fires.
+REPOSITORIES='{"xPaw/GitHub-WebHook":{"secret":"hunter2","webhooks":["https://discord.com/api/webhooks/123/abc"]},"SteamDatabase/*":{"secret":"correct horse","webhooks":["https://discord.com/api/webhooks/456/def"]}}'

@@ -1,0 +1,15 @@
+{
+	"xPaw/GitHub-WebHook": {
+		"secret": "long random string",
+		"webhooks": [
+			"https://discord.com/api/webhooks/000000000000000000/token"
+		]
+	},
+	"SteamDatabase/*": {
+		"secret": "another long random string",
+		"webhooks": [
+			"https://discord.com/api/webhooks/000000000000000000/token",
+			"https://discord.com/api/webhooks/111111111111111111/token"
+		]
+	}
+}

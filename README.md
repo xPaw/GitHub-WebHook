@@ -4,6 +4,7 @@ depending on the converter used.
 
 See `examples/discord.php` for a basic application that sends webhooks to Discord.  
 See `examples/irker.php` for a basic application that sends messages to IRC.  
+See `worker/` for a Cloudflare Worker that sends webhooks to Discord.  
 
 ## GitHubWebHook
 `GitHubWebHook.php` accepts, processes and validates an event,
