@@ -5,10 +5,12 @@ namespace GitHubWebHook;
 
 class DiscordConverter extends BaseConverter
 {
-	private const string HTML_COMMENT = '~<!--.*?-->~s';
+	// An unclosed comment hides the rest of the text, which is also how GitHub renders it
+	private const string HTML_COMMENT = '~<!--.*?(?:-->|\z)~s';
 
-	// Requires a tag name, so that a lone "<" in text such as "a < b" is left alone
-	private const string HTML_TAG = '~</?[a-z](?:[^>"\']|"[^"]*"|\'[^\']*\')*>~i';
+	// Requires a tag name, so that a lone "<" in text such as "a < b" is left alone.
+	// A tag never contains another "<", which keeps text full of unclosed tags cheap to scan.
+	private const string HTML_TAG = '~</?[a-z](?:[^<>"\']|"[^"<]*"|\'[^\'<]*\')*>~i';
 
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.

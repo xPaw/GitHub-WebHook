@@ -9,7 +9,7 @@
                 "url": "https:\/\/github.com\/xPaw",
                 "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=4"
             },
-            "description": "I <3 this project, it is > others\nif a < b and c > d\nsee link end\ncode <?php echo 1; ?> end\n",
+            "description": "before <a href=\"x\nmiddle bold and <img src=\nquoted link\nend ",
             "footer": {
                 "text": "bug"
             }
