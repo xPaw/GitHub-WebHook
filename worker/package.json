@@ -8,13 +8,15 @@
 		"deploy": "wrangler deploy",
 		"types": "wrangler types",
 		"typecheck": "wrangler types && tsc --noEmit",
-		"test": "npm run typecheck && vitest run",
+		"test": "npm run typecheck && vitest run --coverage",
 		"coverage": "vitest run --coverage"
 	},
 	"dependencies": {
 		"@octokit/webhooks-methods": "^6.0.0"
 	},
 	"devDependencies": {
+		"@cfworker/json-schema": "^4.1.1",
+		"@octokit/openapi-webhooks": "^12.1.0",
 		"@octokit/openapi-webhooks-types": "^12.1.0",
 		"@types/node": "^26.6.1",
 		"@vitest/coverage-v8": "^5.0.1",

@@ -6,6 +6,7 @@ export default defineConfig({
 		coverage: {
 			include: ['src/**'],
 			reporter: ['text', 'html'],
+			thresholds: { 100: true },
 		},
 	},
 });
