@@ -99,6 +99,7 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - **secret_scanning_alert** - A leaked secret was found, resolved, reopened or seen in a public place
 - **sponsorship** - Someone started sponsoring an account, a private sponsor is not named and amounts are never shown
 - **team** - A team was created, renamed, deleted, had its privacy changed, or was given or refused access to a repository
+- **workflow_run** - A GitHub Actions workflow run failed, timed out or failed to start on the default branch, other runs are ignored
 
 Actions of supported events that would only be noise, such as editing, labelling or assigning an issue, are ignored.
 Push event ignores branch deletions (use delete event instead).
@@ -137,7 +138,6 @@ Push event ignores branch deletions (use delete event instead).
 - **team_add** - A team was given access to a repository, which the team event announces already
 - **watch** - Someone starred a repository, despite the name
 - **workflow_job** - Sent for every state change of every GitHub Actions job
-- **workflow_run** - A GitHub Actions workflow run was requested, started or completed
 
 ### Events that can not be supported
 

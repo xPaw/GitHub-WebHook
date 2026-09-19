@@ -155,6 +155,21 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { $Payload->sponsorship->sponsor = null; },
 				'title', 'got a new private sponsor',
 			],
+			'workflow run escapes the message of its commit once' => [
+				'workflow_run', 'workflow_run_failed',
+				static function( stdClass $Payload ) : void { $Payload->workflow_run->head_commit->message = 'fix_bug'; },
+				'description', 'fix\_bug',
+			],
+			'workflow run without a name is named after its workflow' => [
+				'workflow_run', 'workflow_run_failed',
+				static function( stdClass $Payload ) : void { $Payload->workflow_run->name = ''; $Payload->workflow->name = 'Tests'; },
+				'title', 'workflow **Tests** failed on `master`',
+			],
+			'workflow run without any name' => [
+				'workflow_run', 'workflow_run_failed',
+				static function( stdClass $Payload ) : void { $Payload->workflow_run->name = null; $Payload->workflow = null; },
+				'title', 'workflow **unknown** failed on `master`',
+			],
 			'project without a body' => [
 				'project', 'project',
 				static function( stdClass $Payload ) : void { $Payload->project->body = null; },

@@ -76,6 +76,7 @@ class DiscordConverter extends BaseConverter
 			case 'membership'    : $Embed = $this->FormatMembershipEvent( ); break;
 			case 'team'          : $Embed = $this->FormatTeamEvent( ); break;
 			case 'sponsorship'   : $Embed = $this->FormatSponsorshipEvent( ); break;
+			case 'workflow_run'  : $Embed = $this->FormatWorkflowRunEvent( ); break;
 		}
 
 		if( empty( $Embed ) )
@@ -207,6 +208,9 @@ class DiscordConverter extends BaseConverter
 			case 'off track'  :
 			case 'publicly leaked':
 			case 'unpublished':
+			case 'failed'     :
+			case 'timed out'  :
+			case 'failed to start':
 			case 'requested changes in':
 			case 'closed without merging': return self::COLOR_BAD;
 
@@ -1557,6 +1561,56 @@ class DiscordConverter extends BaseConverter
 				'url' => $Author->html_url ?? 'https://github.com/ghost',
 				'icon_url' => $Author->avatar_url ?? 'https://github.com/ghost.png',
 			],
+		];
+	}
+
+	/**
+	 * Formats a workflow run event. Only a run that broke the default branch is worth telling,
+	 * the rest would be noise.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatWorkflowRunEvent( ) : array
+	{
+		if( $this->Payload->action === 'requested'
+		||  $this->Payload->action === 'in_progress' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'completed' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Run = $this->Payload->workflow_run;
+
+		$Outcome = match( $Run->conclusion ?? null )
+		{
+			'failure' => 'failed',
+			'timed_out' => 'timed out',
+			'startup_failure' => 'failed to start',
+			default => throw new IgnoredEventException( $this->EventType . ' - ' . ( $Run->conclusion ?? 'null' ) ),
+		};
+
+		if( ( $Run->head_branch ?? null ) !== $this->Payload->repository->default_branch )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - not the default branch' );
+		}
+
+		$Name = $Run->name ?? '';
+
+		if( $Name === '' )
+		{
+			$Name = $this->Payload->workflow->name ?? 'unknown';
+		}
+
+		return [
+			'title' => "workflow **" . self::Escape( $Name ) . "** {$Outcome} on " . self::EscapeCode( $Run->head_branch ),
+			'description' => self::ShortMessage( $Run->head_commit->message ?? '' ),
+			'url' => $Run->html_url,
+			'color' => $this->FormatAction( $Outcome ),
+			'author' => $this->FormatAuthor(),
 		];
 	}
 

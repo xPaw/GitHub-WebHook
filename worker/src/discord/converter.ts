@@ -42,6 +42,7 @@ type OrgBlockEvent = Payload<'org-block'>;
 type MembershipEvent = Payload<'membership'>;
 type TeamEvent = Payload<'team'>;
 type SponsorshipEvent = Payload<'sponsorship'>;
+type WorkflowRunEvent = Payload<'workflow-run'>;
 
 export interface DiscordEmbed {
 	title: string;
@@ -166,6 +167,8 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 			return formatTeam(payload as TeamEvent);
 		case 'sponsorship':
 			return formatSponsorship(payload as SponsorshipEvent);
+		case 'workflow_run':
+			return formatWorkflowRun(payload as WorkflowRunEvent);
 		default:
 			throw new NotImplementedError(eventType);
 	}
@@ -224,6 +227,9 @@ function actionColor(action: string): number {
 		case 'off track':
 		case 'publicly leaked':
 		case 'unpublished':
+		case 'failed':
+		case 'timed out':
+		case 'failed to start':
 		case 'requested changes in':
 		case 'closed without merging':
 			return COLOR_BAD;
@@ -1063,6 +1069,30 @@ function formatSponsorship(payload: SponsorshipEvent): DiscordEmbed {
 		url,
 		color: COLOR_DEFAULT,
 		author: formatAuthor(sponsor as Sender),
+	};
+}
+
+/** Only a run that broke the default branch is worth telling, the rest would be noise. */
+function formatWorkflowRun(payload: WorkflowRunEvent): DiscordEmbed {
+	assertAction('workflow_run', payload.action, ['completed'], ['requested', 'in_progress']);
+
+	const run = payload.workflow_run;
+	const outcome = { failure: 'failed', timed_out: 'timed out', startup_failure: 'failed to start' }[run.conclusion as string];
+
+	if (outcome === undefined) {
+		throw new IgnoredEventError(`workflow_run - ${run.conclusion}`);
+	}
+
+	if (run.head_branch !== payload.repository.default_branch) {
+		throw new IgnoredEventError('workflow_run - not the default branch');
+	}
+
+	return {
+		title: `workflow **${escape(run.name || payload.workflow?.name || 'unknown')}** ${outcome} on ${escapeCode(payload.repository.default_branch)}`,
+		description: shortMessage(run.head_commit.message),
+		url: run.html_url,
+		color: actionColor(outcome),
+		author: formatAuthor(payload.sender),
 	};
 }
 

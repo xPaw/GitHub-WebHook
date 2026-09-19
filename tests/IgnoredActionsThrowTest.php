@@ -50,6 +50,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 			[ 'code_scanning_alert', 'code_scanning_alert_created', [ 'appeared_in_branch', 'updated_assignment' ] ],
 			[ 'secret_scanning_alert', 'secret_scanning_alert_created', [ 'assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed' ] ],
 			[ 'project', 'project', [ 'edited' ] ],
+			[ 'workflow_run', 'workflow_run_failed', [ 'requested', 'in_progress' ] ],
 			[ 'sponsorship', 'sponsorship_created', [ 'cancelled', 'edited', 'tier_changed', 'pending_cancellation', 'pending_tier_change' ] ],
 			[ 'branch_protection_rule', 'branch_protection_rule_created', [ 'edited' ] ],
 			[ 'projects_v2', 'projects_v2_created', [ 'edited' ] ],
@@ -73,6 +74,22 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 		$Payload->review->state = 'commented';
 
 		$ProvidedData[ 'pull_request_review - commented' ] = [ 'pull_request_review', $Payload, 'pull_request_review - commented' ];
+
+		// Only a run that broke the default branch is worth telling
+		foreach( [ 'success', 'cancelled', 'skipped', null ] as $Conclusion )
+		{
+			$Payload = self::LoadPayload( 'workflow_run_failed' );
+			$Payload->workflow_run->conclusion = $Conclusion;
+
+			$Message = 'workflow_run - ' . ( $Conclusion ?? 'null' );
+
+			$ProvidedData[ $Message ] = [ 'workflow_run', $Payload, $Message ];
+		}
+
+		$Payload = self::LoadPayload( 'workflow_run_failed' );
+		$Payload->workflow_run->head_branch = 'feature';
+
+		$ProvidedData[ 'workflow_run - another branch' ] = [ 'workflow_run', $Payload, 'workflow_run - not the default branch' ];
 
 		// Only a new name or a new privacy is worth telling
 		$Payload = self::LoadPayload( 'team_edited' );

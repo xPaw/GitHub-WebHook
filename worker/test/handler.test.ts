@@ -456,17 +456,17 @@ describe('worker', () => {
 	it('does not reveal whether an event is supported without a valid signature', async () => {
 		const edited = JSON.stringify({ ...JSON.parse(fixture('issue_opened')), action: 'edited' });
 		const ignored = await worker.fetch(await buildRequest('issues', edited, { secret: 'wrong' }), env);
-		const unsupported = await worker.fetch(await buildRequest('workflow_run', fixture('push'), { signature: null }), env);
+		const unsupported = await worker.fetch(await buildRequest('check_run', fixture('push'), { signature: null }), env);
 
 		expect(ignored.status).toBe(401);
 		expect(unsupported.status).toBe(401);
 	});
 
 	it('returns 501 for unsupported events', async () => {
-		const response = await worker.fetch(await buildRequest('workflow_run', fixture('push')), env);
+		const response = await worker.fetch(await buildRequest('check_run', fixture('push')), env);
 
 		expect(response.status).toBe(501);
-		expect(await response.text()).toContain('Unsupported GitHub event: workflow_run');
+		expect(await response.text()).toContain('Unsupported GitHub event: check_run');
 	});
 
 	it('accepts event names that have digits in them', async () => {

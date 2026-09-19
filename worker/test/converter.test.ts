@@ -45,6 +45,7 @@ describe('ignored actions', () => {
 		['code_scanning_alert', 'code_scanning_alert_created', ['appeared_in_branch', 'updated_assignment']],
 		['secret_scanning_alert', 'secret_scanning_alert_created', ['assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed']],
 		['project', 'project', ['edited']],
+		['workflow_run', 'workflow_run_failed', ['requested', 'in_progress']],
 		['sponsorship', 'sponsorship_created', ['cancelled', 'edited', 'tier_changed', 'pending_cancellation', 'pending_tier_change']],
 		['branch_protection_rule', 'branch_protection_rule_created', ['edited']],
 		['projects_v2', 'projects_v2_created', ['edited']],
@@ -72,7 +73,7 @@ describe('ignored actions', () => {
 
 describe('unsupported events', () => {
 	it('unknown event type', () => {
-		expect(() => getEmbed('workflow_run', {})).toThrow(new NotImplementedError('workflow_run'));
+		expect(() => getEmbed('check_run', {})).toThrow(new NotImplementedError('check_run'));
 	});
 
 	const fixtures: [event: string, fixture: string][] = [
@@ -107,6 +108,7 @@ describe('unsupported events', () => {
 		['membership', 'membership_added'],
 		['team', 'team_created'],
 		['sponsorship', 'sponsorship_created'],
+		['workflow_run', 'workflow_run_failed'],
 	];
 
 	it.each(fixtures)('%s with an unknown action', (eventType, fixture) => {
@@ -319,6 +321,48 @@ describe('optional fields', () => {
 		});
 
 		expect(result.title).toBe('is now sponsoring **ghost**');
+	});
+
+	it.each(['success', 'cancelled', 'skipped', 'neutral', 'action_required', 'stale', null])('workflow run that ended with %s is ignored', (conclusion) => {
+		const run = payload('workflow_run_failed', (p) => {
+			p.workflow_run.conclusion = conclusion;
+		});
+
+		expect(() => getEmbed('workflow_run', run)).toThrow(new IgnoredEventError(`workflow_run - ${conclusion}`));
+	});
+
+	it('workflow run that failed on another branch is ignored', () => {
+		const run = payload('workflow_run_failed', (p) => {
+			p.workflow_run.head_branch = 'feature';
+		});
+
+		expect(() => getEmbed('workflow_run', run)).toThrow(new IgnoredEventError('workflow_run - not the default branch'));
+	});
+
+	it('workflow run escapes the message of its commit once', () => {
+		const result = embed('workflow_run', 'workflow_run_failed', (p) => {
+			p.workflow_run.head_commit.message = 'fix_bug';
+		});
+
+		expect(result.description).toBe('fix\\_bug');
+	});
+
+	it('workflow run without a name is named after its workflow', () => {
+		const result = embed('workflow_run', 'workflow_run_failed', (p) => {
+			p.workflow_run.name = '';
+			p.workflow.name = 'Tests';
+		});
+
+		expect(result.title).toBe('workflow **Tests** failed on `master`');
+	});
+
+	it('workflow run without any name', () => {
+		const result = embed('workflow_run', 'workflow_run_failed', (p) => {
+			p.workflow_run.name = null;
+			p.workflow = null;
+		});
+
+		expect(result.title).toBe('workflow **unknown** failed on `master`');
 	});
 
 	it('project without a body', () => {

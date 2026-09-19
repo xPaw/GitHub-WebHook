@@ -1,0 +1,15 @@
+{
+    "embeds": [
+        {
+            "title": "workflow **CI** failed on `master`",
+            "description": "Fix the login form validation\u2026",
+            "url": "https:\/\/github.com\/octo-org\/octo-repo\/actions\/runs\/90003001",
+            "color": 16007990,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars0.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

@@ -67,6 +67,7 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 			'membership' => 'membership_added',
 			'team' => 'team_created',
 			'sponsorship' => 'sponsorship_created',
+			'workflow_run' => 'workflow_run_failed',
 		];
 
 		$ProvidedData = [];

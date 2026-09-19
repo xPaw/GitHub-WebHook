@@ -50,6 +50,7 @@ class IrcConverter extends BaseConverter
 			case 'membership'    : return $this->FormatMembershipEvent( );
 			case 'team'          : return $this->FormatTeamEvent( );
 			case 'sponsorship'   : return $this->FormatSponsorshipEvent( );
+			case 'workflow_run'  : return $this->FormatWorkflowRunEvent( );
 
 		}
 
@@ -116,6 +117,9 @@ class IrcConverter extends BaseConverter
 			case 'review dismissed':
 			case 'publicly leaked':
 			case 'unpublished':
+			case 'failed'     :
+			case 'timed out'  :
+			case 'failed to start':
 			case 'force-pushed':
 			case 'requested changes':
 			case 'closed without merging':
@@ -1382,6 +1386,55 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $Sponsor ),
 						$this->FormatName( $Sponsored ),
 						$URL
+		);
+	}
+
+	/**
+	 * Formats a workflow run event. Only a run that broke the default branch is worth telling,
+	 * the rest would be noise.
+	 */
+	private function FormatWorkflowRunEvent( ) : string
+	{
+		if( $this->Payload->action === 'requested'
+		||  $this->Payload->action === 'in_progress' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'completed' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Run = $this->Payload->workflow_run;
+
+		$Outcome = match( $Run->conclusion ?? null )
+		{
+			'failure' => 'failed',
+			'timed_out' => 'timed out',
+			'startup_failure' => 'failed to start',
+			default => throw new IgnoredEventException( $this->EventType . ' - ' . ( $Run->conclusion ?? 'null' ) ),
+		};
+
+		if( ( $Run->head_branch ?? null ) !== $this->Payload->repository->default_branch )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - not the default branch' );
+		}
+
+		$Name = $Run->name ?? '';
+
+		if( $Name === '' )
+		{
+			$Name = $this->Payload->workflow->name ?? 'unknown';
+		}
+
+		return sprintf( '[%s] Workflow %s %s on %s: %s %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $Name ),
+						$this->FormatAction( $Outcome ),
+						$this->FormatBranch( $Run->head_branch ),
+						$this->ShortMessage( $Run->head_commit->message ?? '' ),
+						$this->FormatURL( $Run->html_url )
 		);
 	}
 
