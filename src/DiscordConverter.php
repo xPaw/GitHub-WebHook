@@ -866,6 +866,10 @@ class DiscordConverter extends BaseConverter
 			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->discussion->body );
 			$Embed[ 'footer' ] = self::LabelsFooter( $this->Payload->discussion->labels ?? null );
 		}
+		else if( $Action === 'answered' )
+		{
+			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->answer->body ?? null );
+		}
 
 		return $Embed;
 	}
@@ -1553,15 +1557,29 @@ class DiscordConverter extends BaseConverter
 			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
 		};
 
-		// Renaming a team is an edit, the rest of the changes are of no interest
-		$From = $Action === 'edited' ? ( $this->Payload->changes->name->from ?? null ) : null;
+		$From = null;
+		$Title = null;
 
-		if( $From !== null )
+		// An edit is worth telling when it renames a team or changes who can see it
+		if( $Action === 'edited' )
 		{
-			$Action = 'renamed';
+			$From = $this->Payload->changes->name->from ?? null;
+
+			if( $From !== null )
+			{
+				$Action = 'renamed';
+			}
+			else if( isset( $this->Payload->changes->privacy ) )
+			{
+				$Title = "changed the privacy of team **" . self::Escape( $this->Payload->team->name ) . "** to **" . self::Escape( $this->Payload->team->privacy ?? 'unknown' ) . "**";
+			}
+			else
+			{
+				throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			}
 		}
 
-		$Title = "{$Action} team **" . self::Escape( $this->Payload->team->name ) . "**{$Where}";
+		$Title ??= "{$Action} team **" . self::Escape( $this->Payload->team->name ) . "**{$Where}";
 
 		if( $From !== null )
 		{

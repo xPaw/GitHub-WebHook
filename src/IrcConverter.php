@@ -1379,12 +1379,32 @@ class IrcConverter extends BaseConverter
 			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
 		};
 
-		// Renaming a team is an edit, the rest of the changes are of no interest
-		$From = $Action === 'edited' ? ( $this->Payload->changes->name->from ?? null ) : null;
+		$From = null;
 
-		if( $From !== null )
+		// An edit is worth telling when it renames a team or changes who can see it
+		if( $Action === 'edited' )
 		{
-			$Action = 'renamed';
+			$From = $this->Payload->changes->name->from ?? null;
+
+			if( $From !== null )
+			{
+				$Action = 'renamed';
+			}
+			else if( isset( $this->Payload->changes->privacy ) )
+			{
+				return sprintf( '[%s] %s %s the privacy of team %s to %s %s',
+								$this->FormatRepoName( ),
+								$this->FormatName( $this->Payload->sender->login ),
+								$this->FormatAction( 'changed' ),
+								$this->FormatName( $this->Payload->team->name ),
+								$this->Payload->team->privacy ?? 'unknown',
+								$this->FormatURL( $this->Payload->team->html_url )
+				);
+			}
+			else
+			{
+				throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+			}
 		}
 
 		return sprintf( '[%s] %s %s team %s%s%s %s',

@@ -641,6 +641,8 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 	if (action === 'created') {
 		embed.description = shortDescription(payload.discussion.body);
 		embed.footer = labelsFooter(payload.discussion.labels);
+	} else if (payload.action === 'answered') {
+		embed.description = shortDescription(payload.answer?.body);
 	}
 
 	return embed;
@@ -1061,11 +1063,19 @@ function formatTeam(payload: TeamEvent): DiscordEmbed {
 		throw new NotImplementedError('team', payload.action);
 	}
 
-	// Renaming a team is an edit, the rest of the changes are of no interest
 	const from = payload.action === 'edited' ? payload.changes.name?.from : null;
 	const verb = from ? 'renamed' : action;
 
 	let title = `${verb} team **${escape(payload.team.name)}**${where}`;
+
+	// An edit is worth telling when it renames a team or changes who can see it
+	if (payload.action === 'edited' && !from) {
+		if (!payload.changes.privacy) {
+			throw new IgnoredEventError(`team - ${payload.action}`);
+		}
+
+		title = `changed the privacy of team **${escape(payload.team.name)}** to **${escape(payload.team.privacy ?? 'unknown')}**`;
+	}
 
 	if (from) {
 		title += ` (from **${escape(from)}**)`;

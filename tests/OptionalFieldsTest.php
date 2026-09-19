@@ -140,6 +140,16 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { $Payload->invitation->role = 'reinstate'; },
 				'title', 'invited **hacktocat** to the organization',
 			],
+			'team without a privacy' => [
+				'team', 'team_edited_privacy',
+				static function( stdClass $Payload ) : void { unset( $Payload->team->privacy ); },
+				'title', 'changed the privacy of team **github** to **unknown**',
+			],
+			'answered discussion without the body of the answer' => [
+				'discussion', 'discussion_answered',
+				static function( stdClass $Payload ) : void { $Payload->answer->body = null; },
+				'description', null,
+			],
 			'project without a body' => [
 				'project', 'project',
 				static function( stdClass $Payload ) : void { $Payload->project->body = null; },

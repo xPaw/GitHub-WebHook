@@ -73,6 +73,12 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 
 		$ProvidedData[ 'pull_request_review - commented' ] = [ 'pull_request_review', $Payload, 'pull_request_review - commented' ];
 
+		// Only a new name or a new privacy is worth telling
+		$Payload = self::LoadPayload( 'team_edited' );
+		$Payload->changes = (object)[ 'description' => (object)[ 'from' => 'An older description' ] ];
+
+		$ProvidedData[ 'team - edited description' ] = [ 'team', $Payload, 'team - edited' ];
+
 		return $ProvidedData;
 	}
 

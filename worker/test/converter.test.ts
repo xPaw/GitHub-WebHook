@@ -272,6 +272,30 @@ describe('optional fields', () => {
 		expect(result.url).toBeUndefined();
 	});
 
+	it('team without a privacy', () => {
+		const result = embed('team', 'team_edited_privacy', (p) => {
+			delete p.team.privacy;
+		});
+
+		expect(result.title).toBe('changed the privacy of team **github** to **unknown**');
+	});
+
+	it('team edit that changes neither the name nor the privacy is ignored', () => {
+		const edited = payload('team_edited', (p) => {
+			p.changes = { description: { from: 'An older description' } };
+		});
+
+		expect(() => getEmbed('team', edited)).toThrow(new IgnoredEventError('team - edited'));
+	});
+
+	it('answered discussion without the body of the answer', () => {
+		const result = embed('discussion', 'discussion_answered', (p) => {
+			p.answer.body = null;
+		});
+
+		expect(result).not.toHaveProperty('description');
+	});
+
 	it('project without a body', () => {
 		const result = embed('project', 'project', (p) => {
 			p.project.body = null;
@@ -362,13 +386,6 @@ describe('optional fields', () => {
 		expect(result.title).toBe('renamed the organization **Octocoders**');
 	});
 
-	it('edited team that was not renamed', () => {
-		const result = embed('team', 'team_edited', (p) => {
-			p.changes = { description: { from: 'Open-source team' } };
-		});
-
-		expect(result.title).toBe('edited team **github**');
-	});
 });
 
 describe('html stripping', () => {

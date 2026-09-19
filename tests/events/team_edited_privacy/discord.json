@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "changed the privacy of team **github** to **secret**",
+            "url": "https:\/\/github.com\/orgs\/Octocoders\/teams\/github",
+            "color": 3113463,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

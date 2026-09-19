@@ -97,7 +97,7 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - **repository_advisory** - A security advisory of a repository was published or reported
 - **repository_ruleset** - A ruleset was created, edited or deleted, along with how it is enforced
 - **secret_scanning_alert** - A leaked secret was found, resolved, reopened or seen in a public place
-- **team** - A team was created, renamed, deleted, or given or refused access to a repository
+- **team** - A team was created, renamed, deleted, had its privacy changed, or was given or refused access to a repository
 
 Actions of supported events that would only be noise, such as editing, labelling or assigning an issue, are ignored.
 Push event ignores branch deletions (use delete event instead).
