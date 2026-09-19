@@ -75,6 +75,7 @@ class DiscordConverter extends BaseConverter
 			case 'org_block'     : $Embed = $this->FormatOrgBlockEvent( ); break;
 			case 'membership'    : $Embed = $this->FormatMembershipEvent( ); break;
 			case 'team'          : $Embed = $this->FormatTeamEvent( ); break;
+			case 'sponsorship'   : $Embed = $this->FormatSponsorshipEvent( ); break;
 		}
 
 		if( empty( $Embed ) )
@@ -1514,6 +1515,48 @@ class DiscordConverter extends BaseConverter
 			'title' => "{$this->Payload->action} user **" . self::Escape( $this->Payload->blocked_user->login ?? 'ghost' ) . "**",
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a sponsorship event, which only says that there is a new sponsor.
+	 * What they pay is between them and the sponsored account.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatSponsorshipEvent( ) : array
+	{
+		if( $this->Payload->action === 'cancelled'
+		||  $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'tier_changed'
+		||  $this->Payload->action === 'pending_cancellation'
+		||  $this->Payload->action === 'pending_tier_change' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Sponsor = $this->Payload->sponsorship->sponsor ?? null;
+		$Sponsorable = $this->Payload->sponsorship->sponsorable ?? null;
+		$Sponsored = $Sponsorable->login ?? 'ghost';
+		$IsPublic = ( $this->Payload->sponsorship->privacy_level ?? null ) === 'public' && $Sponsor !== null;
+
+		// The sender is the sponsor, who asked not to be named when the sponsorship is private
+		$Author = $IsPublic ? $Sponsor : $Sponsorable;
+
+		return [
+			'title' => $IsPublic ? "is now sponsoring **" . self::Escape( $Sponsored ) . "**" : 'got a new private sponsor',
+			'url' => 'https://github.com/sponsors/' . $Sponsored,
+			'color' => self::COLOR_DEFAULT,
+			'author' => [
+				'name' => $Author->login ?? 'ghost',
+				'url' => $Author->html_url ?? 'https://github.com/ghost',
+				'icon_url' => $Author->avatar_url ?? 'https://github.com/ghost.png',
+			],
 		];
 	}
 

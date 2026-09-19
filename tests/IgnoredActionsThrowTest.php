@@ -50,6 +50,7 @@ class IgnoredActionsThrowTest extends \PHPUnit\Framework\TestCase
 			[ 'code_scanning_alert', 'code_scanning_alert_created', [ 'appeared_in_branch', 'updated_assignment' ] ],
 			[ 'secret_scanning_alert', 'secret_scanning_alert_created', [ 'assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed' ] ],
 			[ 'project', 'project', [ 'edited' ] ],
+			[ 'sponsorship', 'sponsorship_created', [ 'cancelled', 'edited', 'tier_changed', 'pending_cancellation', 'pending_tier_change' ] ],
 			[ 'branch_protection_rule', 'branch_protection_rule_created', [ 'edited' ] ],
 			[ 'projects_v2', 'projects_v2_created', [ 'edited' ] ],
 			[ 'projects_v2_status_update', 'projects_v2_status_update', [ 'edited', 'deleted' ] ],

@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "is now sponsoring **octocat**",
+            "url": "https:\/\/github.com\/sponsors\/octocat",
+            "color": 5025616,
+            "author": {
+                "name": "monalisa",
+                "url": "https:\/\/github.com\/monalisa",
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/u\/2?"
+            }
+        }
+    ]
+}

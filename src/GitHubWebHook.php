@@ -68,19 +68,39 @@ class GitHubWebHook
 
 		if( !isset( $this->Payload->repository ) )
 		{
-			if( !isset( $this->Payload->organization ) )
+			if( isset( $this->Payload->organization ) )
+			{
+				// This is a silly hack to handle org-only events
+				// Add "/repositories" because repo matching code would expect a "<org>/<repo>" format
+				$Owner = $this->Payload->organization->login;
+				$Name = 'repositories';
+				$Label = 'org: ';
+			}
+			else if( isset( $this->Payload->sponsorship->sponsorable->login ) )
+			{
+				// Events of a sponsors listing have neither, they are reported as "<sponsored account>/sponsors"
+				$Owner = $this->Payload->sponsorship->sponsorable->login;
+				$Name = 'sponsors';
+				$Label = 'sponsors: ';
+			}
+			else if( ( $this->Payload->hook->type ?? null ) === 'SponsorsListing' && isset( $this->Payload->sender->login ) )
+			{
+				// The ping of a sponsors listing only knows who set the webhook up
+				$Owner = $this->Payload->sender->login;
+				$Name = 'sponsors';
+				$Label = 'sponsors: ';
+			}
+			else
 			{
 				throw new Exception( 'Missing repository information.' );
 			}
 
-			// This is a silly hack to handle org-only events
 			$this->Payload->repository = (object)[
-				// Add "/repositories" because repo matching code would expect a "<org>/<repo>" format
-				'full_name' => $this->Payload->organization->login . '/repositories',
-				'name' => 'org: ' . $this->Payload->organization->login,
+				'full_name' => $Owner . '/' . $Name,
+				'name' => $Label . $Owner,
 				'owner' => (object)[
-					'name' => $this->Payload->organization->login,
-					'login' => $this->Payload->organization->login,
+					'name' => $Owner,
+					'login' => $Owner,
 				],
 			];
 		}

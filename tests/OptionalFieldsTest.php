@@ -150,6 +150,11 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { $Payload->answer->body = null; },
 				'description', null,
 			],
+			'sponsorship without a sponsor is announced as a private one' => [
+				'sponsorship', 'sponsorship_created',
+				static function( stdClass $Payload ) : void { $Payload->sponsorship->sponsor = null; },
+				'title', 'got a new private sponsor',
+			],
 			'project without a body' => [
 				'project', 'project',
 				static function( stdClass $Payload ) : void { $Payload->project->body = null; },

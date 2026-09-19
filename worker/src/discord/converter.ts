@@ -41,6 +41,7 @@ type OrganizationEvent = Payload<'organization'>;
 type OrgBlockEvent = Payload<'org-block'>;
 type MembershipEvent = Payload<'membership'>;
 type TeamEvent = Payload<'team'>;
+type SponsorshipEvent = Payload<'sponsorship'>;
 
 export interface DiscordEmbed {
 	title: string;
@@ -163,6 +164,8 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 			return formatMembership(payload as MembershipEvent);
 		case 'team':
 			return formatTeam(payload as TeamEvent);
+		case 'sponsorship':
+			return formatSponsorship(payload as SponsorshipEvent);
 		default:
 			throw new NotImplementedError(eventType);
 	}
@@ -1033,6 +1036,33 @@ function formatOrgBlock(payload: OrgBlockEvent): DiscordEmbed {
 		title: `${payload.action} user **${escape(payload.blocked_user?.login ?? 'ghost')}**`,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
+	};
+}
+
+/** Only says that there is a new sponsor, what they pay is between them and the sponsored account. */
+function formatSponsorship(payload: SponsorshipEvent): DiscordEmbed {
+	assertAction('sponsorship', payload.action, ['created'], ['cancelled', 'edited', 'tier_changed', 'pending_cancellation', 'pending_tier_change']);
+
+	const { sponsor, sponsorable, privacy_level: privacy } = payload.sponsorship;
+	const sponsored = sponsorable?.login ?? 'ghost';
+	const url = `https://github.com/sponsors/${sponsored}`;
+
+	// The sender is the sponsor, who asked not to be named
+	if (privacy !== 'public' || !sponsor) {
+		return {
+			title: 'got a new private sponsor',
+			url,
+			color: COLOR_DEFAULT,
+			// This schema describes its users with urls that are all optional, GitHub sends them
+			author: formatAuthor(sponsorable as Sender),
+		};
+	}
+
+	return {
+		title: `is now sponsoring **${escape(sponsored)}**`,
+		url,
+		color: COLOR_DEFAULT,
+		author: formatAuthor(sponsor as Sender),
 	};
 }
 

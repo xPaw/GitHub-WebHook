@@ -130,6 +130,38 @@ class RequestTest extends \PHPUnit\Framework\TestCase
 		( new GitHubWebHook( ) )->ProcessRequest( );
 	}
 
+	public function testSponsorshipIsReportedAsTheSponsoredAccount( ) : void
+	{
+		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = 'sponsorship';
+		$_POST[ 'payload' ] = '{"sponsorship":{"sponsorable":{"login":"octocat"}}}';
+
+		$Hook = new GitHubWebHook( );
+		$Hook->ProcessRequest( );
+
+		self::assertSame( 'octocat/sponsors', $Hook->GetFullRepositoryName() );
+	}
+
+	public function testPingOfSponsorsListingIsReportedAsItsSender( ) : void
+	{
+		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = 'ping';
+		$_POST[ 'payload' ] = '{"hook":{"type":"SponsorsListing"},"sender":{"login":"octocat"}}';
+
+		$Hook = new GitHubWebHook( );
+		$Hook->ProcessRequest( );
+
+		self::assertSame( 'octocat/sponsors', $Hook->GetFullRepositoryName() );
+	}
+
+	public function testPingOfAnotherKindOfHookWithoutRepository( ) : void
+	{
+		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = 'ping';
+		$_POST[ 'payload' ] = '{"hook":{"type":"App"},"sender":{"login":"octocat"}}';
+
+		$this->expectExceptionMessage( 'Missing repository information.' );
+
+		( new GitHubWebHook( ) )->ProcessRequest( );
+	}
+
 	public function testJsonContentTypeReadsTheRequestBody( ) : void
 	{
 		$_SERVER[ 'CONTENT_TYPE' ] = 'application/json';

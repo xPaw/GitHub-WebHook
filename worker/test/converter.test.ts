@@ -45,6 +45,7 @@ describe('ignored actions', () => {
 		['code_scanning_alert', 'code_scanning_alert_created', ['appeared_in_branch', 'updated_assignment']],
 		['secret_scanning_alert', 'secret_scanning_alert_created', ['assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed']],
 		['project', 'project', ['edited']],
+		['sponsorship', 'sponsorship_created', ['cancelled', 'edited', 'tier_changed', 'pending_cancellation', 'pending_tier_change']],
 		['branch_protection_rule', 'branch_protection_rule_created', ['edited']],
 		['projects_v2', 'projects_v2_created', ['edited']],
 		['projects_v2_status_update', 'projects_v2_status_update', ['edited', 'deleted']],
@@ -105,6 +106,7 @@ describe('unsupported events', () => {
 		['org_block', 'org_block_blocked'],
 		['membership', 'membership_added'],
 		['team', 'team_created'],
+		['sponsorship', 'sponsorship_created'],
 	];
 
 	it.each(fixtures)('%s with an unknown action', (eventType, fixture) => {
@@ -294,6 +296,29 @@ describe('optional fields', () => {
 		});
 
 		expect(result).not.toHaveProperty('description');
+	});
+
+	it('sponsorship without a sponsor is announced as a private one', () => {
+		const result = embed('sponsorship', 'sponsorship_created', (p) => {
+			p.sponsorship.sponsor = null;
+		});
+
+		expect(result.title).toBe('got a new private sponsor');
+		expect(result.author.name).toBe('octocat');
+	});
+
+	it('private sponsorship does not name the sponsor anywhere', () => {
+		const result = embed('sponsorship', 'sponsorship_created_private', () => {});
+
+		expect(JSON.stringify(result)).not.toContain('monalisa');
+	});
+
+	it('sponsorship of a deleted account', () => {
+		const result = embed('sponsorship', 'sponsorship_created', (p) => {
+			p.sponsorship.sponsorable = null;
+		});
+
+		expect(result.title).toBe('is now sponsoring **ghost**');
 	});
 
 	it('project without a body', () => {

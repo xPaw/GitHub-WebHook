@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "got a new private sponsor",
+            "url": "https:\/\/github.com\/sponsors\/octocat",
+            "color": 5025616,
+            "author": {
+                "name": "octocat",
+                "url": "https:\/\/github.com\/octocat",
+                "icon_url": "https:\/\/avatars2.githubusercontent.com\/u\/5?"
+            }
+        }
+    ]
+}

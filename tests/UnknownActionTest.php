@@ -66,6 +66,7 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 			'org_block' => 'org_block_blocked',
 			'membership' => 'membership_added',
 			'team' => 'team_created',
+			'sponsorship' => 'sponsorship_created',
 		];
 
 		$ProvidedData = [];

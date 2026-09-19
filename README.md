@@ -97,6 +97,7 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 - **repository_advisory** - A security advisory of a repository was published or reported
 - **repository_ruleset** - A ruleset was created, edited or deleted, along with how it is enforced
 - **secret_scanning_alert** - A leaked secret was found, resolved, reopened or seen in a public place
+- **sponsorship** - Someone started sponsoring an account, a private sponsor is not named and amounts are never shown
 - **team** - A team was created, renamed, deleted, had its privacy changed, or was given or refused access to a repository
 
 Actions of supported events that would only be noise, such as editing, labelling or assigning an issue, are ignored.
@@ -130,7 +131,6 @@ Push event ignores branch deletions (use delete event instead).
 - **secret_scanning_alert_location** - Sent for every place a secret was found in, the alert itself is announced
 - **secret_scanning_scan** - A secret scanning scan has finished
 - **security_and_analysis** - Security features were enabled or disabled for a repository
-- **sponsorship** - Someone started, changed or cancelled a sponsorship
 - **star** - Someone starred or unstarred a repository
 - **status** - Sent for every state change of every commit status
 - **sub_issues** - A sub-issue was added to or removed from an issue

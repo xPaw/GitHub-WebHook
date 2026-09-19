@@ -484,6 +484,30 @@ describe('worker', () => {
 		expect(await response.text()).toContain('Received ping in repository octo-org/repositories');
 	});
 
+	it('reports a sponsorship as <sponsored account>/sponsors', async () => {
+		const response = await worker.fetch(await buildRequest('sponsorship', fixture('sponsorship_created')), env);
+
+		expect(response.status).toBe(202);
+		expect(await response.text()).toContain('Received sponsorship in repository octocat/sponsors');
+	});
+
+	it('reports the ping of a sponsors listing as <sender>/sponsors', async () => {
+		const response = await worker.fetch(await buildRequest('ping', fixture('ping_sponsors')), env);
+
+		expect(response.status).toBe(202);
+		expect(await response.text()).toContain('Received ping in repository octocat/sponsors');
+	});
+
+	it('rejects the ping of another kind of hook that has no repository', async () => {
+		const ping = JSON.parse(fixture('ping_sponsors'));
+		ping.hook.type = 'App';
+
+		const response = await worker.fetch(await buildRequest('ping', JSON.stringify(ping)), env);
+
+		expect(response.status).toBe(400);
+		expect(await response.text()).toContain('Missing repository information.');
+	});
+
 	it('returns 502 when Discord rejects the message', async () => {
 		fetchMock.mockImplementation(async () => new Response('nope', { status: 500 }));
 

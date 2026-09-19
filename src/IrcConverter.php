@@ -49,6 +49,7 @@ class IrcConverter extends BaseConverter
 			case 'org_block'     : return $this->FormatOrgBlockEvent( );
 			case 'membership'    : return $this->FormatMembershipEvent( );
 			case 'team'          : return $this->FormatTeamEvent( );
+			case 'sponsorship'   : return $this->FormatSponsorshipEvent( );
 
 		}
 
@@ -1339,6 +1340,48 @@ class IrcConverter extends BaseConverter
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
 						$this->FormatName( $this->Payload->blocked_user->login ?? 'ghost' )
+		);
+	}
+
+	/**
+	 * Formats a sponsorship event, which only says that there is a new sponsor.
+	 * What they pay is between them and the sponsored account.
+	 */
+	private function FormatSponsorshipEvent( ) : string
+	{
+		if( $this->Payload->action === 'cancelled'
+		||  $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'tier_changed'
+		||  $this->Payload->action === 'pending_cancellation'
+		||  $this->Payload->action === 'pending_tier_change' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Sponsor = $this->Payload->sponsorship->sponsor->login ?? null;
+		$Sponsored = $this->Payload->sponsorship->sponsorable->login ?? 'ghost';
+		$URL = $this->FormatURL( 'https://github.com/sponsors/' . $Sponsored );
+
+		// A private sponsor asked not to be named
+		if( ( $this->Payload->sponsorship->privacy_level ?? null ) !== 'public' || $Sponsor === null )
+		{
+			return sprintf( '[%s] %s got a new private sponsor %s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $Sponsored ),
+							$URL
+			);
+		}
+
+		return sprintf( '[%s] %s is now sponsoring %s %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $Sponsor ),
+						$this->FormatName( $Sponsored ),
+						$URL
 		);
 	}
 

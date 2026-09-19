@@ -7,7 +7,7 @@ const EVENT_NAME = /^[a-z0-9_]+$/;
 
 export interface WebhookRequest {
 	eventType: string;
-	/** Full name of the repository, or `<org>/repositories` for events that have no repository. */
+	/** Full name of the repository, or `<org>/repositories` and `<account>/sponsors` for events that have no repository. */
 	repositoryName: string;
 	/** Short name of the repository, or of the organization for events that have no repository. */
 	displayName: string;
@@ -19,6 +19,9 @@ export interface WebhookRequest {
 interface RawPayload {
 	repository?: { full_name?: string; name: string; owner: { name?: string | null; login: string; avatar_url?: string } };
 	organization?: { login: string; avatar_url?: string };
+	sponsorship?: { sponsorable?: { login: string; avatar_url?: string } | null };
+	hook?: { type?: string };
+	sender?: { login: string; avatar_url?: string } | null;
 }
 
 /** Verifies the X-Hub-Signature-256 header against the raw request body. */
@@ -48,7 +51,7 @@ export function parseRequest(request: Request, body: string): WebhookRequest {
 	return { eventType, ...names(payload), payload };
 }
 
-function names({ repository, organization }: RawPayload): Omit<WebhookRequest, 'eventType' | 'payload'> {
+function names({ repository, organization, sponsorship, hook, sender }: RawPayload): Omit<WebhookRequest, 'eventType' | 'payload'> {
 	if (repository) {
 		return {
 			repositoryName: repository.full_name ?? `${repository.owner.name}/${repository.name}`,
@@ -63,6 +66,18 @@ function names({ repository, organization }: RawPayload): Omit<WebhookRequest, '
 			repositoryName: `${organization.login}/repositories`,
 			displayName: organization.login,
 			avatarUrl: organization.avatar_url,
+		};
+	}
+
+	// Events of a sponsors listing have neither, they are reported as "<sponsored account>/sponsors".
+	// Its ping only knows who set the webhook up.
+	const sponsored = sponsorship?.sponsorable ?? (hook?.type === 'SponsorsListing' ? sender : null);
+
+	if (sponsored) {
+		return {
+			repositoryName: `${sponsored.login}/sponsors`,
+			displayName: sponsored.login,
+			avatarUrl: sponsored.avatar_url,
 		};
 	}
 
