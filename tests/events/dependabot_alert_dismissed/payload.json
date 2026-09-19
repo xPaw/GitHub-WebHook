@@ -74,7 +74,7 @@
 		"url": "https://api.github.com/repos/Codertocat/Hello-World/dependabot/alerts/5",
 		"html_url": "https://github.com/Codertocat/Hello-World/security/dependabot/5",
 		"created_at": "2022-06-15T07:43:03Z",
-		"updated_at": "2022-06-15T07:43:03Z",
+		"updated_at": "2022-06-16T10:21:54Z",
 		"dismissed_at": "2022-06-16T10:21:54Z",
 		"dismissed_by": {
 			"login": "Codertocat",

@@ -2,14 +2,14 @@
     "embeds": [
         {
             "title": "created `fix_export_with_alpha` at `46f500` (+1 new commit)",
-            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/commit\/46f500abc031be1eb4ea7611eaf622773b47dcac",
+            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/commit\/46f500abc031be1eb4ea7611eaf622773b47dcac",
             "color": 5025616,
             "author": {
-                "name": "lewa-j",
-                "url": "https:\/\/github.com\/lewa-j",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/5416122?v=4"
+                "name": "octocat",
+                "url": "https:\/\/github.com\/octocat",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000002?v=4"
             },
-            "description": "[`46f500`](https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/commit\/46f500abc031be1eb4ea7611eaf622773b47dcac) Fix PNG export of textures with non transparency data in the alpha channel"
+            "description": "[`46f500`](https:\/\/github.com\/octo-org\/Spoon-Knife\/commit\/46f500abc031be1eb4ea7611eaf622773b47dcac) Fix PNG export of textures with transparency data"
         }
     ]
 }

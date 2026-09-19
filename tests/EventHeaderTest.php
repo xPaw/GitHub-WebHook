@@ -10,7 +10,7 @@ class EventHeaderTest extends \PHPUnit\Framework\TestCase
 	{
 		$_SERVER[ 'REQUEST_METHOD' ] = 'POST';
 		$_SERVER[ 'CONTENT_TYPE' ] = 'application/x-www-form-urlencoded';
-		$_POST[ 'payload' ] = '{"repository":{"full_name":"xPaw/GitHub-WebHook"}}';
+		$_POST[ 'payload' ] = '{"repository":{"full_name":"monalisa/Hello-World"}}';
 	}
 
 	#[DataProvider('validEventProvider')]
@@ -22,7 +22,7 @@ class EventHeaderTest extends \PHPUnit\Framework\TestCase
 		$Hook->ProcessRequest( );
 
 		self::assertSame( $Event, $Hook->GetEventType() );
-		self::assertSame( 'xPaw/GitHub-WebHook', $Hook->GetFullRepositoryName() );
+		self::assertSame( 'monalisa/Hello-World', $Hook->GetFullRepositoryName() );
 	}
 
 	#[DataProvider('invalidEventProvider')]

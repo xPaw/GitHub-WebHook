@@ -9,25 +9,26 @@ define("GITHUB_SECRET", "secretgoeshere");
 
 /* Send config */
 $Channels = array(
-	/* SteamDB */
-	"SteamDatabase/SteamLinux" => array(
-		"irc://chat.freenode.net/#steamlug"
+	/* A single repository */
+	"octo-org/octo-repo" => array(
+		"irc://irc.example.com/#octo-repo"
 	),
-	"SteamDatabase/*" => array(
-		"irc://chat.freenode.net/#steamdb"
+	/* Every repository of an organization, every entry that matches gets the message */
+	"octo-org/*" => array(
+		"irc://irc.example.com/#octo-org"
 	),
-	/* Personal */
-	"meklu/mekoverlay" => array(
-		"irc://chat.freenode.net/meklu,isnick"
+	/* A private message to a nick instead of a channel */
+	"octocat/Hello-World" => array(
+		"irc://irc.example.com/octocat,isnick"
 	),
 );
 
 /* Send config */
 $DiscordWebhooks = array(
-	"SteamDatabase/SteamLinux" => array(
+	"octo-org/octo-repo" => array(
 		"https://discord.com/webhook/.........."
 	),
-	"SteamDatabase/*" => array(
+	"octo-org/*" => array(
 		"https://discord.com/webhook/.........."
 	),
 );

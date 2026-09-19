@@ -116,9 +116,10 @@
 	},
 	"registry_package": {
 		"id": 10696,
-		"name": "hello-world-npm",
+		"name": "hello-world",
+		"description": null,
 		"package_type": "CONTAINER",
-		"html_url": "https://github.com/Codertocat/hello-world-npm/packages/10696",
+		"html_url": "https://github.com/Codertocat/hello-world-npm/pkgs/container/hello-world",
 		"created_at": "2019-05-09T23:28:29Z",
 		"updated_at": "2019-05-09T23:28:29Z",
 		"owner": {
@@ -144,66 +145,54 @@
 		"package_version": {
 			"id": 24147,
 			"version": "sha256:9c1e2f",
-			"summary": "A simple npm package to demonstrate GitHub Packages",
+			"summary": "",
+			"name": "sha256:9c1e2f",
+			"description": "",
 			"body": {},
-			"body_html": "<h1>hello-world-npm</h1>\n<p>This is a simple npm package that demonstrates the <a href=\"https://github.com/features/package\">Github Package Registry</a>.</p>\n<h2>Installation</h2>\n<p><code>$ npm install</code></p>\n<h2>Usage</h2>\n<pre><code>const myPackage = require('hello-world-node-package');\nmyPackage.helloWorld();\n</code></pre>",
-			"release": {
-				"url": "https://api.github.com/repos/Codertocat/hello-world-npm/releases/17264286",
-				"html_url": "https://github.com/Codertocat/hello-world-npm/releases/tag/1.0.0",
-				"id": 17264286,
-				"tag_name": "1.0.0",
-				"target_commitish": "master",
-				"name": "1.0.0",
-				"draft": false,
-				"author": {
-					"login": "Codertocat",
-					"id": 21031067,
-					"node_id": "MDQ6VXNlcjIxMDMxMDY3",
-					"avatar_url": "https://avatars1.githubusercontent.com/u/21031067?v=4",
-					"gravatar_id": "",
-					"url": "https://api.github.com/users/Codertocat",
-					"html_url": "https://github.com/Codertocat",
-					"followers_url": "https://api.github.com/users/Codertocat/followers",
-					"following_url": "https://api.github.com/users/Codertocat/following{/other_user}",
-					"gists_url": "https://api.github.com/users/Codertocat/gists{/gist_id}",
-					"starred_url": "https://api.github.com/users/Codertocat/starred{/owner}{/repo}",
-					"subscriptions_url": "https://api.github.com/users/Codertocat/subscriptions",
-					"organizations_url": "https://api.github.com/users/Codertocat/orgs",
-					"repos_url": "https://api.github.com/users/Codertocat/repos",
-					"events_url": "https://api.github.com/users/Codertocat/events{/privacy}",
-					"received_events_url": "https://api.github.com/users/Codertocat/received_events",
-					"type": "User",
-					"site_admin": false
-				},
-				"prerelease": false,
-				"created_at": "2019-05-09T23:24:40Z",
-				"published_at": "2019-05-09T23:26:59Z"
-			},
-			"manifest": "{\"_from\":\"\",\"_id\":\"@codertocat/hello-world-npm@1.0.0\",\"_nodeVersion\":\"10.0.0\",\"_npmUser\":{},\"_npmVersion\":\"5.6.0\",\"_shasum\":\"\",\"author\":{\"name\":\"Codertocat\"},\"bugs\":{\"url\":\"https://github.com/Codertocat/hello-world-npm/issues\"},\"description\":\"A simple npm package to demonstrate GitHub Package Registry\",\"dependencies\":null,\"devDependencies\":null,\"peerDependencies\":null,\"dist\":{\"integrity\":\"sha512-CcChRwjJk+pvGVERbgdjc0w5h6HrOs6jK6OJuHmFcmbnGuhiy9tPMtb4WcSSdvwrktAxf96LsJBNqeIHAEHl3A==\",\"shasum\":\"a413c56a12997ca1b56715ebe81d8c6e0ffe6abb\",\"tarball\":\"http://npm.pkg.github.com/@codertocat/hello-world-npm/-/@codertocat/hello-world-npm-1.0.0.tgz\"},\"gitHead\":\"6c62fb45fe66bfb1ea9a66abc38f6a0cc974292b\",\"homepage\":\"https://github.com/Codertocat/hello-world-npm#readme\",\"license\":\"ISC\",\"main\":\"index.js\",\"name\":\"@codertocat/hello-world-npm\",\"repository\":{\"type\":\"git\",\"url\":\"git+https://github.com/Codertocat/hello-world-npm.git\"},\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" \\u0026\\u0026 exit 1\"},\"version\":\"1.0.0\"}",
-			"html_url": "https://github.com/Codertocat/hello-world-npm/packages/10696?version=1.0.0",
-			"tag_name": "1.0.0",
-			"target_commitish": "master",
-			"target_oid": "6c62fb45fe66bfb1ea9a66abc38f6a0cc974292b",
+			"body_html": "",
+			"manifest": "",
+			"html_url": "https://github.com/Codertocat/hello-world-npm/pkgs/container/hello-world/10696",
+			"tag_name": "",
+			"target_commitish": "",
+			"target_oid": "",
 			"draft": false,
 			"prerelease": false,
 			"created_at": "2019-05-09T23:28:29Z",
 			"updated_at": "2019-05-09T23:28:30Z",
 			"metadata": [],
-			"package_files": [
-				{
-					"download_url": "https://github-production-package-file-4f11e5.s3.amazonaws.com/185882436/3e6d9b00-7288-11e9-9d72-c0df4c711800?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20190509%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20190509T232830Z&X-Amz-Expires=300&X-Amz-Signature=4b825c49cd93370123a77d0f97a4ebb0d44efb76da46faf1e382f0c668b35819&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=filename%3Dhello-world-npm-1.0.0-npm.tgz&response-content-type=application%2Foctet-stream",
-					"id": 92167,
-					"name": "hello-world-npm-1.0.0-npm.tgz",
-					"sha256": "ba703915435b6ca2ca666b5d8332db34bf9dc37a198ed70d3a5fa5d08b8415c8",
-					"sha1": "a413c56a12997ca1b56715ebe81d8c6e0ffe6abb",
-					"md5": "56ebbd5a5a03367f62d0c732bafd3c66",
-					"content_type": "application/octet-stream",
-					"state": "uploaded",
-					"size": 654,
-					"created_at": "2019-05-09T23:28:30Z",
-					"updated_at": "2019-05-09T23:28:30Z"
+			"container_metadata": {
+				"tag": {
+					"name": "latest",
+					"digest": "sha256:9c1e2f"
+				},
+				"labels": {
+					"description": "A simple container image to demonstrate GitHub Packages",
+					"source": "https://github.com/Codertocat/hello-world-npm",
+					"revision": "",
+					"image_url": "",
+					"licenses": "",
+					"all_labels": {}
+				},
+				"manifest": {
+					"digest": "sha256:9c1e2f",
+					"media_type": "application/vnd.oci.image.manifest.v1+json",
+					"uri": "repositories/codertocat/hello-world/manifests/sha256:9c1e2f",
+					"size": 1574,
+					"config": {
+						"digest": "sha256:1f2e9c",
+						"media_type": "application/vnd.oci.image.config.v1+json",
+						"size": 2872
+					},
+					"layers": [
+						{
+							"digest": "sha256:e9c21f",
+							"media_type": "application/vnd.oci.image.layer.v1.tar+gzip",
+							"size": 3401613
+						}
+					]
 				}
-			],
+			},
+			"package_files": [],
 			"author": {
 				"login": "Codertocat",
 				"id": 21031067,
@@ -224,13 +213,14 @@
 				"type": "User",
 				"site_admin": false
 			},
-			"installation_command": "npm install @Codertocat/@1.0.0"
+			"installation_command": "docker pull ghcr.io/codertocat/hello-world@sha256:9c1e2f",
+			"package_url": "ghcr.io/codertocat/hello-world:latest"
 		},
 		"registry": {
-			"about_url": "https://help.github.com/about-github-packages",
-			"name": "GitHub npm registry",
-			"type": "npm",
-			"url": "https://npm.pkg.github.com/@Codertocat",
+			"about_url": "https://docs.github.com/packages/learn-github-packages/introduction-to-github-packages",
+			"name": "GitHub CONTAINER registry",
+			"type": "CONTAINER",
+			"url": "https://ghcr.io/codertocat/hello-world",
 			"vendor": "GitHub Inc"
 		},
 		"ecosystem": "CONTAINER",

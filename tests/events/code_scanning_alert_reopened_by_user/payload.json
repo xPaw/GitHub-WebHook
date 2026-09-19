@@ -3,10 +3,8 @@
 	"alert": {
 		"number": 10,
 		"created_at": "2020-07-22T14:06:31Z",
-		"updated_at": "2020-07-22T14:06:31Z",
 		"url": "https://api.github.com/repos/Codertocat/Hello-World/code-scanning/alerts/10",
 		"html_url": "https://github.com/Codertocat/Hello-World/security/code-scanning/10",
-		"instances_url": "https://api.github.com/repos/Codertocat/Hello-World/code-scanning/alerts/10/instances",
 		"state": "open",
 		"fixed_at": null,
 		"dismissed_by": null,
@@ -16,19 +14,10 @@
 		"rule": {
 			"id": "js/unsafe-jquery-plugin",
 			"severity": "warning",
-			"description": "Unsafe jQuery plugin",
-			"name": "js/unsafe-jquery-plugin",
-			"full_description": "A jQuery plugin that unintentionally constructs HTML from some of its options may be unsafe to use for clients.",
-			"tags": [
-				"security",
-				"external/cwe/cwe-079",
-				"external/cwe/cwe-116"
-			],
-			"help_uri": null
+			"description": "Unsafe jQuery plugin"
 		},
 		"tool": {
 			"name": "CodeQL",
-			"guid": null,
 			"version": "2.22.4"
 		},
 		"most_recent_instance": {

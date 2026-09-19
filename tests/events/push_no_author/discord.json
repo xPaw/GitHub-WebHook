@@ -2,14 +2,14 @@
     "embeds": [
         {
             "title": "pushed 1 new commit",
-            "url": "https:\/\/github.com\/ModDota\/DotaTracking\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171",
+            "url": "https:\/\/github.com\/Octocoders\/test-repo1\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171",
             "color": 5025616,
             "author": {
-                "name": "SinZ163",
-                "url": "https:\/\/github.com\/SinZ163",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/767456?v=4"
+                "name": "hubot",
+                "url": "https:\/\/github.com\/hubot",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/90000004?v=4"
             },
-            "description": "[`560082`](https:\/\/github.com\/ModDota\/DotaTracking\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171) Update gitignore and add a readme to dota\/gamemode\/content to keep folder alive - *Dota \\*test\\* Tracking*"
+            "description": "[`560082`](https:\/\/github.com\/Octocoders\/test-repo1\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171) Update gitignore and add a readme - *Octo \\*test\\* Cat*"
         }
     ]
 }

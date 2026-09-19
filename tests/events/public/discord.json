@@ -1,13 +1,13 @@
 {
     "embeds": [
         {
-            "title": "**new-private-repository** is now open source and available to everyone!",
-            "url": "https:\/\/github.com\/xPaw\/new-private-repository",
+            "title": "**new-private-repo** is now open source and available to everyone!",
+            "url": "https:\/\/github.com\/monalisa\/new-private-repo",
             "color": 5025616,
             "author": {
-                "name": "xPaw",
-                "url": "https:\/\/github.com\/xPaw",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
+                "name": "monalisa",
+                "url": "https:\/\/github.com\/monalisa",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
             }
         }
     ]

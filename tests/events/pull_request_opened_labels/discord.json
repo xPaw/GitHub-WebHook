@@ -2,10 +2,10 @@
     "embeds": [
         {
             "title": "opened PR **#311**: Bump Microsoft.NET.Test.Sdk from 16.7.1 to 16.8.0",
-            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/pull\/311",
+            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/311",
             "color": 5025616,
             "author": {
-                "name": "xPaw",
+                "name": "dependabot[bot]",
                 "url": "https:\/\/github.com\/apps\/dependabot",
                 "icon_url": "https:\/\/avatars0.githubusercontent.com\/in\/29110?v=4"
             },

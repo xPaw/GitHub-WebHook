@@ -56,18 +56,18 @@ describe('worker', () => {
 		expect(init.method).toBe('POST');
 		expect((init.headers as Record<string, string>)['User-Agent']).toBe('https://github.com/xPaw/GitHub-WebHook');
 		expect(JSON.parse(init.body as string)).toEqual({
-			username: 'GitHub-WebHook',
+			username: 'Hello-World',
 			allowed_mentions: { parse: [] },
 			embeds: [
 				expect.objectContaining({
 					title: 'pushed 1 new commit',
-					author: expect.objectContaining({ name: 'xPaw' }),
+					author: expect.objectContaining({ name: 'monalisa' }),
 				}),
 			],
 		});
 
 		const text = await response.text();
-		expect(text).toContain('Received push in repository xPaw/GitHub-WebHook');
+		expect(text).toContain('Received push in repository monalisa/Hello-World');
 		expect(text).toContain('Discord HTTP 204');
 		expect(text).not.toContain(TOKEN);
 	});
@@ -94,11 +94,11 @@ describe('worker', () => {
 		}
 
 		it('is the name of the repository', async () => {
-			expect(await sentUsername('push', fixture('push'))).toBe('GitHub-WebHook');
+			expect(await sentUsername('push', fixture('push'))).toBe('Hello-World');
 		});
 
 		it('is the organization for events without a repository', async () => {
-			expect(await sentUsername('ping', fixture('ping_org'))).toBe('SteamDatabase');
+			expect(await sentUsername('ping', fixture('ping_org'))).toBe('octo-org');
 		});
 
 		it.each(['DiscordBot', 'my-clyde', 'everyone', 'here', 'x'.repeat(81)])('is left out for %s, which Discord rejects', async (name) => {
@@ -355,7 +355,7 @@ describe('worker', () => {
 		it('ignores the push of a pull request merged on github.com', async () => {
 			const response = await deliver('push', 'push', (p) => {
 				p.head_commit.committer.username = 'web-flow';
-				p.head_commit.message = 'Merge pull request #6 from xPaw/feature\n\ntest pull request';
+				p.head_commit.message = 'Merge pull request #6 from monalisa/feature\n\ntest pull request';
 			});
 
 			await expectIgnored(response, 'push - web-flow pull request merge');
@@ -481,7 +481,7 @@ describe('worker', () => {
 
 		expect(response.status).toBe(202);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(await response.text()).toContain('Received ping in repository SteamDatabase/repositories');
+		expect(await response.text()).toContain('Received ping in repository octo-org/repositories');
 	});
 
 	it('returns 502 when Discord rejects the message', async () => {
@@ -544,13 +544,13 @@ describe('worker', () => {
 	it('falls back to the owner and name when the repository has no full name', async () => {
 		const payload = JSON.parse(fixture('push'));
 		delete payload.repository.full_name;
-		payload.repository.owner.name = 'xPaw';
-		payload.repository.name = 'GitHub-WebHook';
+		payload.repository.owner.name = 'monalisa';
+		payload.repository.name = 'Hello-World';
 
 		const response = await worker.fetch(await buildRequest('push', JSON.stringify(payload)), env);
 
 		expect(response.status).toBe(202);
-		expect(await response.text()).toContain('Received push in repository xPaw/GitHub-WebHook');
+		expect(await response.text()).toContain('Received push in repository monalisa/Hello-World');
 	});
 
 	it('returns 500 without details when the payload can not be converted', async () => {

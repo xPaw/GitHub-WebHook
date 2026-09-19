@@ -2,14 +2,14 @@
     "embeds": [
         {
             "title": "opened issue **#508**: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\u2026",
-            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/issues\/508",
+            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/issues\/508",
             "color": 5025616,
             "author": {
-                "name": "xPaw",
-                "url": "https:\/\/github.com\/xPaw",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=4"
+                "name": "monalisa",
+                "url": "https:\/\/github.com\/monalisa",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
             },
-            "description": "Seems like a combination of Valve updating some of the particle stuff, and our code not handling certain things.\nIt needs a loving pass to fix up the existing stuff we have. I committed a few fix which should ease the task.",
+            "description": "Seems like a combination of an upstream change and our code not handling certain things.\nIt needs a pass to fix up the existing stuff we have. I committed a few fixes which should ease the task.",
             "footer": {
                 "text": "bug"
             }

@@ -2,13 +2,13 @@
     "embeds": [
         {
             "title": "updated wiki",
-            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/wiki",
-            "description": "[created New Page](https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/wiki\/New-Page)\n[edited \\_Sidebar](https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/wiki\/_Sidebar\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36): Fixed a typo",
+            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki",
+            "description": "[created New Page](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/New-Page)\n[edited \\_Sidebar](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/_Sidebar\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36): Fixed a typo",
             "color": 3113463,
             "author": {
-                "name": "xPaw",
-                "url": "https:\/\/github.com\/xPaw",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=3"
+                "name": "monalisa",
+                "url": "https:\/\/github.com\/monalisa",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
             }
         }
     ]

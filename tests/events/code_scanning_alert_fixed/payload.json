@@ -3,7 +3,6 @@
 	"alert": {
 		"number": 10,
 		"created_at": "2020-07-22T14:06:31Z",
-		"updated_at": "2020-07-22T14:06:31Z",
 		"url": "https://api.github.com/repos/Codertocat/Hello-World/code-scanning/alerts/10",
 		"html_url": "https://github.com/Codertocat/Hello-World/security/code-scanning/10",
 		"instances_url": "https://api.github.com/repos/Codertocat/Hello-World/code-scanning/alerts/10/instances",

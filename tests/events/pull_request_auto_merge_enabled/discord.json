@@ -1,13 +1,13 @@
 {
     "embeds": [
         {
-            "title": "enabled auto-merge on PR **#328**: Fix white eyelashes",
-            "url": "https:\/\/github.com\/SteamDatabase\/ValveResourceFormat\/pull\/328",
+            "title": "enabled auto-merge on PR **#328**: Fix a rendering glitch",
+            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/328",
             "color": 3113463,
             "author": {
-                "name": "xPaw",
-                "url": "https:\/\/github.com\/xPaw",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/613331?v=4"
+                "name": "monalisa",
+                "url": "https:\/\/github.com\/monalisa",
+                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
             }
         }
     ]

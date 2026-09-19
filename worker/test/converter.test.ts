@@ -253,7 +253,7 @@ describe('optional fields', () => {
 			p.changes.owner.from = {};
 		});
 
-		expect(result.title).toBe('transferred **SteamDocsScraper**');
+		expect(result.title).toBe('transferred **linguist**');
 	});
 
 	it('push to a ref without a refs/ prefix', () => {
