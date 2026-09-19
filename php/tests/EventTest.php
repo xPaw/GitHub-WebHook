@@ -64,7 +64,7 @@ class EventTest extends \PHPUnit\Framework\TestCase
 	{
 		$ProvidedData = [];
 
-		foreach( new DirectoryIterator( __DIR__ . DIRECTORY_SEPARATOR . 'events' ) as $File )
+		foreach( new DirectoryIterator( dirname( __DIR__, 2 ) . DIRECTORY_SEPARATOR . 'fixtures' ) as $File )
 		{
 			if( $File->isDot() || !$File->isDir() )
 			{

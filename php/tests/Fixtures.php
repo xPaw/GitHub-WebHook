@@ -10,7 +10,7 @@ trait Fixtures
 {
 	private static function LoadPayload( string $Fixture ) : stdClass
 	{
-		$Path = __DIR__ . DIRECTORY_SEPARATOR . 'events' . DIRECTORY_SEPARATOR . $Fixture . DIRECTORY_SEPARATOR . 'payload.json';
+		$Path = dirname( __DIR__, 2 ) . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR . $Fixture . DIRECTORY_SEPARATOR . 'payload.json';
 
 		$Payload = json_decode( (string)file_get_contents( $Path ), flags: JSON_THROW_ON_ERROR );
 
@@ -47,7 +47,7 @@ trait Fixtures
 	{
 		$Fixtures = [];
 
-		foreach( new DirectoryIterator( __DIR__ . DIRECTORY_SEPARATOR . 'events' ) as $File )
+		foreach( new DirectoryIterator( dirname( __DIR__, 2 ) . DIRECTORY_SEPARATOR . 'fixtures' ) as $File )
 		{
 			if( $File->isDot() || !$File->isDir() )
 			{

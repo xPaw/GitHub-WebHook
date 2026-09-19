@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const EVENTS_DIR = join(import.meta.dirname, '..', '..', 'tests', 'events');
+const EVENTS_DIR = join(import.meta.dirname, '..', '..', 'fixtures');
 
 /** Names of every event fixture. */
 export const fixtures = readdirSync(EVENTS_DIR, { withFileTypes: true })

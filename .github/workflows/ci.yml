@@ -11,6 +11,9 @@ jobs:
     strategy:
       matrix:
         php: ['8.4']
+    defaults:
+      run:
+        working-directory: php
     steps:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2

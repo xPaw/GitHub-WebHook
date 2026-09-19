@@ -82,5 +82,5 @@ Some events are ignored because they would only be noise, see `src/ignored.ts`:
 ## Development
 Copy `.dev.vars.example` to `.dev.vars` and run `npm run dev` to start the Worker locally.
 
-`npm test` runs the typecheck and then the tests. Every event in `../tests/events`
+`npm test` runs the typecheck and then the tests. Every event in `../fixtures`
 is converted and compared against its expected `discord.json` embed.

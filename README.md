@@ -1,61 +1,54 @@
-This script acts as a web hook for [GitHub](https://github.com/) events, processes them,
-and returns messages which can be sent out to an IRC channel or a Discord webhook,
-depending on the converter used.
+# GitHub WebHook
+Accepts webhook events of [GitHub](https://github.com/), validates them, and converts them into
+readable messages which can be sent out to an IRC channel or a Discord webhook.
 
-See `examples/discord.php` for a basic application that sends webhooks to Discord.  
-See `examples/irker.php` for a basic application that sends messages to IRC.  
-See `worker/` for a Cloudflare Worker that sends webhooks to Discord.  
+A push, a merged pull request and a release look like this on IRC, with colors:
 
-## GitHubWebHook
-`GitHubWebHook.php` accepts, processes and validates an event,
-it also can make sure that the event came from a GitHub server.
-
-Functions in this class are:
-
-#### ProcessRequest()
-Accepts an event, throws `Exception` on error.
-
-#### GetEventType()
-Returns event type.
-
-#### GetPayload()
-Returns decoded JSON payload as an object.
-
-#### GetFullRepositoryName()
-Returns full name of the repository for which an event was sent for.
-
-#### ValidateHubSignature( $SecretKey )
-Returns true if HMAC hex digest of the payload matches GitHub's, false otherwise.
-Throws `Exception` if the signature header is missing.
-
-## Converters
-Both converters take the data parsed by `GitHubWebHook`, and neither of them modifies the payload,
-so the same payload can be given to both:
-
-```php
-$Hook = new GitHubWebHook( );
-$Hook->ProcessRequest( );
-
-$Irc = new IrcConverter( $Hook->GetEventType(), $Hook->GetPayload() );
-$Discord = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
+```
+[Hello-World] monalisa pushed 1 new commit: Add tests for the webhook handler https://github.com/monalisa/Hello-World/commit/8ddec647
+[Hello-World] monalisa merged pull request #6 from monalisa to master: test pull request. https://github.com/monalisa/Hello-World/pull/6
+[Spoon-Knife] monalisa published a pre-release 0.0.4: https://github.com/octo-org/Spoon-Knife/releases/tag/0.0.4
 ```
 
-Both of them throw `NotImplementedException` for an event or an action that is not formatted,
-and `IgnoredEventException` for actions of supported events that are ignored by design,
-such as editing, labelling or assigning an issue.
+On Discord the same events are embeds with the user as the author, a linked title such as "pushed 1 new commit",
+and the commits, the comment or the release notes as the description.
 
-### IrcConverter
+Discord can accept GitHub webhooks on its own when `/github` is added to the url of a webhook,
+but it only formats a handful of events and silently drops the rest, such as security alerts, wiki edits
+and everything about organizations and teams, and there is no control over what is announced or how it looks.
 
-#### GetMessage()
-Returns a colored string which can be sent to an IRC server.
-Some events, such as wiki updates, return multiple lines separated by a new line.
+Only the events that are worth reading are announced, the noisy ones are left out on purpose,
+see the [list of events](#events-ref) below.
 
-### DiscordConverter
+There are two versions, use whichever is easier for you to host:
 
-#### GetEmbed()
-Returns an array which can be encoded as JSON and sent to a Discord webhook as is.
-It contains a single embed whose author is the GitHub user that triggered the event.
-Titles and descriptions are cut to fit within the limits of Discord.
+| Version | Sends to | What it is |
+|---------|----------|------------|
+| [`php/`](php/) | IRC, Discord | A PHP library, your application receives the request and sends out the converted message |
+| [`worker/`](worker/) | Discord | A Cloudflare Worker that is ready to deploy, it posts to the Discord webhook that is named in the url |
+
+Both versions are kept in sync: they support the same events, ignore the same actions,
+and produce the same Discord embed for the same payload.
+Every event in [`fixtures/`](fixtures/) has a payload along with the messages that are expected for it,
+and the tests of both versions run against these same fixtures.
+A change to how an event is formatted has to be made in both versions.
+
+## Fixtures
+Every folder in `fixtures/` is one event:
+
+| File | Contents |
+|------|----------|
+| `type.txt` | The name of the event, as sent in the `X-GitHub-Event` header |
+| `payload.json` | The payload as sent by GitHub |
+| `expected.bin` | The IRC message that is expected for it, with its color codes |
+| `discord.json` | The Discord embed that is expected for it |
+
+The PHP tests check both messages, the Worker tests check the embed
+and validate the payload against the webhook schemas of GitHub.
+
+To add or change an event, add a folder with its type and payload, make the change in `php/`,
+and run its tests with `UPDATE_FIXTURES=1` to write the expected messages.
+Review them with git, then make the same change in `worker/` until its tests pass against the same embed.
 
 ## Events [\[ref\]](https://docs.github.com/en/webhooks/webhook-events-and-payloads)
 
