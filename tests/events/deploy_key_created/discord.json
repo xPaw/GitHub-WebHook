@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "created deploy key: **hey-its-a-deploy-key** (read-only)",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys",
+            "color": 5025616,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

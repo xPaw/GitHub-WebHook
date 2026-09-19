@@ -9,13 +9,9 @@ function withAction(fixture: string, action: string): Payload {
 	});
 }
 
-describe('ignored events', () => {
-	it.each(['create', 'fork', 'watch', 'star', 'status'])('%s', (eventType) => {
-		expect(() => getEmbed(eventType, {})).toThrow(new IgnoredEventError(eventType));
-	});
-
+describe('ignored actions', () => {
 	const actions: [event: string, fixture: string, actions: string[]][] = [
-		['issues', 'issue_opened', ['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped']],
+		['issues', 'issue_opened', ['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped', 'field_added', 'field_removed']],
 		[
 			'pull_request',
 			'pull_request_closed_merged',
@@ -33,6 +29,7 @@ describe('ignored events', () => {
 				'enqueued',
 				'dequeued',
 				'auto_merge_disabled',
+				'stacked',
 			],
 		],
 		['pull_request_review', 'pull_request_review', ['edited']],
@@ -40,12 +37,17 @@ describe('ignored events', () => {
 		['milestone', 'milestone', ['edited']],
 		['release', 'release', ['created', 'edited', 'released', 'prereleased']],
 		['member', 'member', ['edited']],
-		['issue_comment', 'issue_comment', ['edited']],
+		['issue_comment', 'issue_comment', ['edited', 'pinned', 'unpinned']],
 		['discussion', 'discussion_created', ['edited', 'labeled', 'unlabeled', 'unanswered']],
 		['discussion_comment', 'discussion_comment_created', ['edited']],
 		['repository', 'repository', ['edited']],
-		['code_scanning_alert', 'code_scanning_alert_created', ['appeared_in_branch']],
-		['secret_scanning_alert', 'secret_scanning_alert_created', ['assigned', 'unassigned', 'validated']],
+		['dependabot_alert', 'dependabot_alert_created', ['assignees_changed']],
+		['code_scanning_alert', 'code_scanning_alert_created', ['appeared_in_branch', 'updated_assignment']],
+		['secret_scanning_alert', 'secret_scanning_alert_created', ['assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed']],
+		['project', 'project', ['edited']],
+		['branch_protection_rule', 'branch_protection_rule_created', ['edited']],
+		['projects_v2', 'projects_v2_created', ['edited']],
+		['projects_v2_status_update', 'projects_v2_status_update', ['edited', 'deleted']],
 	];
 
 	describe.each(actions)('%s', (eventType, fixture, ignored) => {
@@ -69,7 +71,7 @@ describe('ignored events', () => {
 
 describe('unsupported events', () => {
 	it('unknown event type', () => {
-		expect(() => getEmbed('deployment', {})).toThrow(new NotImplementedError('deployment'));
+		expect(() => getEmbed('workflow_run', {})).toThrow(new NotImplementedError('workflow_run'));
 	});
 
 	const fixtures: [event: string, fixture: string][] = [
@@ -91,6 +93,18 @@ describe('unsupported events', () => {
 		['secret_scanning_alert', 'secret_scanning_alert_created'],
 		['member', 'member'],
 		['repository', 'repository'],
+		['project', 'project'],
+		['projects_v2', 'projects_v2_created'],
+		['projects_v2_status_update', 'projects_v2_status_update'],
+		['branch_protection_configuration', 'branch_protection_configuration_enabled'],
+		['branch_protection_rule', 'branch_protection_rule_created'],
+		['repository_ruleset', 'repository_ruleset_created'],
+		['deploy_key', 'deploy_key_created'],
+		['meta', 'meta_deleted'],
+		['organization', 'organization_member_added'],
+		['org_block', 'org_block_blocked'],
+		['membership', 'membership_added'],
+		['team', 'team_created'],
 	];
 
 	it.each(fixtures)('%s with an unknown action', (eventType, fixture) => {
@@ -248,6 +262,112 @@ describe('optional fields', () => {
 		});
 
 		expect(result.title).toBe('pushed 1 new commit to `master`');
+	});
+
+	it('ruleset of an organization has no page of its own', () => {
+		const result = embed('repository_ruleset', 'repository_ruleset_created', (p) => {
+			p.repository_ruleset._links.html = null;
+		});
+
+		expect(result.url).toBeUndefined();
+	});
+
+	it('project without a body', () => {
+		const result = embed('project', 'project', (p) => {
+			p.project.body = null;
+		});
+
+		expect(result).not.toHaveProperty('description');
+	});
+
+	it('project status update without a status', () => {
+		const result = embed('projects_v2_status_update', 'projects_v2_status_update', (p) => {
+			p.projects_v2_status_update.status = null;
+		});
+
+		expect(result.title).toBe('posted a project status update');
+	});
+
+	it('project status update without a body', () => {
+		const result = embed('projects_v2_status_update', 'projects_v2_status_update', (p) => {
+			p.projects_v2_status_update.body = null;
+		});
+
+		expect(result).not.toHaveProperty('description');
+	});
+
+	it('membership event without a member', () => {
+		const result = embed('membership', 'membership_added', (p) => {
+			p.member = null;
+		});
+
+		expect(result.title).toBe('added **ghost** to team **github**');
+	});
+
+	it('blocked user that was deleted', () => {
+		const result = embed('org_block', 'org_block_blocked', (p) => {
+			p.blocked_user = null;
+		});
+
+		expect(result.title).toBe('blocked user **ghost**');
+	});
+
+	it('organization member that was deleted', () => {
+		const result = embed('organization', 'organization_member_added', (p) => {
+			p.membership.user = null;
+		});
+
+		expect(result.title).toBe('added **ghost** (member) to the organization');
+	});
+
+	it('organization invitation by email does not reveal the address', () => {
+		const result = embed('organization', 'organization_member_invited', (p) => {
+			delete p.user;
+			p.invitation.login = null;
+			p.invitation.email = 'hacktocat@example.com';
+		});
+
+		expect(result.title).toBe('invited someone by email (member) to the organization');
+	});
+
+	it('organization invitation names the role in plain words', () => {
+		const result = embed('organization', 'organization_member_invited', (p) => {
+			p.invitation.role = 'billing_manager';
+		});
+
+		expect(result.title).toBe('invited **hacktocat** (billing manager) to the organization');
+	});
+
+	it('organization invitation that reinstates someone has no role to name', () => {
+		const result = embed('organization', 'organization_member_invited', (p) => {
+			p.invitation.role = 'reinstate';
+		});
+
+		expect(result.title).toBe('invited **hacktocat** to the organization');
+	});
+
+	it('organization member event without a membership', () => {
+		const result = embed('organization', 'organization_member_removed', (p) => {
+			delete p.membership;
+		});
+
+		expect(result.title).toBe('removed **ghost** from the organization');
+	});
+
+	it('renamed organization without the previous name', () => {
+		const result = embed('organization', 'organization_renamed', (p) => {
+			delete p.changes;
+		});
+
+		expect(result.title).toBe('renamed the organization **Octocoders**');
+	});
+
+	it('edited team that was not renamed', () => {
+		const result = embed('team', 'team_edited', (p) => {
+			p.changes = { description: { from: 'Open-source team' } };
+		});
+
+		expect(result.title).toBe('edited team **github**');
 	});
 });
 

@@ -41,7 +41,8 @@ $Discord = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 ```
 
 Both of them throw `NotImplementedException` for an event or an action that is not formatted,
-and `IgnoredEventException` for the ones that are ignored by design, see the lists of events below.
+and `IgnoredEventException` for actions of supported events that are ignored by design,
+such as editing, labelling or assigning an issue.
 
 ### IrcConverter
 
@@ -62,98 +63,97 @@ Track changes to GitHub webhook payloads documentation here: https://github.com/
 
 ### Supported events
 
-- code_scanning_alert
-- commit_comment
-- delete
-- dependabot_alert
-- discussion
-- discussion_comment
-- gollum
-- issue_comment
-- issues
-- member
-- milestone
-- package
-- ping
-- public
-- pull_request
-- pull_request_review
-- pull_request_review_comment
-- push
-- registry_package
-- release
-- repository
-- repository_advisory
-- secret_scanning_alert
+- **branch_protection_configuration** - Branch protection was enabled or disabled for every branch of a repository
+- **branch_protection_rule** - A branch protection rule was created or deleted
+- **code_scanning_alert** - A code scanning alert was created, fixed, reopened or closed
+- **commit_comment** - Someone commented on a commit
+- **delete** - A branch or a tag was deleted
+- **dependabot_alert** - A vulnerable dependency was found, fixed, dismissed or reintroduced
+- **deploy_key** - A deploy key was added or removed, saying whether it can write to the repository
+- **discussion** - A discussion was created, answered, closed, locked, pinned, transferred or deleted
+- **discussion_comment** - Someone commented on a discussion
+- **gollum** - Wiki pages were created or edited
+- **issue_comment** - Someone commented on an issue or a pull request
+- **issues** - An issue was opened, closed, reopened, locked, pinned, transferred or deleted
+- **member** - A collaborator was added to or removed from a repository
+- **membership** - A user was added to or removed from a team
+- **meta** - This very webhook was deleted, so it is the last message that it sends
+- **milestone** - A milestone was created, closed, opened or deleted
+- **org_block** - An organization blocked or unblocked a user
+- **organization** - An organization was renamed or deleted, or a member was invited, added or removed
+- **package** - A package was published or updated in GitHub Packages
+- **ping** - Sent once when a webhook is created, to confirm that it works
+- **project** - A project (classic) was created, closed, reopened or deleted
+- **projects_v2** - A project was created, closed, reopened or deleted
+- **projects_v2_status_update** - A status update was posted on a project, along with how the project is doing
+- **public** - A private repository was made public
+- **pull_request** - A pull request was opened, merged, closed, reopened, locked, readied for review or converted to a draft
+- **pull_request_review** - A pull request review was submitted or dismissed
+- **pull_request_review_comment** - Someone commented on the diff of a pull request
+- **push** - Commits were pushed to a branch, or a branch or a tag was created
+- **registry_package** - A package was published or updated in a registry, such as a container image
+- **release** - A release was published, unpublished or deleted
+- **repository** - A repository was created, deleted, archived, renamed, transferred or had its visibility changed
+- **repository_advisory** - A security advisory of a repository was published or reported
+- **repository_ruleset** - A ruleset was created, edited or deleted, along with how it is enforced
+- **secret_scanning_alert** - A leaked secret was found, resolved, reopened or seen in a public place
+- **team** - A team was created, renamed, deleted, or given or refused access to a repository
 
-### Not yet supported events
-
-- branch_protection_configuration
-- branch_protection_rule
-- check_run
-- check_suite
-- custom_property
-- custom_property_values
-- deploy_key
-- deployment
-- deployment_status
-- issue_dependencies
-- label
-- membership
-- meta
-- org_block
-- organization
-- page_build
-- personal_access_token_request
-- projects_v2
-- projects_v2_item
-- projects_v2_status_update
-- pull_request_review_thread
-- repository_import
-- repository_ruleset
-- secret_scanning_alert_location
-- secret_scanning_scan
-- security_and_analysis
-- sponsorship
-- sub_issues
-- team
-- team_add
-- workflow_job
-- workflow_run
-
-### Events ignored by design
-
-- create - New branches and tags are formatted from the push event instead, which has the commits
-- fork
-- star
-- status
-- watch
-
-Additionally, events like labelling or assigning an issue are also ignored.
+Actions of supported events that would only be noise, such as editing, labelling or assigning an issue, are ignored.
 Push event ignores branch deletions (use delete event instead).
+
+### Unsupported events
+
+- **bypass_request_secret_scanning** - Someone asked to push a secret past push protection, or got a response
+- **check_run** - Sent for every state change of every check, the same noise as status
+- **check_suite** - Sent for every set of checks that runs on a commit
+- **create** - New branches and tags are formatted from the push event instead, which has the commits
+- **custom_property** - A custom property definition of an organization was changed
+- **custom_property_values** - The custom property values of a repository were changed
+- **deployment** - Sent for every deployment
+- **deployment_status** - Sent for every state change of every deployment
+- **dismissal_request_code_scanning** - Someone asked to dismiss a code scanning alert, or got a response
+- **dismissal_request_dependabot** - Someone asked to dismiss a Dependabot alert, or got a response
+- **dismissal_request_secret_scanning** - Someone asked to dismiss a secret scanning alert, or got a response
+- **exemption_request_push_ruleset** - Someone asked to push past a push ruleset, or got a response
+- **fork** - Someone forked a repository
+- **issue_dependencies** - An issue was marked as blocked by or blocking another one
+- **label** - A label was created, edited or deleted, label syncs send dozens at once
+- **merge_group** - Sent for every entry of a merge queue
+- **page_build** - Sent for every GitHub Pages build, which follows a push that is already announced
+- **personal_access_token_request** - A fine-grained personal access token asked for access to an organization
+- **project_card** - Sent for every card that is created, moved or edited in a project (classic)
+- **project_column** - A column was created, moved or deleted in a project (classic)
+- **projects_v2_item** - Sent for every item that is added, moved or edited in a project
+- **pull_request_review_thread** - A review thread was resolved or unresolved
+- **repository_import** - A repository import from another source finished
+- **secret_scanning_alert_location** - Sent for every place a secret was found in, the alert itself is announced
+- **secret_scanning_scan** - A secret scanning scan has finished
+- **security_and_analysis** - Security features were enabled or disabled for a repository
+- **sponsorship** - Someone started, changed or cancelled a sponsorship
+- **star** - Someone starred or unstarred a repository
+- **status** - Sent for every state change of every commit status
+- **sub_issues** - A sub-issue was added to or removed from an issue
+- **team_add** - A team was given access to a repository, which the team event announces already
+- **watch** - Someone starred a repository, despite the name
+- **workflow_job** - Sent for every state change of every GitHub Actions job
+- **workflow_run** - A GitHub Actions workflow run was requested, started or completed
 
 ### Events that can not be supported
 
 These are only sent to GitHub Apps or GitHub Marketplace, not to repository or organization webhooks.
 
-- deployment_protection_rule
-- deployment_review
-- github_app_authorization
-- installation
-- installation_repositories
-- installation_target
-- marketplace_purchase
-- merge_group
-- repository_dispatch
-- security_advisory
-- workflow_dispatch
-
-### Events that are no longer sent
-
-- project - Projects (classic) were removed
-- project_card
-- project_column
-- repository_vulnerability_alert - Replaced by dependabot_alert
+- **deployment_protection_rule** - A deployment is waiting for a custom protection rule of a GitHub App
+- **deployment_review** - A deployment is waiting for, or got, an approval
+- **github_app_authorization** - A user revoked their authorization of a GitHub App
+- **installation** - A GitHub App was installed, uninstalled or suspended
+- **installation_repositories** - Repositories were added to or removed from a GitHub App installation
+- **installation_target** - The account a GitHub App is installed on was renamed
+- **marketplace_purchase** - A GitHub Marketplace plan was bought, changed or cancelled
+- **repository_dispatch** - A GitHub App was sent a custom event through the API
+- **repository_vulnerability_alert** - Replaced by dependabot_alert
+- **security_advisory** - A global security advisory was published or updated, for any project on GitHub
+- **workflow_dispatch** - A GitHub Actions workflow was triggered manually
 
 ## License
 [MIT](LICENSE)

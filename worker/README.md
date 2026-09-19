@@ -65,7 +65,7 @@ and `npx wrangler tail` streams the logs of the Worker.
 | Status | Meaning |
 |--------|---------|
 | 202 | Sent to Discord |
-| 200 | The event is deliberately ignored, such as `star` or an edited comment |
+| 200 | The action is deliberately ignored, such as an edited comment or a label change |
 | 400 | Malformed request, or the url is not a valid `/discordhook/` url |
 | 401 | Missing or invalid signature |
 | 500 | `SECRET` is not set, see `wrangler tail` |

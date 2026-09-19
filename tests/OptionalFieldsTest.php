@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use GitHubWebHook\DiscordConverter;
+use GitHubWebHook\GitHubWebHook;
 use GitHubWebHook\IrcConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -18,6 +19,7 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 	{
 		$Payload = self::LoadPayload( $Fixture );
 		$Change( $Payload );
+		$Payload = self::ProcessPayload( $Event, $Payload );
 
 		$Embed = ( new DiscordConverter( $Event, $Payload ) )->GetEmbed();
 
@@ -103,7 +105,63 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { $Payload->registry_package->package_version->version = ''; },
 				'title', 'published npm package: **hello-world-npm**',
 			],
+			'ruleset of an organization has no page of its own' => [
+				'repository_ruleset', 'repository_ruleset_created',
+				static function( stdClass $Payload ) : void { $Payload->repository_ruleset->_links->html = null; },
+				'url', null,
+			],
+			'membership event without a member' => [
+				'membership', 'membership_added',
+				static function( stdClass $Payload ) : void { $Payload->member = null; },
+				'title', 'added **ghost** to team **github**',
+			],
+			'blocked user that was deleted' => [
+				'org_block', 'org_block_blocked',
+				static function( stdClass $Payload ) : void { $Payload->blocked_user = null; },
+				'title', 'blocked user **ghost**',
+			],
+			'organization member that was deleted' => [
+				'organization', 'organization_member_added',
+				static function( stdClass $Payload ) : void { $Payload->membership->user = null; },
+				'title', 'added **ghost** (member) to the organization',
+			],
+			'organization invitation by email does not reveal the address' => [
+				'organization', 'organization_member_invited',
+				static function( stdClass $Payload ) : void
+				{
+					unset( $Payload->user );
+					$Payload->invitation->login = null;
+					$Payload->invitation->email = 'hacktocat@example.com';
+				},
+				'title', 'invited someone by email (member) to the organization',
+			],
+			'organization invitation that reinstates someone has no role to name' => [
+				'organization', 'organization_member_invited',
+				static function( stdClass $Payload ) : void { $Payload->invitation->role = 'reinstate'; },
+				'title', 'invited **hacktocat** to the organization',
+			],
+			'project without a body' => [
+				'project', 'project',
+				static function( stdClass $Payload ) : void { $Payload->project->body = null; },
+				'description', null,
+			],
 		];
+	}
+
+	/**
+	 * Events of an organization have no repository until the request is processed.
+	 */
+	private static function ProcessPayload( string $Event, stdClass $Payload ) : object
+	{
+		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = $Event;
+		$_SERVER[ 'REQUEST_METHOD' ] = 'POST';
+		$_SERVER[ 'CONTENT_TYPE' ] = 'application/x-www-form-urlencoded';
+		$_POST[ 'payload' ] = json_encode( $Payload, JSON_THROW_ON_ERROR );
+
+		$Hook = new GitHubWebHook( );
+		$Hook->ProcessRequest( );
+
+		return $Hook->GetPayload();
 	}
 
 	private static function LoadPayload( string $Fixture ) : stdClass

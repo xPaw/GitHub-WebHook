@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "removed team **github** from this repository",
+            "url": "https:\/\/github.com\/orgs\/Octocoders\/teams\/github",
+            "color": 16007990,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

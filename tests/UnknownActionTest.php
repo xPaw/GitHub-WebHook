@@ -54,6 +54,18 @@ class UnknownActionTest extends \PHPUnit\Framework\TestCase
 			'secret_scanning_alert' => 'secret_scanning_alert_created',
 			'member' => 'member',
 			'repository' => 'repository',
+			'project' => 'project',
+			'projects_v2' => 'projects_v2_created',
+			'projects_v2_status_update' => 'projects_v2_status_update',
+			'branch_protection_configuration' => 'branch_protection_configuration_enabled',
+			'branch_protection_rule' => 'branch_protection_rule_created',
+			'repository_ruleset' => 'repository_ruleset_created',
+			'deploy_key' => 'deploy_key_created',
+			'meta' => 'meta_deleted',
+			'organization' => 'organization_member_added',
+			'org_block' => 'org_block_blocked',
+			'membership' => 'membership_added',
+			'team' => 'team_created',
 		];
 
 		$ProvidedData = [];

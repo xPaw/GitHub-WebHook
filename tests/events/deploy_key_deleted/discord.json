@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "deleted deploy key: **deploys from the build server** (read-write)",
+            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys",
+            "color": 16007990,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

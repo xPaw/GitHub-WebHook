@@ -36,16 +36,6 @@ class DiscordConverter extends BaseConverter
 	 */
 	public function GetEmbed( ) : array
 	{
-		// New branches and tags are formatted from the push event, which has the commits
-		if( $this->EventType === 'create'
-		||  $this->EventType === 'fork'
-		||  $this->EventType === 'watch'
-		||  $this->EventType === 'star'
-		||  $this->EventType === 'status' )
-		{
-			throw new IgnoredEventException( $this->EventType );
-		}
-
 		$Embed = null;
 
 		switch( $this->EventType )
@@ -73,6 +63,18 @@ class DiscordConverter extends BaseConverter
 			case 'dependabot_alert': $Embed = $this->FormatDependabotAlertEvent( ); break;
 			case 'code_scanning_alert': $Embed = $this->FormatCodeScanningAlertEvent( ); break;
 			case 'secret_scanning_alert': $Embed = $this->FormatSecretScanningAlertEvent( ); break;
+			case 'project'       : $Embed = $this->FormatProjectEvent( ); break;
+			case 'projects_v2'   : $Embed = $this->FormatProjectV2Event( ); break;
+			case 'projects_v2_status_update': $Embed = $this->FormatProjectStatusUpdateEvent( ); break;
+			case 'branch_protection_configuration': $Embed = $this->FormatBranchProtectionConfigurationEvent( ); break;
+			case 'branch_protection_rule': $Embed = $this->FormatBranchProtectionRuleEvent( ); break;
+			case 'repository_ruleset': $Embed = $this->FormatRepositoryRulesetEvent( ); break;
+			case 'deploy_key'    : $Embed = $this->FormatDeployKeyEvent( ); break;
+			case 'meta'          : $Embed = $this->FormatMetaEvent( ); break;
+			case 'organization'  : $Embed = $this->FormatOrganizationEvent( ); break;
+			case 'org_block'     : $Embed = $this->FormatOrgBlockEvent( ); break;
+			case 'membership'    : $Embed = $this->FormatMembershipEvent( ); break;
+			case 'team'          : $Embed = $this->FormatTeamEvent( ); break;
 		}
 
 		if( empty( $Embed ) )
@@ -194,10 +196,14 @@ class DiscordConverter extends BaseConverter
 		switch( $Action )
 		{
 			case 'reintroduced':
+			case 'at risk'    :
 			case 'reopened'   : return self::COLOR_ATTENTION;
 
 			case 'deleted'    :
 			case 'removed'    :
+			case 'blocked'    :
+			case 'disabled'   :
+			case 'off track'  :
 			case 'publicly leaked':
 			case 'unpublished':
 			case 'requested changes in':
@@ -207,6 +213,7 @@ class DiscordConverter extends BaseConverter
 			case 'auto-dismissed':
 			case 'converted to draft':
 			case 'archived'   :
+			case 'inactive'   :
 			case 'closed as not planned': return self::COLOR_SET_ASIDE;
 
 			case 'pinned'     :
@@ -215,6 +222,8 @@ class DiscordConverter extends BaseConverter
 			case 'unlocked'   :
 			case 'transferred':
 			case 'renamed'    :
+			case 'edited'     :
+			case 'unblocked'  :
 			case 'changed category':
 			case 'publicized' :
 			case 'privatized' :
@@ -223,7 +232,8 @@ class DiscordConverter extends BaseConverter
 			case 'updated'    : return self::COLOR_NEUTRAL;
 
 			case 'closed'     :
-			case 'merged'     : return self::COLOR_CLOSED;
+			case 'merged'     :
+			case 'complete'   : return self::COLOR_CLOSED;
 
 			default           : return self::COLOR_DEFAULT;
 		}
@@ -445,7 +455,9 @@ class DiscordConverter extends BaseConverter
 		||  $Action === 'assigned'
 		||  $Action === 'unassigned'
 		||  $Action === 'typed'
-		||  $Action === 'untyped' )
+		||  $Action === 'untyped'
+		||  $Action === 'field_added'
+		||  $Action === 'field_removed' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
@@ -531,7 +543,8 @@ class DiscordConverter extends BaseConverter
 		||  $Action === 'demilestoned'
 		||  $Action === 'enqueued'
 		||  $Action === 'dequeued'
-		||  $Action === 'auto_merge_disabled' )
+		||  $Action === 'auto_merge_disabled'
+		||  $Action === 'stacked' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
@@ -699,7 +712,9 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatIssueCommentEvent( ) : array
 	{
-		if( $this->Payload->action === 'edited' )
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'pinned'
+		||  $this->Payload->action === 'unpinned' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -898,6 +913,11 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatDependabotAlertEvent( ) : array
 	{
+		if( $this->Payload->action === 'assignees_changed' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		$Action = match( $this->Payload->action )
 		{
 			'created' => 'created',
@@ -941,7 +961,8 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatCodeScanningAlertEvent( ) : array
 	{
-		if( $this->Payload->action === 'appeared_in_branch' )
+		if( $this->Payload->action === 'appeared_in_branch'
+		||  $this->Payload->action === 'updated_assignment' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -986,7 +1007,9 @@ class DiscordConverter extends BaseConverter
 	{
 		if( $this->Payload->action === 'assigned'
 		||  $this->Payload->action === 'unassigned'
-		||  $this->Payload->action === 'validated' )
+		||  $this->Payload->action === 'validated'
+		||  $this->Payload->action === 'metadata_created'
+		||  $this->Payload->action === 'metadata_removed' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -1204,5 +1227,390 @@ class DiscordConverter extends BaseConverter
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
 		];
+	}
+
+	/**
+	 * Formats a project (classic) event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatProjectEvent( ) : array
+	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'closed'
+		&&  $this->Payload->action !== 'reopened'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "{$this->Payload->action} project **#{$this->Payload->project->number}**: " . self::Escape( $this->Payload->project->name ),
+			'description' => $this->Payload->action === 'created' ? self::ShortDescription( $this->Payload->project->body ) : '',
+			'url' => $this->Payload->project->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a project event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatProjectV2Event( ) : array
+	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'closed'
+		&&  $this->Payload->action !== 'reopened'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Project = $this->Payload->projects_v2;
+
+		// Projects have no url of their own in the payload, they live under the organization that owns them
+		return [
+			'title' => "{$this->Payload->action} project **#{$Project->number}**: " . self::Escape( $Project->title ),
+			'description' => $this->Payload->action === 'created' ? self::ShortDescription( $Project->short_description ) : '',
+			'url' => sprintf( 'https://github.com/orgs/%s/projects/%d', $this->Payload->organization->login, $Project->number ),
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a project status update event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatProjectStatusUpdateEvent( ) : array
+	{
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'deleted' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Update = $this->Payload->projects_v2_status_update;
+		$Status = self::ProjectStatus( $Update->status ?? null );
+
+		// The payload only has the node id of the project, so there is nothing to link but the list of them
+		return [
+			'title' => 'posted a project status update' . ( $Status === null ? '' : " ({$Status})" ),
+			'description' => self::ShortDescription( $Update->body ?? null ),
+			'url' => 'https://github.com/orgs/' . $this->Payload->organization->login . '/projects',
+			'color' => $Status === null ? self::COLOR_DEFAULT : $this->FormatAction( $Status ),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a branch protection configuration event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatBranchProtectionConfigurationEvent( ) : array
+	{
+		if( $this->Payload->action !== 'enabled'
+		&&  $this->Payload->action !== 'disabled' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "{$this->Payload->action} branch protection for all branches",
+			'url' => $this->Payload->repository->html_url . '/settings/branches',
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a branch protection rule event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatBranchProtectionRuleEvent( ) : array
+	{
+		// An edit changes a dozen settings at a time, which is too much to put in a title
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "{$this->Payload->action} branch protection rule " . self::EscapeCode( $this->Payload->rule->name ),
+			'url' => $this->Payload->repository->html_url . '/settings/branches',
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a repository ruleset event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatRepositoryRulesetEvent( ) : array
+	{
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'edited'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Ruleset = $this->Payload->repository_ruleset;
+		$Embed = [
+			'title' => "{$this->Payload->action} ruleset: **" . self::Escape( $Ruleset->name ) . "** (" . self::Escape( $Ruleset->enforcement ) . ")",
+			// Rulesets of an organization have no page of their own
+			'url' => $Ruleset->_links->html->href ?? null,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+
+		if( $Embed[ 'url' ] === null )
+		{
+			unset( $Embed[ 'url' ] );
+		}
+
+		return $Embed;
+	}
+
+	/**
+	 * Formats a deploy key event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatDeployKeyEvent( ) : array
+	{
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		// A key that can write to the repository is worth telling apart from one that can not
+		$Access = $this->Payload->key->read_only ? 'read-only' : 'read-write';
+
+		return [
+			'title' => "{$this->Payload->action} deploy key: **" . self::Escape( $this->Payload->key->title ) . "** ({$Access})",
+			'url' => $this->Payload->repository->html_url . '/settings/keys',
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a meta event, which says that this very webhook was deleted.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatMetaEvent( ) : array
+	{
+		if( $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "deleted hook {$this->Payload->hook_id}",
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats an organization event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatOrganizationEvent( ) : array
+	{
+		$Action = match( $this->Payload->action )
+		{
+			'deleted' => 'deleted',
+			'renamed' => 'renamed',
+			'member_added' => 'added',
+			'member_removed' => 'removed',
+			'member_invited' => 'invited',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		if( $Action === 'deleted' || $Action === 'renamed' )
+		{
+			$From = $this->Payload->changes->login->from ?? null;
+
+			$Title = "{$Action} the organization **" . self::Escape( $this->Payload->organization->login ) . "**";
+
+			if( $From !== null )
+			{
+				$Title .= " (from **" . self::Escape( $From ) . "**)";
+			}
+		}
+		else
+		{
+			$Member = $this->OrganizationMember( );
+			$Role = $this->OrganizationRole( );
+
+			$Title = $Action . ' ' . ( $Member === null ? 'someone by email' : '**' . self::Escape( $Member ) . '**' );
+
+			if( $Role !== null )
+			{
+				$Title .= ' (' . self::Escape( $Role ) . ')';
+			}
+
+			$Title .= ( $Action === 'removed' ? ' from' : ' to' ) . ' the organization';
+		}
+
+		return [
+			'title' => $Title,
+			'color' => $this->FormatAction( $Action ),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats an organization block event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatOrgBlockEvent( ) : array
+	{
+		if( $this->Payload->action !== 'blocked'
+		&&  $this->Payload->action !== 'unblocked' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return [
+			'title' => "{$this->Payload->action} user **" . self::Escape( $this->Payload->blocked_user->login ?? 'ghost' ) . "**",
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a membership event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatMembershipEvent( ) : array
+	{
+		if( $this->Payload->action !== 'added'
+		&&  $this->Payload->action !== 'removed' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Where = $this->Payload->action === 'added' ? 'to' : 'from';
+
+		return [
+			'title' => "{$this->Payload->action} **" . self::Escape( $this->Payload->member->login ?? 'ghost' ) . "** {$Where} team **" . self::Escape( $this->Payload->team->name ) . "**",
+			'url' => $this->Payload->team->html_url,
+			'color' => $this->FormatAction(),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * Formats a team event.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatTeamEvent( ) : array
+	{
+		[ $Action, $Where ] = match( $this->Payload->action )
+		{
+			'created' => [ 'created', '' ],
+			'deleted' => [ 'deleted', '' ],
+			'edited' => [ 'edited', '' ],
+			'added_to_repository' => [ 'added', ' to this repository' ],
+			'removed_from_repository' => [ 'removed', ' from this repository' ],
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		// Renaming a team is an edit, the rest of the changes are of no interest
+		$From = $Action === 'edited' ? ( $this->Payload->changes->name->from ?? null ) : null;
+
+		if( $From !== null )
+		{
+			$Action = 'renamed';
+		}
+
+		$Title = "{$Action} team **" . self::Escape( $this->Payload->team->name ) . "**{$Where}";
+
+		if( $From !== null )
+		{
+			$Title .= " (from **" . self::Escape( $From ) . "**)";
+		}
+
+		return [
+			'title' => $Title,
+			'url' => $this->Payload->team->html_url,
+			'color' => $this->FormatAction( $Action ),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
+	/**
+	 * The user an organization member event is about. An invitation by email has no account yet,
+	 * and the address is not something to announce.
+	 */
+	private function OrganizationMember( ) : ?string
+	{
+		if( $this->Payload->action === 'member_invited' )
+		{
+			return $this->Payload->user->login ?? $this->Payload->invitation->login ?? null;
+		}
+
+		return $this->Payload->membership->user->login ?? 'ghost';
+	}
+
+	/**
+	 * The role of the member an organization event is about. An invitation calls a plain member
+	 * a direct member, and reinstating someone gives back the role they had, which is not named.
+	 */
+	private function OrganizationRole( ) : ?string
+	{
+		$Role = $this->Payload->membership->role ?? $this->Payload->invitation->role ?? null;
+
+		if( !is_string( $Role ) || $Role === 'reinstate' )
+		{
+			return null;
+		}
+
+		return $Role === 'direct_member' ? 'member' : str_replace( '_', ' ', $Role );
+	}
+
+	/**
+	 * GitHub sends the status of a project as an enum such as `OFF_TRACK`, and it can be unset.
+	 */
+	private static function ProjectStatus( mixed $Status ) : ?string
+	{
+		return is_string( $Status ) ? strtolower( str_replace( '_', ' ', $Status ) ) : null;
 	}
 }

@@ -29,6 +29,18 @@ type RepositoryAdvisoryEvent = Payload<'repository-advisory'>;
 type DependabotAlertEvent = Payload<'dependabot-alert'>;
 type CodeScanningAlertEvent = Payload<'code-scanning-alert'>;
 type SecretScanningAlertEvent = Payload<'secret-scanning-alert'>;
+type ProjectEvent = Payload<'project'>;
+type ProjectV2Event = Payload<'projects-v2'>;
+type ProjectStatusUpdateEvent = Payload<'projects-v2-status-update'>;
+type BranchProtectionConfigurationEvent = Payload<'branch-protection-configuration'>;
+type BranchProtectionRuleEvent = Payload<'branch-protection-rule'>;
+type RepositoryRulesetEvent = Payload<'repository-ruleset'>;
+type DeployKeyEvent = Payload<'deploy-key'>;
+type MetaEvent = Payload<'meta'>;
+type OrganizationEvent = Payload<'organization'>;
+type OrgBlockEvent = Payload<'org-block'>;
+type MembershipEvent = Payload<'membership'>;
+type TeamEvent = Payload<'team'>;
 
 export interface DiscordEmbed {
 	title: string;
@@ -52,20 +64,13 @@ const MAX_DESCRIPTION_LENGTH = 4096;
 const MAX_FOOTER_LENGTH = 2048;
 const MAX_WIKI_PAGES = 5;
 
-/** Events we deliberately never forward, new branches and tags are formatted from `push` which has the commits. */
-const IGNORED_EVENTS = new Set(['create', 'fork', 'watch', 'star', 'status']);
-
 /**
  * Converts a GitHub webhook payload into a Discord webhook message.
  *
- * @throws {IgnoredEventError} for events we deliberately skip.
+ * @throws {IgnoredEventError} for actions we deliberately skip.
  * @throws {NotImplementedError} for events (or actions) we do not format.
  */
 export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
-	if (IGNORED_EVENTS.has(eventType)) {
-		throw new IgnoredEventError(eventType);
-	}
-
 	const embed = format(eventType, payload);
 
 	// Discord rejects the whole message when an embed is over its limits
@@ -134,6 +139,30 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 			return formatCodeScanningAlert(payload as CodeScanningAlertEvent);
 		case 'secret_scanning_alert':
 			return formatSecretScanningAlert(payload as SecretScanningAlertEvent);
+		case 'project':
+			return formatProject(payload as ProjectEvent);
+		case 'projects_v2':
+			return formatProjectV2(payload as ProjectV2Event);
+		case 'projects_v2_status_update':
+			return formatProjectStatusUpdate(payload as ProjectStatusUpdateEvent);
+		case 'branch_protection_configuration':
+			return formatBranchProtectionConfiguration(payload as BranchProtectionConfigurationEvent);
+		case 'branch_protection_rule':
+			return formatBranchProtectionRule(payload as BranchProtectionRuleEvent);
+		case 'repository_ruleset':
+			return formatRepositoryRuleset(payload as RepositoryRulesetEvent);
+		case 'deploy_key':
+			return formatDeployKey(payload as DeployKeyEvent);
+		case 'meta':
+			return formatMeta(payload as MetaEvent);
+		case 'organization':
+			return formatOrganization(payload as OrganizationEvent);
+		case 'org_block':
+			return formatOrgBlock(payload as OrgBlockEvent);
+		case 'membership':
+			return formatMembership(payload as MembershipEvent);
+		case 'team':
+			return formatTeam(payload as TeamEvent);
 		default:
 			throw new NotImplementedError(eventType);
 	}
@@ -182,10 +211,14 @@ function actionColor(action: string): number {
 	switch (action) {
 		case 'reopened':
 		case 'reintroduced':
+		case 'at risk':
 			return COLOR_ATTENTION;
 
 		case 'deleted':
 		case 'removed':
+		case 'blocked':
+		case 'disabled':
+		case 'off track':
 		case 'publicly leaked':
 		case 'unpublished':
 		case 'requested changes in':
@@ -196,6 +229,7 @@ function actionColor(action: string): number {
 		case 'auto-dismissed':
 		case 'converted to draft':
 		case 'archived':
+		case 'inactive':
 		case 'closed as not planned':
 			return COLOR_SET_ASIDE;
 
@@ -205,6 +239,8 @@ function actionColor(action: string): number {
 		case 'unlocked':
 		case 'transferred':
 		case 'renamed':
+		case 'edited':
+		case 'unblocked':
 		case 'changed category':
 		case 'publicized':
 		case 'privatized':
@@ -215,6 +251,7 @@ function actionColor(action: string): number {
 
 		case 'closed':
 		case 'merged':
+		case 'complete':
 			return COLOR_CLOSED;
 
 		default:
@@ -373,7 +410,7 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 		'issues',
 		payload.action,
 		['opened', 'closed', 'reopened', 'deleted', 'pinned', 'locked', 'unlocked', 'transferred'],
-		['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped'],
+		['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped', 'field_added', 'field_removed'],
 	);
 
 	const action =
@@ -438,6 +475,7 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 			'enqueued',
 			'dequeued',
 			'auto_merge_disabled',
+			'stacked',
 		],
 	);
 
@@ -529,7 +567,7 @@ function formatCommitComment(payload: CommitCommentEvent): DiscordEmbed {
 
 /** Comments on issues, pull requests and discussions. */
 function formatComment(event: string, payload: IssueCommentEvent | DiscussionCommentEvent): DiscordEmbed {
-	assertAction(event, payload.action, ['created', 'deleted'], ['edited']);
+	assertAction(event, payload.action, ['created', 'deleted'], event === 'issue_comment' ? ['edited', 'pinned', 'unpinned'] : ['edited']);
 
 	const subject = 'discussion' in payload ? payload.discussion : payload.issue;
 	const kind = 'discussion' in payload ? 'discussion' : payload.issue.pull_request ? 'PR' : 'issue';
@@ -617,7 +655,7 @@ function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 		action = 'reopened';
 	}
 
-	assertAction('dependabot_alert', action, ['created', 'fixed', 'dismissed', 'auto-dismissed', 'reopened', 'reintroduced']);
+	assertAction('dependabot_alert', action, ['created', 'fixed', 'dismissed', 'auto-dismissed', 'reopened', 'reintroduced'], ['assignees_changed']);
 
 	const advisory = payload.alert.security_advisory;
 	const vulnerability = payload.alert.security_vulnerability;
@@ -650,7 +688,7 @@ function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed 
 		action = 'reopened';
 	}
 
-	assertAction('code_scanning_alert', action, ['created', 'fixed', 'dismissed', 'reopened'], ['appeared_in_branch']);
+	assertAction('code_scanning_alert', action, ['created', 'fixed', 'dismissed', 'reopened'], ['appeared_in_branch', 'updated_assignment']);
 
 	const embed: DiscordEmbed = {
 		title: `Code scanning alert **#${payload.alert.number}** ${action}: ${escape(payload.alert.rule.description)}`,
@@ -678,7 +716,7 @@ function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEm
 		'secret_scanning_alert',
 		action,
 		['created', 'resolved', 'reopened', 'publicly leaked'],
-		['assigned', 'unassigned', 'validated'],
+		['assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed'],
 	);
 
 	const { alert } = payload;
@@ -803,6 +841,240 @@ function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 		title,
 		url: payload.repository.html_url,
 		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatProject(payload: ProjectEvent): DiscordEmbed {
+	assertAction('project', payload.action, ['created', 'closed', 'reopened', 'deleted'], ['edited']);
+
+	return {
+		title: `${payload.action} project **#${payload.project.number}**: ${escape(payload.project.name)}`,
+		description: payload.action === 'created' ? shortDescription(payload.project.body) : '',
+		url: payload.project.html_url,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatProjectV2(payload: ProjectV2Event): DiscordEmbed {
+	assertAction('projects_v2', payload.action, ['created', 'closed', 'reopened', 'deleted'], ['edited']);
+
+	const project = payload.projects_v2;
+
+	return {
+		title: `${payload.action} project **#${project.number}**: ${escape(project.title)}`,
+		description: payload.action === 'created' ? shortDescription(project.short_description) : '',
+		// Projects have no url of their own in the payload, they live under the organization that owns them
+		url: `https://github.com/orgs/${payload.organization.login}/projects/${project.number}`,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+/** GitHub sends the status of a project as an enum such as `OFF_TRACK`, and it can be unset. */
+function projectStatus(status: string | null | undefined): string | null {
+	return status ? status.toLowerCase().replaceAll('_', ' ') : null;
+}
+
+function formatProjectStatusUpdate(payload: ProjectStatusUpdateEvent): DiscordEmbed {
+	assertAction('projects_v2_status_update', payload.action, ['created'], ['edited', 'deleted']);
+
+	const update = payload.projects_v2_status_update;
+	const status = projectStatus(update.status);
+
+	return {
+		title: `posted a project status update${status === null ? '' : ` (${status})`}`,
+		description: shortDescription(update.body),
+		// The payload only has the node id of the project, so there is nothing to link but the list of them
+		url: `https://github.com/orgs/${payload.organization.login}/projects`,
+		color: status === null ? COLOR_DEFAULT : actionColor(status),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatBranchProtectionConfiguration(payload: BranchProtectionConfigurationEvent): DiscordEmbed {
+	assertAction('branch_protection_configuration', payload.action, ['enabled', 'disabled']);
+
+	return {
+		title: `${payload.action} branch protection for all branches`,
+		url: `${payload.repository.html_url}/settings/branches`,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatBranchProtectionRule(payload: BranchProtectionRuleEvent): DiscordEmbed {
+	// An edit changes a dozen settings at a time, which is too much to put in a title
+	assertAction('branch_protection_rule', payload.action, ['created', 'deleted'], ['edited']);
+
+	return {
+		title: `${payload.action} branch protection rule ${escapeCode(payload.rule.name)}`,
+		url: `${payload.repository.html_url}/settings/branches`,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatRepositoryRuleset(payload: RepositoryRulesetEvent): DiscordEmbed {
+	assertAction('repository_ruleset', payload.action, ['created', 'edited', 'deleted']);
+
+	const ruleset = payload.repository_ruleset;
+
+	return {
+		title: `${payload.action} ruleset: **${escape(ruleset.name)}** (${escape(ruleset.enforcement)})`,
+		// Rulesets of an organization have no page of their own
+		url: ruleset._links?.html?.href,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatDeployKey(payload: DeployKeyEvent): DiscordEmbed {
+	assertAction('deploy_key', payload.action, ['created', 'deleted']);
+
+	// A key that can write to the repository is worth telling apart from one that can not
+	const access = payload.key.read_only ? 'read-only' : 'read-write';
+
+	return {
+		title: `${payload.action} deploy key: **${escape(payload.key.title)}** (${access})`,
+		url: `${payload.repository.html_url}/settings/keys`,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+/** Says that this very webhook was deleted. */
+function formatMeta(payload: MetaEvent): DiscordEmbed {
+	assertAction('meta', payload.action, ['deleted']);
+
+	return {
+		title: `deleted hook ${payload.hook_id}`,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+/**
+ * The user an organization member event is about. An invitation by email has no account yet,
+ * and the address is not something to announce.
+ */
+function organizationMember(payload: OrganizationEvent): string | null {
+	if (payload.action === 'member_invited') {
+		return payload.user?.login ?? payload.invitation.login ?? null;
+	}
+
+	return ('membership' in payload ? payload.membership?.user?.login : null) ?? 'ghost';
+}
+
+/**
+ * The role of the member an organization event is about. An invitation calls a plain member
+ * a direct member, and reinstating someone gives back the role they had, which is not named.
+ */
+function organizationRole(payload: OrganizationEvent): string | null {
+	const role = ('membership' in payload ? payload.membership?.role : null) ?? ('invitation' in payload ? payload.invitation.role : null);
+
+	if (!role || role === 'reinstate') {
+		return null;
+	}
+
+	return role === 'direct_member' ? 'member' : role.replaceAll('_', ' ');
+}
+
+function formatOrganization(payload: OrganizationEvent): DiscordEmbed {
+	const action = {
+		deleted: 'deleted',
+		renamed: 'renamed',
+		member_added: 'added',
+		member_removed: 'removed',
+		member_invited: 'invited',
+	}[payload.action as string];
+
+	if (action === undefined) {
+		throw new NotImplementedError('organization', payload.action);
+	}
+
+	let title: string;
+
+	if (action === 'deleted' || action === 'renamed') {
+		const from = payload.action === 'renamed' ? payload.changes?.login?.from : null;
+
+		title = `${action} the organization **${escape(payload.organization.login)}**`;
+
+		if (from) {
+			title += ` (from **${escape(from)}**)`;
+		}
+	} else {
+		const member = organizationMember(payload);
+		const role = organizationRole(payload);
+
+		title = `${action} ${member === null ? 'someone by email' : `**${escape(member)}**`}`;
+
+		if (role) {
+			title += ` (${escape(role)})`;
+		}
+
+		title += `${action === 'removed' ? ' from' : ' to'} the organization`;
+	}
+
+	return {
+		title,
+		color: actionColor(action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatOrgBlock(payload: OrgBlockEvent): DiscordEmbed {
+	assertAction('org_block', payload.action, ['blocked', 'unblocked']);
+
+	return {
+		title: `${payload.action} user **${escape(payload.blocked_user?.login ?? 'ghost')}**`,
+		color: actionColor(payload.action),
+		author: formatAuthor(payload.sender),
+	};
+}
+
+function formatMembership(payload: MembershipEvent): DiscordEmbed {
+	assertAction('membership', payload.action, ['added', 'removed']);
+
+	const where = payload.action === 'added' ? 'to' : 'from';
+
+	return {
+		title: `${payload.action} **${escape(payload.member?.login ?? 'ghost')}** ${where} team **${escape(payload.team.name)}**`,
+		url: payload.team.html_url,
+		color: actionColor(payload.action),
+		// This schema describes the sender as a user whose urls are all optional, GitHub sends them
+		author: formatAuthor(payload.sender as Sender),
+	};
+}
+
+function formatTeam(payload: TeamEvent): DiscordEmbed {
+	const [action, where] = {
+		created: ['created', ''],
+		deleted: ['deleted', ''],
+		edited: ['edited', ''],
+		added_to_repository: ['added', ' to this repository'],
+		removed_from_repository: ['removed', ' from this repository'],
+	}[payload.action as string] ?? [];
+
+	if (action === undefined) {
+		throw new NotImplementedError('team', payload.action);
+	}
+
+	// Renaming a team is an edit, the rest of the changes are of no interest
+	const from = payload.action === 'edited' ? payload.changes.name?.from : null;
+	const verb = from ? 'renamed' : action;
+
+	let title = `${verb} team **${escape(payload.team.name)}**${where}`;
+
+	if (from) {
+		title += ` (from **${escape(from)}**)`;
+	}
+
+	return {
+		title,
+		url: payload.team.html_url,
+		color: actionColor(verb),
 		author: formatAuthor(payload.sender),
 	};
 }

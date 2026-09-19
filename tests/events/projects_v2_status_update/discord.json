@@ -1,0 +1,15 @@
+{
+    "embeds": [
+        {
+            "title": "posted a project status update (on track)",
+            "description": "Two of the four milestones are done, the rest is on schedule.",
+            "url": "https:\/\/github.com\/orgs\/Octocoders\/projects",
+            "color": 5025616,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

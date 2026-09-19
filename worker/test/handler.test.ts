@@ -308,11 +308,12 @@ describe('worker', () => {
 		expect(response.status).toBe(400);
 	});
 
-	it('returns 200 for ignored events', async () => {
-		const response = await worker.fetch(await buildRequest('watch', fixture('push')), env);
+	it('returns 200 for ignored actions', async () => {
+		const edited = JSON.stringify({ ...JSON.parse(fixture('issue_opened')), action: 'edited' });
+		const response = await worker.fetch(await buildRequest('issues', edited), env);
 
 		expect(response.status).toBe(200);
-		expect(await response.text()).toContain('Ignored GitHub event: watch');
+		expect(await response.text()).toContain('Ignored GitHub event: issues - edited');
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -453,18 +454,19 @@ describe('worker', () => {
 	});
 
 	it('does not reveal whether an event is supported without a valid signature', async () => {
-		const ignored = await worker.fetch(await buildRequest('watch', fixture('push'), { secret: 'wrong' }), env);
-		const unsupported = await worker.fetch(await buildRequest('deployment', fixture('push'), { signature: null }), env);
+		const edited = JSON.stringify({ ...JSON.parse(fixture('issue_opened')), action: 'edited' });
+		const ignored = await worker.fetch(await buildRequest('issues', edited, { secret: 'wrong' }), env);
+		const unsupported = await worker.fetch(await buildRequest('workflow_run', fixture('push'), { signature: null }), env);
 
 		expect(ignored.status).toBe(401);
 		expect(unsupported.status).toBe(401);
 	});
 
 	it('returns 501 for unsupported events', async () => {
-		const response = await worker.fetch(await buildRequest('deployment', fixture('push')), env);
+		const response = await worker.fetch(await buildRequest('workflow_run', fixture('push')), env);
 
 		expect(response.status).toBe(501);
-		expect(await response.text()).toContain('Unsupported GitHub event: deployment');
+		expect(await response.text()).toContain('Unsupported GitHub event: workflow_run');
 	});
 
 	it('accepts event names that have digits in them', async () => {

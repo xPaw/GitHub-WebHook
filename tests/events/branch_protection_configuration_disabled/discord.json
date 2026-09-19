@@ -1,0 +1,14 @@
+{
+    "embeds": [
+        {
+            "title": "disabled branch protection for all branches",
+            "url": "https:\/\/github.com\/octo-org\/octo-repo\/settings\/branches",
+            "color": 16007990,
+            "author": {
+                "name": "Codertocat",
+                "url": "https:\/\/github.com\/Codertocat",
+                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
+            }
+        }
+    ]
+}

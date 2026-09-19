@@ -37,15 +37,19 @@ class IrcConverter extends BaseConverter
 			case 'dependabot_alert': return $this->FormatDependabotAlertEvent( );
 			case 'code_scanning_alert': return $this->FormatCodeScanningAlertEvent( );
 			case 'secret_scanning_alert': return $this->FormatSecretScanningAlertEvent( );
+			case 'project'       : return $this->FormatProjectEvent( );
+			case 'projects_v2'   : return $this->FormatProjectV2Event( );
+			case 'projects_v2_status_update': return $this->FormatProjectStatusUpdateEvent( );
+			case 'branch_protection_configuration': return $this->FormatBranchProtectionConfigurationEvent( );
+			case 'branch_protection_rule': return $this->FormatBranchProtectionRuleEvent( );
+			case 'repository_ruleset': return $this->FormatRepositoryRulesetEvent( );
+			case 'deploy_key'    : return $this->FormatDeployKeyEvent( );
+			case 'meta'          : return $this->FormatMetaEvent( );
+			case 'organization'  : return $this->FormatOrganizationEvent( );
+			case 'org_block'     : return $this->FormatOrgBlockEvent( );
+			case 'membership'    : return $this->FormatMembershipEvent( );
+			case 'team'          : return $this->FormatTeamEvent( );
 
-			// New branches and tags are formatted from the push event, which has the commits
-			case 'create'        :
-
-			// Spammy events that we do not care about
-			case 'fork'          :
-			case 'watch'         :
-			case 'star'          :
-			case 'status'        : throw new IgnoredEventException( $this->EventType );
 		}
 
 		throw new NotImplementedException( $this->EventType );
@@ -86,6 +90,7 @@ class IrcConverter extends BaseConverter
 			case 'alert created':
 			case 'reopened'   :
 			case 'reintroduced':
+			case 'at risk'    :
 				return "\00307" . $Text . "\017";
 
 			// Something was set aside
@@ -93,15 +98,20 @@ class IrcConverter extends BaseConverter
 			case 'auto-dismissed':
 			case 'converted to draft':
 			case 'archived'   :
+			case 'inactive'   :
 			case 'closed as not planned':
 				return "\00314" . $Text . "\017";
 
 			case 'closed'     :
 			case 'merged'     :
+			case 'complete'   :
 				return "\00313" . $Text . "\017";
 
 			case 'deleted'    :
 			case 'removed'    :
+			case 'blocked'    :
+			case 'disabled'   :
+			case 'off track'  :
 			case 'review dismissed':
 			case 'publicly leaked':
 			case 'unpublished':
@@ -325,7 +335,9 @@ class IrcConverter extends BaseConverter
 		||  $this->Payload->action === 'assigned'
 		||  $this->Payload->action === 'unassigned'
 		||  $this->Payload->action === 'typed'
-		||  $this->Payload->action === 'untyped' )
+		||  $this->Payload->action === 'untyped'
+		||  $this->Payload->action === 'field_added'
+		||  $this->Payload->action === 'field_removed' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -405,7 +417,8 @@ class IrcConverter extends BaseConverter
 		||  $Action === 'demilestoned'
 		||  $Action === 'enqueued'
 		||  $Action === 'dequeued'
-		||  $Action === 'auto_merge_disabled' )
+		||  $Action === 'auto_merge_disabled'
+		||  $Action === 'stacked' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $Action );
 		}
@@ -559,7 +572,9 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatIssueCommentEvent( ) : string
 	{
-		if( $this->Payload->action === 'edited' )
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'pinned'
+		||  $this->Payload->action === 'unpinned' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -758,7 +773,8 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatCodeScanningAlertEvent( ) : string
 	{
-		if( $this->Payload->action === 'appeared_in_branch' )
+		if( $this->Payload->action === 'appeared_in_branch'
+		||  $this->Payload->action === 'updated_assignment' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -798,6 +814,11 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatDependabotAlertEvent( ) : string
 	{
+		if( $this->Payload->action === 'assignees_changed' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
 		$Action = match( $this->Payload->action )
 		{
 			'created' => 'created',
@@ -844,7 +865,9 @@ class IrcConverter extends BaseConverter
 	{
 		if( $this->Payload->action === 'assigned'
 		||  $this->Payload->action === 'unassigned'
-		||  $this->Payload->action === 'validated' )
+		||  $this->Payload->action === 'validated'
+		||  $this->Payload->action === 'metadata_created'
+		||  $this->Payload->action === 'metadata_removed' )
 		{
 			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
 		}
@@ -1063,5 +1086,364 @@ class IrcConverter extends BaseConverter
 						$From,
 						$this->FormatURL( $this->Payload->repository->html_url )
 		);
+	}
+
+	/**
+	 * Formats a project (classic) event.
+	 */
+	private function FormatProjectEvent( ) : string
+	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'closed'
+		&&  $this->Payload->action !== 'reopened'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s project %s: %s. %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatNumber( sprintf( '#%d', $this->Payload->project->number ) ),
+						rtrim( $this->Payload->project->name, '.' ),
+						$this->FormatURL( $this->Payload->project->html_url )
+		);
+	}
+
+	/**
+	 * Formats a project event.
+	 */
+	private function FormatProjectV2Event( ) : string
+	{
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'closed'
+		&&  $this->Payload->action !== 'reopened'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s project %s: %s. %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatNumber( sprintf( '#%d', $this->Payload->projects_v2->number ) ),
+						rtrim( $this->Payload->projects_v2->title, '.' ),
+						$this->FormatURL( $this->ProjectV2URL( ) )
+		);
+	}
+
+	/**
+	 * Formats a project status update event.
+	 */
+	private function FormatProjectStatusUpdateEvent( ) : string
+	{
+		if( $this->Payload->action === 'edited'
+		||  $this->Payload->action === 'deleted' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Status = self::ProjectStatus( $this->Payload->projects_v2_status_update->status ?? null );
+		$Body = self::Trim( (string)( $this->Payload->projects_v2_status_update->body ?? '' ) );
+
+		// The payload only has the node id of the project, so there is nothing to link but the list of them
+		return sprintf( '[%s] %s posted a project status update%s%s %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$Status === null ? '' : ' (' . $this->FormatAction( $Status ) . ')',
+						$Body === '' ? '' : ': ' . $this->ShortMessage( $Body ),
+						$this->FormatURL( 'https://github.com/orgs/' . $this->Payload->organization->login . '/projects' )
+		);
+	}
+
+	/**
+	 * Formats a branch protection configuration event.
+	 */
+	private function FormatBranchProtectionConfigurationEvent( ) : string
+	{
+		if( $this->Payload->action !== 'enabled'
+		&&  $this->Payload->action !== 'disabled' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s branch protection for all branches %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatURL( $this->Payload->repository->html_url . '/settings/branches' )
+		);
+	}
+
+	/**
+	 * Formats a branch protection rule event.
+	 */
+	private function FormatBranchProtectionRuleEvent( ) : string
+	{
+		// An edit changes a dozen settings at a time, which is too much to put in a line
+		if( $this->Payload->action === 'edited' )
+		{
+			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
+		}
+
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s branch protection rule %s %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatBranch( $this->Payload->rule->name ),
+						$this->FormatURL( $this->Payload->repository->html_url . '/settings/branches' )
+		);
+	}
+
+	/**
+	 * Formats a repository ruleset event.
+	 */
+	private function FormatRepositoryRulesetEvent( ) : string
+	{
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'edited'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		$Ruleset = $this->Payload->repository_ruleset;
+		$URL = $Ruleset->_links->html->href ?? null;
+
+		return sprintf( '[%s] %s %s ruleset: %s (%s)%s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$Ruleset->name,
+						$Ruleset->enforcement,
+						$URL === null ? '' : ' ' . $this->FormatURL( $URL )
+		);
+	}
+
+	/**
+	 * Formats a deploy key event.
+	 */
+	private function FormatDeployKeyEvent( ) : string
+	{
+		if( $this->Payload->action !== 'created'
+		&&  $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		// A key that can write to the repository is worth telling apart from one that can not
+		return sprintf( '[%s] %s %s deploy key: %s (%s) %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->Payload->key->title,
+						$this->Payload->key->read_only ? 'read-only' : 'read-write',
+						$this->FormatURL( $this->Payload->repository->html_url . '/settings/keys' )
+		);
+	}
+
+	/**
+	 * Formats a meta event, which says that this very webhook was deleted.
+	 */
+	private function FormatMetaEvent( ) : string
+	{
+		if( $this->Payload->action !== 'deleted' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s hook %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatHash( (string)$this->Payload->hook_id )
+		);
+	}
+
+	/**
+	 * Formats an organization event.
+	 */
+	private function FormatOrganizationEvent( ) : string
+	{
+		$Action = match( $this->Payload->action )
+		{
+			'deleted' => 'deleted',
+			'renamed' => 'renamed',
+			'member_added' => 'added',
+			'member_removed' => 'removed',
+			'member_invited' => 'invited',
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		if( $Action === 'deleted' || $Action === 'renamed' )
+		{
+			$From = $this->Payload->changes->login->from ?? null;
+
+			return sprintf( '[%s] %s %s this organization%s',
+							$this->FormatRepoName( ),
+							$this->FormatName( $this->Payload->sender->login ),
+							$this->FormatAction( $Action ),
+							$From === null ? '' : ' from ' . $this->FormatName( $From )
+			);
+		}
+
+		$Member = $this->OrganizationMember( );
+		$Role = $this->OrganizationRole( );
+
+		return sprintf( '[%s] %s %s %s%s %s the organization',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( $Action ),
+						$Member === null ? 'someone by email' : $this->FormatName( $Member ),
+						$Role === null ? '' : ' (' . $Role . ')',
+						$Action === 'removed' ? 'from' : 'to'
+		);
+	}
+
+	/**
+	 * Formats an organization block event.
+	 */
+	private function FormatOrgBlockEvent( ) : string
+	{
+		if( $this->Payload->action !== 'blocked'
+		&&  $this->Payload->action !== 'unblocked' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s user %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatName( $this->Payload->blocked_user->login ?? 'ghost' )
+		);
+	}
+
+	/**
+	 * Formats a membership event.
+	 */
+	private function FormatMembershipEvent( ) : string
+	{
+		if( $this->Payload->action !== 'added'
+		&&  $this->Payload->action !== 'removed' )
+		{
+			throw new NotImplementedException( $this->EventType, $this->Payload->action );
+		}
+
+		return sprintf( '[%s] %s %s %s %s team %s %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( ),
+						$this->FormatName( $this->Payload->member->login ?? 'ghost' ),
+						$this->Payload->action === 'added' ? 'to' : 'from',
+						$this->FormatName( $this->Payload->team->name ),
+						$this->FormatURL( $this->Payload->team->html_url )
+		);
+	}
+
+	/**
+	 * Formats a team event.
+	 */
+	private function FormatTeamEvent( ) : string
+	{
+		[ $Action, $Where ] = match( $this->Payload->action )
+		{
+			'created' => [ 'created', '' ],
+			'deleted' => [ 'deleted', '' ],
+			'edited' => [ 'edited', '' ],
+			'added_to_repository' => [ 'added', ' to this repository' ],
+			'removed_from_repository' => [ 'removed', ' from this repository' ],
+			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
+		};
+
+		// Renaming a team is an edit, the rest of the changes are of no interest
+		$From = $Action === 'edited' ? ( $this->Payload->changes->name->from ?? null ) : null;
+
+		if( $From !== null )
+		{
+			$Action = 'renamed';
+		}
+
+		return sprintf( '[%s] %s %s team %s%s%s %s',
+						$this->FormatRepoName( ),
+						$this->FormatName( $this->Payload->sender->login ),
+						$this->FormatAction( $Action ),
+						$this->FormatName( $this->Payload->team->name ),
+						$Where,
+						$From === null ? '' : ' from ' . $this->FormatName( $From ),
+						$this->FormatURL( $this->Payload->team->html_url )
+		);
+	}
+
+	/**
+	 * Projects have no url of their own in the payload, they live under the organization that owns them.
+	 */
+	private function ProjectV2URL( ) : string
+	{
+		return sprintf( 'https://github.com/orgs/%s/projects/%d',
+						$this->Payload->organization->login,
+						$this->Payload->projects_v2->number
+		);
+	}
+
+	/**
+	 * The user an organization member event is about. An invitation by email has no account yet,
+	 * and the address is not something to announce.
+	 */
+	private function OrganizationMember( ) : ?string
+	{
+		if( $this->Payload->action === 'member_invited' )
+		{
+			return $this->Payload->user->login ?? $this->Payload->invitation->login ?? null;
+		}
+
+		return $this->Payload->membership->user->login ?? 'ghost';
+	}
+
+	/**
+	 * The role of the member an organization event is about. An invitation calls a plain member
+	 * a direct member, and reinstating someone gives back the role they had, which is not named.
+	 */
+	private function OrganizationRole( ) : ?string
+	{
+		$Role = $this->Payload->membership->role ?? $this->Payload->invitation->role ?? null;
+
+		if( !is_string( $Role ) || $Role === 'reinstate' )
+		{
+			return null;
+		}
+
+		return $Role === 'direct_member' ? 'member' : str_replace( '_', ' ', $Role );
+	}
+
+	/**
+	 * GitHub sends the status of a project as an enum such as `OFF_TRACK`, and it can be unset.
+	 */
+	private static function ProjectStatus( mixed $Status ) : ?string
+	{
+		return is_string( $Status ) ? strtolower( str_replace( '_', ' ', $Status ) ) : null;
 	}
 }
