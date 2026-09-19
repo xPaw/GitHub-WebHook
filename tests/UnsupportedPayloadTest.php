@@ -10,6 +10,17 @@ use GitHubWebHook\NotImplementedException;
  */
 class UnsupportedPayloadTest extends \PHPUnit\Framework\TestCase
 {
+	use Fixtures;
+
+	public function testIrcUnknownEvent( ) : void
+	{
+		$this->expectException( NotImplementedException::class );
+		$this->expectExceptionMessage( 'Unsupported event type' );
+
+		$Parser = new IrcConverter( 'surely_this_event_does_not_exist', (object)[] );
+		$Parser->GetMessage();
+	}
+
 	public function testDiscordUnknownEvent( ) : void
 	{
 		$this->expectException( NotImplementedException::class );
@@ -63,16 +74,5 @@ class UnsupportedPayloadTest extends \PHPUnit\Framework\TestCase
 
 		$Parser = new DiscordConverter( 'delete', $Payload );
 		$Parser->GetEmbed();
-	}
-
-	private static function LoadPayload( string $Fixture ) : stdClass
-	{
-		$Path = __DIR__ . DIRECTORY_SEPARATOR . 'events' . DIRECTORY_SEPARATOR . $Fixture . DIRECTORY_SEPARATOR . 'payload.json';
-
-		$Payload = json_decode( (string)file_get_contents( $Path ), flags: JSON_THROW_ON_ERROR );
-
-		assert( $Payload instanceof stdClass );
-
-		return $Payload;
 	}
 }

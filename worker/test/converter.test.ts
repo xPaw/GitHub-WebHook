@@ -1,20 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { getEmbed } from '../src/discord/converter.js';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../src/errors.js';
-import { loadPayload as payload, type Payload } from './fixtures.js';
-
-function withAction(fixture: string, action: string): Payload {
-	return payload(fixture, (p) => {
-		p.action = action;
-	});
-}
+import { actionFixtures, loadPayload as payload, type Payload, withAction } from './fixtures.js';
 
 describe('ignored actions', () => {
-	const actions: [event: string, fixture: string, actions: string[]][] = [
-		['issues', 'issue_opened', ['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped', 'field_added', 'field_removed']],
+	const fixtureOf: Record<string, string> = Object.fromEntries(actionFixtures);
+
+	const actions: [event: string, actions: string[]][] = [
+		['issues', ['edited', 'unpinned', 'milestoned', 'demilestoned', 'labeled', 'unlabeled', 'assigned', 'unassigned', 'typed', 'untyped', 'field_added', 'field_removed']],
 		[
 			'pull_request',
-			'pull_request_closed_merged',
 			[
 				'edited',
 				'synchronize',
@@ -32,29 +27,29 @@ describe('ignored actions', () => {
 				'stacked',
 			],
 		],
-		['pull_request_review', 'pull_request_review', ['edited']],
-		['pull_request_review_comment', 'pull_request_review_comment', ['edited', 'deleted']],
-		['milestone', 'milestone', ['edited']],
-		['release', 'release', ['created', 'edited', 'released', 'prereleased']],
-		['member', 'member', ['edited']],
-		['issue_comment', 'issue_comment', ['edited', 'pinned', 'unpinned']],
-		['discussion', 'discussion_created', ['edited', 'labeled', 'unlabeled', 'unanswered']],
-		['discussion_comment', 'discussion_comment_created', ['edited']],
-		['repository', 'repository', ['edited']],
-		['dependabot_alert', 'dependabot_alert_created', ['assignees_changed']],
-		['code_scanning_alert', 'code_scanning_alert_created', ['appeared_in_branch', 'updated_assignment']],
-		['secret_scanning_alert', 'secret_scanning_alert_created', ['assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed']],
-		['project', 'project', ['edited']],
-		['workflow_run', 'workflow_run_failed', ['requested', 'in_progress']],
-		['sponsorship', 'sponsorship_created', ['cancelled', 'edited', 'tier_changed', 'pending_cancellation', 'pending_tier_change']],
-		['branch_protection_rule', 'branch_protection_rule_created', ['edited']],
-		['projects_v2', 'projects_v2_created', ['edited']],
-		['projects_v2_status_update', 'projects_v2_status_update', ['edited', 'deleted']],
+		['pull_request_review', ['edited']],
+		['pull_request_review_comment', ['edited', 'deleted']],
+		['milestone', ['edited']],
+		['release', ['created', 'edited', 'released', 'prereleased']],
+		['member', ['edited']],
+		['issue_comment', ['edited', 'pinned', 'unpinned']],
+		['discussion', ['edited', 'labeled', 'unlabeled', 'unanswered']],
+		['discussion_comment', ['edited']],
+		['repository', ['edited']],
+		['dependabot_alert', ['assignees_changed']],
+		['code_scanning_alert', ['appeared_in_branch', 'updated_assignment']],
+		['secret_scanning_alert', ['assigned', 'unassigned', 'validated', 'metadata_created', 'metadata_removed']],
+		['project', ['edited']],
+		['workflow_run', ['requested', 'in_progress']],
+		['sponsorship', ['cancelled', 'edited', 'tier_changed', 'pending_cancellation', 'pending_tier_change']],
+		['branch_protection_rule', ['edited']],
+		['projects_v2', ['edited']],
+		['projects_v2_status_update', ['edited', 'deleted']],
 	];
 
-	describe.each(actions)('%s', (eventType, fixture, ignored) => {
+	describe.each(actions)('%s', (eventType, ignored) => {
 		it.each(ignored)('%s', (action) => {
-			expect(() => getEmbed(eventType, withAction(fixture, action))).toThrow(
+			expect(() => getEmbed(eventType, withAction(fixtureOf[eventType], action))).toThrow(
 				new IgnoredEventError(`${eventType} - ${action}`),
 			);
 		});
@@ -69,6 +64,30 @@ describe('ignored actions', () => {
 			new IgnoredEventError('pull_request_review - commented'),
 		);
 	});
+
+	it.each(['success', 'cancelled', 'skipped', 'neutral', 'action_required', 'stale', 'constructor', null])('workflow run that ended with %s is ignored', (conclusion) => {
+		const run = payload('workflow_run_failed', (p) => {
+			p.workflow_run.conclusion = conclusion;
+		});
+
+		expect(() => getEmbed('workflow_run', run)).toThrow(new IgnoredEventError(`workflow_run - ${conclusion}`));
+	});
+
+	it('workflow run that failed on another branch is ignored', () => {
+		const run = payload('workflow_run_failed', (p) => {
+			p.workflow_run.head_branch = 'feature';
+		});
+
+		expect(() => getEmbed('workflow_run', run)).toThrow(new IgnoredEventError('workflow_run - not the default branch'));
+	});
+
+	it('team edit that changes neither the name nor the privacy is ignored', () => {
+		const edited = payload('team_edited', (p) => {
+			p.changes = { description: { from: 'An older description' } };
+		});
+
+		expect(() => getEmbed('team', edited)).toThrow(new IgnoredEventError('team - edited'));
+	});
 });
 
 describe('unsupported events', () => {
@@ -76,44 +95,18 @@ describe('unsupported events', () => {
 		expect(() => getEmbed('check_run', {})).toThrow(new NotImplementedError('check_run'));
 	});
 
-	const fixtures: [event: string, fixture: string][] = [
-		['issues', 'issue_opened'],
-		['pull_request', 'pull_request_closed_merged'],
-		['milestone', 'milestone'],
-		['package', 'package'],
-		['registry_package', 'registry_package'],
-		['release', 'release'],
-		['commit_comment', 'commit_comment'],
-		['issue_comment', 'issue_comment'],
-		['pull_request_review', 'pull_request_review'],
-		['pull_request_review_comment', 'pull_request_review_comment'],
-		['discussion', 'discussion_created'],
-		['discussion_comment', 'discussion_comment_created'],
-		['code_scanning_alert', 'code_scanning_alert_created'],
-		['repository_advisory', 'repository_advisory_published'],
-		['dependabot_alert', 'dependabot_alert_created'],
-		['secret_scanning_alert', 'secret_scanning_alert_created'],
-		['member', 'member'],
-		['repository', 'repository'],
-		['project', 'project'],
-		['projects_v2', 'projects_v2_created'],
-		['projects_v2_status_update', 'projects_v2_status_update'],
-		['branch_protection_configuration', 'branch_protection_configuration_enabled'],
-		['branch_protection_rule', 'branch_protection_rule_created'],
-		['repository_ruleset', 'repository_ruleset_created'],
-		['deploy_key', 'deploy_key_created'],
-		['meta', 'meta_deleted'],
-		['organization', 'organization_member_added'],
-		['org_block', 'org_block_blocked'],
-		['membership', 'membership_added'],
-		['team', 'team_created'],
-		['sponsorship', 'sponsorship_created'],
-		['workflow_run', 'workflow_run_failed'],
-	];
-
-	it.each(fixtures)('%s with an unknown action', (eventType, fixture) => {
+	it.each(actionFixtures)('%s with an unknown action', (eventType, fixture) => {
 		expect(() => getEmbed(eventType, withAction(fixture, 'some_new_action'))).toThrow(
 			new NotImplementedError(eventType, 'some_new_action'),
+		);
+	});
+
+	it.each([
+		['organization', 'organization_member_added'],
+		['team', 'team_created'],
+	])('%s with an action that every object inherits', (eventType, fixture) => {
+		expect(() => getEmbed(eventType, withAction(fixture, 'constructor'))).toThrow(
+			new NotImplementedError(eventType, 'constructor'),
 		);
 	});
 
@@ -284,14 +277,6 @@ describe('optional fields', () => {
 		expect(result.title).toBe('changed the privacy of team **github** to **unknown**');
 	});
 
-	it('team edit that changes neither the name nor the privacy is ignored', () => {
-		const edited = payload('team_edited', (p) => {
-			p.changes = { description: { from: 'An older description' } };
-		});
-
-		expect(() => getEmbed('team', edited)).toThrow(new IgnoredEventError('team - edited'));
-	});
-
 	it('answered discussion without the body of the answer', () => {
 		const result = embed('discussion', 'discussion_answered', (p) => {
 			p.answer.body = null;
@@ -321,22 +306,6 @@ describe('optional fields', () => {
 		});
 
 		expect(result.title).toBe('is now sponsoring **ghost**');
-	});
-
-	it.each(['success', 'cancelled', 'skipped', 'neutral', 'action_required', 'stale', null])('workflow run that ended with %s is ignored', (conclusion) => {
-		const run = payload('workflow_run_failed', (p) => {
-			p.workflow_run.conclusion = conclusion;
-		});
-
-		expect(() => getEmbed('workflow_run', run)).toThrow(new IgnoredEventError(`workflow_run - ${conclusion}`));
-	});
-
-	it('workflow run that failed on another branch is ignored', () => {
-		const run = payload('workflow_run_failed', (p) => {
-			p.workflow_run.head_branch = 'feature';
-		});
-
-		expect(() => getEmbed('workflow_run', run)).toThrow(new IgnoredEventError('workflow_run - not the default branch'));
 	});
 
 	it('workflow run escapes the message of its commit once', () => {
@@ -454,7 +423,6 @@ describe('optional fields', () => {
 
 		expect(result.title).toBe('renamed the organization **Octocoders**');
 	});
-
 });
 
 describe('html stripping', () => {

@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 use GitHubWebHook\DiscordConverter;
-use GitHubWebHook\GitHubWebHook;
 use GitHubWebHook\IrcConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -11,6 +10,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 {
+	use Fixtures;
+
 	/**
 	 * @param callable(stdClass): void $Change
 	 */
@@ -19,7 +20,7 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 	{
 		$Payload = self::LoadPayload( $Fixture );
 		$Change( $Payload );
-		$Payload = self::ProcessPayload( $Event, $Payload );
+		$Payload = self::ProcessPayload( $Event, json_encode( $Payload, JSON_THROW_ON_ERROR ) )->GetPayload();
 
 		$Embed = ( new DiscordConverter( $Event, $Payload ) )->GetEmbed();
 
@@ -176,32 +177,5 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				'description', null,
 			],
 		];
-	}
-
-	/**
-	 * Events of an organization have no repository until the request is processed.
-	 */
-	private static function ProcessPayload( string $Event, stdClass $Payload ) : object
-	{
-		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = $Event;
-		$_SERVER[ 'REQUEST_METHOD' ] = 'POST';
-		$_SERVER[ 'CONTENT_TYPE' ] = 'application/x-www-form-urlencoded';
-		$_POST[ 'payload' ] = json_encode( $Payload, JSON_THROW_ON_ERROR );
-
-		$Hook = new GitHubWebHook( );
-		$Hook->ProcessRequest( );
-
-		return $Hook->GetPayload();
-	}
-
-	private static function LoadPayload( string $Fixture ) : stdClass
-	{
-		$Path = __DIR__ . DIRECTORY_SEPARATOR . 'events' . DIRECTORY_SEPARATOR . $Fixture . DIRECTORY_SEPARATOR . 'payload.json';
-
-		$Payload = json_decode( (string)file_get_contents( $Path ), flags: JSON_THROW_ON_ERROR );
-
-		assert( $Payload instanceof stdClass );
-
-		return $Payload;
 	}
 }

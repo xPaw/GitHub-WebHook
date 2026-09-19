@@ -23,3 +23,23 @@ export function loadPayload(name: string, change: (payload: Payload) => void = (
 export function readFixture(name: string, file = 'payload.json'): string {
 	return readFileSync(join(EVENTS_DIR, name, file), 'utf8');
 }
+
+/** Loads the payload of a fixture with another action in it. */
+export function withAction(fixture: string, action: string): Payload {
+	return loadPayload(fixture, (payload) => {
+		payload.action = action;
+	});
+}
+
+/**
+ * Every event whose payload has an action, with a fixture of it. The fixtures of an event either
+ * all have an action or none do (ping, push, public, delete and gollum have none), and the action
+ * is checked before anything else in the payload is read, so any fixture of an event will do.
+ */
+export const actionFixtures: [event: string, fixture: string][] = [
+	...new Map(
+		fixtures
+			.filter((name) => loadPayload(name).action !== undefined)
+			.map((name): [string, string] => [readFixture(name, 'type.txt').trim(), name]),
+	),
+];

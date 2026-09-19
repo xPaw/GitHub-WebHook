@@ -2,24 +2,18 @@
 declare(strict_types=1);
 
 use GitHubWebHook\DiscordConverter;
-use GitHubWebHook\GitHubWebHook;
 use GitHubWebHook\IrcConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class EventTest extends \PHPUnit\Framework\TestCase
 {
-	#[DataProvider('eventProvider')]
-	public function testEvent( string $Path, string $EventType, string $ExpectedMessage, string $Payload, ?string $ExpectedDiscord ) : void
-	{
-		// Setup env for processor
-		$_SERVER[ 'HTTP_X_GITHUB_EVENT' ] = $EventType;
-		$_SERVER[ 'REQUEST_METHOD' ] = 'POST';
-		$_SERVER[ 'CONTENT_TYPE' ] = 'application/x-www-form-urlencoded';
-		$_POST[ 'payload' ] = $Payload;
+	use Fixtures;
 
+	#[DataProvider('eventProvider')]
+	public function testEvent( string $Path, string $EventType, string $ExpectedMessage, string $Payload, string $ExpectedDiscord ) : void
+	{
 		// Process incoming event
-		$Hook = new GitHubWebHook( );
-		$Hook->ProcessRequest( );
+		$Hook = self::ProcessPayload( $EventType, $Payload );
 
 		self::assertEquals( $EventType, $Hook->GetEventType() );
 
@@ -37,21 +31,18 @@ class EventTest extends \PHPUnit\Framework\TestCase
 
 		self::assertEquals( $ExpectedMessage, $Message, $Path );
 
-		if( $ExpectedDiscord !== null )
+		$ExpectedDiscordArray = json_decode( $ExpectedDiscord, true );
+
+		$Parser = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
+		$Discord = $Parser->GetEmbed();
+
+		if( self::ShouldUpdateFixtures() )
 		{
-			$ExpectedDiscordArray = json_decode( $ExpectedDiscord, true );
-
-			$Parser = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
-			$Discord = $Parser->GetEmbed();
-
-			if( self::ShouldUpdateFixtures() )
-			{
-				file_put_contents( $Path . '/discord.json', json_encode( $Discord, JSON_PRETTY_PRINT ) . "\n" );
-				$ExpectedDiscordArray = $Discord;
-			}
-
-			self::assertEquals( $ExpectedDiscordArray, $Discord, $Path );
+			file_put_contents( $Path . '/discord.json', json_encode( $Discord, JSON_PRETTY_PRINT ) . "\n" );
+			$ExpectedDiscordArray = $Discord;
 		}
+
+		self::assertEquals( $ExpectedDiscordArray, $Discord, $Path );
 
 		// The converters must not modify the payload they were handed
 		self::assertEquals( $Original, $Hook->GetPayload(), $Path );

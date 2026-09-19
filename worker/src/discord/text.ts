@@ -7,6 +7,12 @@ const HTML_TAG = /<\/?[a-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>/gi;
 
 /** Maximum number of newlines kept by {@link shortDescription}; the rest become spaces. */
 const MAX_NEWLINES = 10;
+/** How much of a body {@link shortDescription} keeps. */
+const MAX_SHORT_DESCRIPTION = 250;
+/** How much of the first line {@link shortMessage} keeps. */
+const MAX_SHORT_MESSAGE = 100;
+/** Backslashes at the very end of a string, which may be half of an escaped character. */
+const TRAILING_BACKSLASHES = /\\+$/;
 
 /** Escapes characters that Discord would otherwise interpret as markdown. */
 export function escape(message: string): string {
@@ -26,44 +32,33 @@ function truncate(text: string, limit: number): string {
 		return text;
 	}
 
-	const characters = [...text];
+	// Any limit + 1 code points fit in twice as many code units, plus one
+	const characters = [...text.slice(0, limit * 2 + 1)];
 	return characters.length > limit ? characters.slice(0, limit).join('') : text;
 }
 
 /** Cuts text that is over a limit imposed by Discord, the ellipsis counts towards the limit. */
 export function limitLength(text: string, limit: number): string {
-	// There are never more code points than code units
-	if (text.length <= limit) {
+	if (truncate(text, limit) === text) {
 		return text;
 	}
 
-	const characters = [...text];
-
-	if (characters.length <= limit) {
-		return text;
-	}
-
-	let end = limit - 1;
-	let backslashes = 0;
-
-	while (characters[end - 1 - backslashes] === '\\') {
-		backslashes++;
-	}
+	let cut = truncate(text, limit - 1);
 
 	// Do not leave half of an escaped character behind
-	if (backslashes % 2 === 1) {
-		end--;
+	if ((cut.length - cut.replace(TRAILING_BACKSLASHES, '').length) % 2 === 1) {
+		cut = cut.slice(0, -1);
 	}
 
-	return `${characters.slice(0, end).join('')}…`;
+	return `${cut}…`;
 }
 
 /**
  * Formats the first line of a commit or wiki message, truncated and markdown escaped.
  */
-export function shortMessage(message: string, limit = 100): string {
+export function shortMessage(message: string): string {
 	const full = message.trim();
-	let short = truncate(full.split('\n', 1)[0], limit);
+	let short = truncate(full.split('\n', 1)[0], MAX_SHORT_MESSAGE);
 
 	if (short !== full) {
 		// Tidy ellipsis
@@ -81,7 +76,7 @@ export function shortMessage(message: string, limit = 100): string {
  * Formats a body of text (issue, release, comment…) for use as an embed description:
  * html stripped, blank lines collapsed, newlines and length limited.
  */
-export function shortDescription(message: string | null | undefined, limit = 250): string {
+export function shortDescription(message: string | null | undefined): string {
 	let text = (message ?? '').replace(HTML_COMMENT, '').replace(HTML_TAG, '');
 	text = text.replaceAll('\r', '').replaceAll('\n\n', '\n').trim();
 
@@ -91,7 +86,7 @@ export function shortDescription(message: string | null | undefined, limit = 250
 		text = `${lines.slice(0, MAX_NEWLINES + 1).join('\n')} ${lines.slice(MAX_NEWLINES + 1).join(' ')}`;
 	}
 
-	const truncated = truncate(text, limit);
+	const truncated = truncate(text, MAX_SHORT_DESCRIPTION);
 
 	return truncated === text ? text : `${truncated}…`;
 }

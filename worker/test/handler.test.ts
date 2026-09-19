@@ -1,7 +1,7 @@
 import { sign } from '@octokit/webhooks-methods';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../src/index.js';
-import { readFixture as fixture, loadPayload, type Payload } from './fixtures.js';
+import { readFixture as fixture, loadPayload, type Payload, withAction } from './fixtures.js';
 
 const SECRET = 'correct horse';
 const ID = '123456789012345678';
@@ -30,6 +30,11 @@ async function buildRequest(
 	}
 
 	return new Request(`${WORKER}${options.path ?? PATH}`, { method: 'POST', headers, body });
+}
+
+/** Delivers a fixture, with changes applied to its payload, the way GitHub would. */
+async function deliver(eventType: string, name: string, change?: (payload: Payload) => void): Promise<Response> {
+	return worker.fetch(await buildRequest(eventType, JSON.stringify(loadPayload(name, change))), env);
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -309,7 +314,7 @@ describe('worker', () => {
 	});
 
 	it('returns 200 for ignored actions', async () => {
-		const edited = JSON.stringify({ ...JSON.parse(fixture('issue_opened')), action: 'edited' });
+		const edited = JSON.stringify(withAction('issue_opened', 'edited'));
 		const response = await worker.fetch(await buildRequest('issues', edited), env);
 
 		expect(response.status).toBe(200);
@@ -318,10 +323,6 @@ describe('worker', () => {
 	});
 
 	describe('noise', () => {
-		async function deliver(eventType: string, name: string, change?: (payload: Payload) => void): Promise<Response> {
-			return worker.fetch(await buildRequest(eventType, JSON.stringify(loadPayload(name, change))), env);
-		}
-
 		async function expectIgnored(response: Response, reason: string): Promise<void> {
 			expect(response.status).toBe(200);
 			expect(await response.text()).toBe(`Ignored GitHub event: ${reason}\n`);
@@ -454,7 +455,7 @@ describe('worker', () => {
 	});
 
 	it('does not reveal whether an event is supported without a valid signature', async () => {
-		const edited = JSON.stringify({ ...JSON.parse(fixture('issue_opened')), action: 'edited' });
+		const edited = JSON.stringify(withAction('issue_opened', 'edited'));
 		const ignored = await worker.fetch(await buildRequest('issues', edited, { secret: 'wrong' }), env);
 		const unsupported = await worker.fetch(await buildRequest('check_run', fixture('push'), { signature: null }), env);
 
@@ -499,10 +500,9 @@ describe('worker', () => {
 	});
 
 	it('rejects the ping of another kind of hook that has no repository', async () => {
-		const ping = JSON.parse(fixture('ping_sponsors'));
-		ping.hook.type = 'App';
-
-		const response = await worker.fetch(await buildRequest('ping', JSON.stringify(ping)), env);
+		const response = await deliver('ping', 'ping_sponsors', (p) => {
+			p.hook.type = 'App';
+		});
 
 		expect(response.status).toBe(400);
 		expect(await response.text()).toContain('Missing repository information.');
@@ -566,12 +566,11 @@ describe('worker', () => {
 	});
 
 	it('falls back to the owner and name when the repository has no full name', async () => {
-		const payload = JSON.parse(fixture('push'));
-		delete payload.repository.full_name;
-		payload.repository.owner.name = 'monalisa';
-		payload.repository.name = 'Hello-World';
-
-		const response = await worker.fetch(await buildRequest('push', JSON.stringify(payload)), env);
+		const response = await deliver('push', 'push', (p) => {
+			delete p.repository.full_name;
+			p.repository.owner.name = 'monalisa';
+			p.repository.name = 'Hello-World';
+		});
 
 		expect(response.status).toBe(202);
 		expect(await response.text()).toContain('Received push in repository monalisa/Hello-World');
@@ -579,10 +578,9 @@ describe('worker', () => {
 
 	it('returns 500 without details when the payload can not be converted', async () => {
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-		const payload = JSON.parse(fixture('push'));
-		delete payload.commits;
-
-		const response = await worker.fetch(await buildRequest('push', JSON.stringify(payload)), env);
+		const response = await deliver('push', 'push', (p) => {
+			delete p.commits;
+		});
 
 		expect(response.status).toBe(500);
 		expect(await response.text()).toBe('Failed to process this event.\n');
@@ -591,10 +589,9 @@ describe('worker', () => {
 	});
 
 	it('returns 400 when the payload has no sender', async () => {
-		const payload = JSON.parse(fixture('push'));
-		delete payload.sender;
-
-		const response = await worker.fetch(await buildRequest('push', JSON.stringify(payload)), env);
+		const response = await deliver('push', 'push', (p) => {
+			delete p.sender;
+		});
 
 		expect(response.status).toBe(400);
 	});

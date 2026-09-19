@@ -17,14 +17,14 @@ $Hook = new GitHubWebHook( );
 
 try
 {
-	$Hook->ProcessRequest( );
-
 	if( !$Hook->ValidateHubSignature( GITHUB_SECRET ) )
 	{
 		http_response_code( 401 );
 
 		exit;
 	}
+
+	$Hook->ProcessRequest( );
 
 	echo 'Received ' . $Hook->GetEventType() . ' in repository ' . $Hook->GetFullRepositoryName() . PHP_EOL;
 	//var_dump( $Hook->GetPayload() );

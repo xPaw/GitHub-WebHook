@@ -7,7 +7,7 @@ export abstract class WebhookError extends Error {
 export class IgnoredEventError extends WebhookError {
 	readonly status = 200;
 
-	constructor(public readonly eventName: string) {
+	constructor(eventName: string) {
 		super(`Ignored GitHub event: ${eventName}`);
 	}
 }

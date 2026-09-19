@@ -49,7 +49,7 @@ export interface DiscordEmbed {
 	description?: string;
 	url?: string;
 	color?: number;
-	author: { name: string; url: string; icon_url: string };
+	author: { name: string; url?: string; icon_url?: string };
 	footer?: { text: string };
 }
 
@@ -65,6 +65,7 @@ const MAX_TITLE_LENGTH = 256;
 const MAX_DESCRIPTION_LENGTH = 4096;
 const MAX_FOOTER_LENGTH = 2048;
 const MAX_WIKI_PAGES = 5;
+const MAX_PUSH_COMMITS = 5;
 
 /**
  * Converts a GitHub webhook payload into a Discord webhook message.
@@ -174,8 +175,11 @@ function format(eventType: string, payload: unknown): DiscordEmbed {
 	}
 }
 
-/** Most, but not all, payload schemas mark `sender` as optional; GitHub always sends it. */
-type Sender = { login: string; html_url: string; avatar_url: string } | null | undefined;
+/**
+ * Most, but not all, payload schemas mark `sender` as optional, and some of them describe a user
+ * with urls that are all optional; GitHub always sends the user and their urls.
+ */
+type Sender = { login: string; html_url?: string; avatar_url?: string } | null | undefined;
 
 function formatAuthor(sender: Sender): DiscordEmbed['author'] {
 	if (!sender) {
@@ -201,6 +205,14 @@ const COLOR_BAD = 16007990;
 const COLOR_CLOSED = 8540383;
 /** Something was set aside. */
 const COLOR_SET_ASIDE = 7239297;
+
+/**
+ * Looks a key that came from a payload up in a plain object. Reading the key directly would find
+ * an inherited name such as `constructor`, which is a function rather than a value we know.
+ */
+function lookup<T>(map: Record<string, T>, key: string): T | undefined {
+	return Object.hasOwn(map, key) ? map[key] : undefined;
+}
 
 /** Throws unless the action is one that gets formatted, ignored actions are checked first. */
 function assertAction(event: string, action: string, supported: readonly string[], ignored: readonly string[] = []): void {
@@ -294,9 +306,27 @@ function actionPhrase(action: string): [verb: string, suffix: string] {
 /** Actions after which an alert is open, and so needs attention. */
 const OPEN_ALERT_ACTIONS = new Set(['created', 'reopened', 'reintroduced', 'publicly leaked']);
 
+/**
+ * The parts every alert of a security feature has in common. A new alert always needs attention,
+ * what happened to it afterwards is coloured like any other action.
+ */
+function alertEmbed(title: string, action: string, url: DiscordEmbed['url'], sender: Sender): DiscordEmbed {
+	return {
+		title: OPEN_ALERT_ACTIONS.has(action) ? `⚠ ${title}` : title,
+		url,
+		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
+		author: formatAuthor(sender),
+	};
+}
+
 /** Footers are plain text, so the names need no escaping. */
 function labelsFooter(labels: { name: string }[] | null | undefined): DiscordEmbed['footer'] {
 	return labels && labels.length > 0 ? { text: labels.map((label) => label.name).join(' · ') } : undefined;
+}
+
+/** Names what something used to be called, after a title that says what it is called now. */
+function fromSuffix(name: string): string {
+	return ` (from **${escape(name)}**)`;
 }
 
 /** `refs/heads/some/branch` -> `some/branch`. */
@@ -378,9 +408,9 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	}
 
 	if (commits.length > 0) {
-		// Newest commits first, and never more than five of them
+		// Newest commits first, and never more than a handful of them
 		embed.description = commits
-			.slice(-5)
+			.slice(-MAX_PUSH_COMMITS)
 			.reverse()
 			.map((commit) => {
 				let line = `[${escapeCode(shortSha(commit.id))}](${commit.url}) ${shortMessage(commit.message)}`;
@@ -671,16 +701,12 @@ function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 	const advisory = payload.alert.security_advisory;
 	const vulnerability = payload.alert.security_vulnerability;
 
-	const embed: DiscordEmbed = {
-		title: `Dependabot alert **#${payload.alert.number}** ${action} for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
-		url: payload.alert.html_url,
-		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
-		author: formatAuthor(payload.sender),
-	};
-
-	if (OPEN_ALERT_ACTIONS.has(action)) {
-		embed.title = `⚠ ${embed.title}`;
-	}
+	const embed = alertEmbed(
+		`Dependabot alert **#${payload.alert.number}** ${action} for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
+		action,
+		payload.alert.html_url,
+		payload.sender,
+	);
 
 	if (action === 'created') {
 		embed.description = shortDescription(advisory.description);
@@ -701,16 +727,12 @@ function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed 
 
 	assertAction('code_scanning_alert', action, ['created', 'fixed', 'dismissed', 'reopened'], ['appeared_in_branch', 'updated_assignment']);
 
-	const embed: DiscordEmbed = {
-		title: `Code scanning alert **#${payload.alert.number}** ${action}: ${escape(payload.alert.rule.description)}`,
-		url: payload.alert.html_url,
-		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
-		author: formatAuthor(payload.sender),
-	};
-
-	if (OPEN_ALERT_ACTIONS.has(action)) {
-		embed.title = `⚠ ${embed.title}`;
-	}
+	const embed = alertEmbed(
+		`Code scanning alert **#${payload.alert.number}** ${action}: ${escape(payload.alert.rule.description)}`,
+		action,
+		payload.alert.html_url,
+		payload.sender,
+	);
 
 	if (action === 'created') {
 		embed.description = shortDescription(payload.alert.most_recent_instance?.message?.text);
@@ -733,16 +755,12 @@ function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEm
 	const { alert } = payload;
 	const secretType = alert.secret_type_display_name ?? alert.secret_type ?? 'unknown';
 
-	const embed: DiscordEmbed = {
-		title: `Secret scanning alert **#${alert.number}** ${action}: ${escape(secretType)}`,
-		url: alert.html_url,
-		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
-		author: formatAuthor(payload.sender),
-	};
-
-	if (OPEN_ALERT_ACTIONS.has(action)) {
-		embed.title = `⚠ ${embed.title}`;
-	}
+	const embed = alertEmbed(
+		`Secret scanning alert **#${alert.number}** ${action}: ${escape(secretType)}`,
+		action,
+		alert.html_url,
+		payload.sender,
+	);
 
 	if (action === 'created' && alert.push_protection_bypassed_by) {
 		embed.description = `Push protection bypassed by **${escape(alert.push_protection_bypassed_by.login ?? 'ghost')}**`;
@@ -837,14 +855,14 @@ function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 	let title = `${payload.action} **${escape(payload.repository.name)}**`;
 
 	if (payload.action === 'renamed') {
-		title += ` (from **${escape(payload.changes.repository.name.from)}**)`;
+		title += fromSuffix(payload.changes.repository.name.from);
 	} else if (payload.action === 'transferred') {
 		const from = payload.changes.owner.from;
 
 		const owner = from.user ?? from.organization;
 
 		if (owner) {
-			title += ` (from **${escape(owner.login)}**)`;
+			title += fromSuffix(owner.login);
 		}
 	}
 
@@ -856,31 +874,43 @@ function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 	};
 }
 
-function formatProject(payload: ProjectEvent): DiscordEmbed {
-	assertAction('project', payload.action, ['created', 'closed', 'reopened', 'deleted'], ['edited']);
+/** Projects of either kind, which only differ in where their fields are. */
+function projectEmbed(
+	event: string,
+	action: string,
+	sender: Sender,
+	project: { number: number; title: string; body: string | null | undefined; url: string },
+): DiscordEmbed {
+	assertAction(event, action, ['created', 'closed', 'reopened', 'deleted'], ['edited']);
 
 	return {
-		title: `${payload.action} project **#${payload.project.number}**: ${escape(payload.project.name)}`,
-		description: payload.action === 'created' ? shortDescription(payload.project.body) : '',
-		url: payload.project.html_url,
-		color: actionColor(payload.action),
-		author: formatAuthor(payload.sender),
+		title: `${action} project **#${project.number}**: ${escape(project.title)}`,
+		description: action === 'created' ? shortDescription(project.body) : '',
+		url: project.url,
+		color: actionColor(action),
+		author: formatAuthor(sender),
 	};
 }
 
-function formatProjectV2(payload: ProjectV2Event): DiscordEmbed {
-	assertAction('projects_v2', payload.action, ['created', 'closed', 'reopened', 'deleted'], ['edited']);
+function formatProject(payload: ProjectEvent): DiscordEmbed {
+	return projectEmbed('project', payload.action, payload.sender, {
+		number: payload.project.number,
+		title: payload.project.name,
+		body: payload.project.body,
+		url: payload.project.html_url,
+	});
+}
 
+function formatProjectV2(payload: ProjectV2Event): DiscordEmbed {
 	const project = payload.projects_v2;
 
-	return {
-		title: `${payload.action} project **#${project.number}**: ${escape(project.title)}`,
-		description: payload.action === 'created' ? shortDescription(project.short_description) : '',
+	return projectEmbed('projects_v2', payload.action, payload.sender, {
+		number: project.number,
+		title: project.title,
+		body: project.short_description,
 		// Projects have no url of their own in the payload, they live under the organization that owns them
 		url: `https://github.com/orgs/${payload.organization.login}/projects/${project.number}`,
-		color: actionColor(payload.action),
-		author: formatAuthor(payload.sender),
-	};
+	});
 }
 
 /** GitHub sends the status of a project as an enum such as `OFF_TRACK`, and it can be unset. */
@@ -993,13 +1023,16 @@ function organizationRole(payload: OrganizationEvent): string | null {
 }
 
 function formatOrganization(payload: OrganizationEvent): DiscordEmbed {
-	const action = {
-		deleted: 'deleted',
-		renamed: 'renamed',
-		member_added: 'added',
-		member_removed: 'removed',
-		member_invited: 'invited',
-	}[payload.action as string];
+	const action = lookup(
+		{
+			deleted: 'deleted',
+			renamed: 'renamed',
+			member_added: 'added',
+			member_removed: 'removed',
+			member_invited: 'invited',
+		},
+		payload.action,
+	);
 
 	if (action === undefined) {
 		throw new NotImplementedError('organization', payload.action);
@@ -1013,7 +1046,7 @@ function formatOrganization(payload: OrganizationEvent): DiscordEmbed {
 		title = `${action} the organization **${escape(payload.organization.login)}**`;
 
 		if (from) {
-			title += ` (from **${escape(from)}**)`;
+			title += fromSuffix(from);
 		}
 	} else {
 		const member = organizationMember(payload);
@@ -1059,8 +1092,7 @@ function formatSponsorship(payload: SponsorshipEvent): DiscordEmbed {
 			title: 'got a new private sponsor',
 			url,
 			color: COLOR_DEFAULT,
-			// This schema describes its users with urls that are all optional, GitHub sends them
-			author: formatAuthor(sponsorable as Sender),
+			author: formatAuthor(sponsorable),
 		};
 	}
 
@@ -1068,7 +1100,7 @@ function formatSponsorship(payload: SponsorshipEvent): DiscordEmbed {
 		title: `is now sponsoring **${escape(sponsored)}**`,
 		url,
 		color: COLOR_DEFAULT,
-		author: formatAuthor(sponsor as Sender),
+		author: formatAuthor(sponsor),
 	};
 }
 
@@ -1077,7 +1109,7 @@ function formatWorkflowRun(payload: WorkflowRunEvent): DiscordEmbed {
 	assertAction('workflow_run', payload.action, ['completed'], ['requested', 'in_progress']);
 
 	const run = payload.workflow_run;
-	const outcome = { failure: 'failed', timed_out: 'timed out', startup_failure: 'failed to start' }[run.conclusion as string];
+	const outcome = lookup({ failure: 'failed', timed_out: 'timed out', startup_failure: 'failed to start' }, run.conclusion as string);
 
 	if (outcome === undefined) {
 		throw new IgnoredEventError(`workflow_run - ${run.conclusion}`);
@@ -1105,19 +1137,21 @@ function formatMembership(payload: MembershipEvent): DiscordEmbed {
 		title: `${payload.action} **${escape(payload.member?.login ?? 'ghost')}** ${where} team **${escape(payload.team.name)}**`,
 		url: payload.team.html_url,
 		color: actionColor(payload.action),
-		// This schema describes the sender as a user whose urls are all optional, GitHub sends them
-		author: formatAuthor(payload.sender as Sender),
+		author: formatAuthor(payload.sender),
 	};
 }
 
 function formatTeam(payload: TeamEvent): DiscordEmbed {
-	const [action, where] = {
-		created: ['created', ''],
-		deleted: ['deleted', ''],
-		edited: ['edited', ''],
-		added_to_repository: ['added', ' to this repository'],
-		removed_from_repository: ['removed', ' from this repository'],
-	}[payload.action as string] ?? [];
+	const [action, where] = lookup(
+		{
+			created: ['created', ''],
+			deleted: ['deleted', ''],
+			edited: ['edited', ''],
+			added_to_repository: ['added', ' to this repository'],
+			removed_from_repository: ['removed', ' from this repository'],
+		},
+		payload.action,
+	) ?? [];
 
 	if (action === undefined) {
 		throw new NotImplementedError('team', payload.action);
@@ -1138,7 +1172,7 @@ function formatTeam(payload: TeamEvent): DiscordEmbed {
 	}
 
 	if (from) {
-		title += ` (from **${escape(from)}**)`;
+		title += fromSuffix(from);
 	}
 
 	return {

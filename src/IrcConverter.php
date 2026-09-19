@@ -79,11 +79,7 @@ class IrcConverter extends BaseConverter
 
 	private function FormatAction( ?string $Action = null, ?string $Text = null ) : string
 	{
-		if( $Action === null )
-		{
-			$Action = $this->Payload->action;
-		}
-
+		$Action ??= $this->Payload->action;
 		$Text ??= $Action;
 
 		switch( $Action )
@@ -179,15 +175,16 @@ class IrcConverter extends BaseConverter
 	{
 		$DistinctCommits = $this->GetDistinctCommits( );
 		$Num = count( $DistinctCommits );
+		$NewCommits = $this->FormatNumber( (string)$Num ) . ' new commit' . ( $Num === 1 ? '' : 's' );
 
 		$Message = sprintf( '[%s] %s ',
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->pusher->name )
 		);
 
-		if( isset( $this->Payload->created ) && $this->Payload->created )
+		if( $this->Payload->created )
 		{
-			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
+			if( str_starts_with( $this->Payload->ref, 'refs/tags/' ) )
 			{
 				$Message .= sprintf( 'tagged %s at %s',
 					$this->FormatBranch( $this->RefName ),
@@ -211,18 +208,15 @@ class IrcConverter extends BaseConverter
 
 				if( $Num > 0 )
 				{
-					$Message .= sprintf( ' (+%s new commit%s)',
-						$this->FormatNumber( (string)$Num ),
-						$Num === 1 ? '' : 's'
-					);
+					$Message .= sprintf( ' (+%s)', $NewCommits );
 				}
 			}
 		}
-		else if( isset( $this->Payload->deleted ) && $this->Payload->deleted )
+		else if( $this->Payload->deleted )
 		{
 			throw new NotImplementedException( $this->EventType, 'deleted (use DeleteEvent if needed)' );
 		}
-		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
+		else if( $this->Payload->forced )
 		{
 			$Message .= sprintf( '%s %s from %s to %s',
 				$this->FormatAction( 'force-pushed' ),
@@ -252,9 +246,8 @@ class IrcConverter extends BaseConverter
 		else
 		{
 			// Most pushes go to the default branch, so only other branches are worth naming
-			$Message .= sprintf( 'pushed %s new commit%s%s',
-				$this->FormatNumber( (string)$Num ),
-				$Num === 1 ? '' : 's',
+			$Message .= sprintf( 'pushed %s%s',
+				$NewCommits,
 				$this->IsDefaultBranch() ? '' : ' to ' . $this->FormatBranch( $this->RefName )
 			);
 		}
@@ -372,7 +365,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( $Action, $Verb ),
-						$this->FormatNumber( sprintf( '#%d', $this->Payload->issue->number ) ),
+						$this->FormatNumber( '#' . $this->Payload->issue->number ),
 						$Suffix,
 						rtrim( $this->Payload->issue->title, '.' ),
 						$this->FormatURL( $this->Payload->issue->html_url )
@@ -483,7 +476,7 @@ class IrcConverter extends BaseConverter
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( $Action ),
-						$this->FormatNumber( sprintf( '#%d', $this->Payload->milestone->number ) ),
+						$this->FormatNumber( '#' . $this->Payload->milestone->number ),
 						rtrim( $this->Payload->milestone->title, '.' ),
 						$this->FormatURL( $this->Payload->milestone->html_url )
 		);
@@ -688,7 +681,7 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event.
+	 * Formats a discussion event.
 	 */
 	private function FormatDiscussionEvent( ) : string
 	{
@@ -729,7 +722,7 @@ class IrcConverter extends BaseConverter
 			$this->FormatRepoName( ),
 			$this->FormatName( $this->Payload->sender->login ),
 			$this->FormatAction( $Action, $Verb ),
-			$this->FormatNumber( sprintf( '#%d', $this->Payload->discussion->number ) ),
+			$this->FormatNumber( '#' . $this->Payload->discussion->number ),
 			$Suffix,
 			rtrim( $this->Payload->discussion->title, '.' ),
 			$this->FormatURL( $Action === 'answered' ? ( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url ) : $this->Payload->discussion->html_url )
@@ -737,7 +730,7 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event.
+	 * Formats a discussion comment event.
 	 */
 	private function FormatDiscussionCommentEvent( ) : string
 	{
@@ -1047,7 +1040,7 @@ class IrcConverter extends BaseConverter
 	}
 
 	/**
-	 * Triggered when a repository is created..
+	 * Formats a repository event.
 	 */
 	private function FormatRepositoryEvent( ) : string
 	{
@@ -1098,26 +1091,10 @@ class IrcConverter extends BaseConverter
 	 */
 	private function FormatProjectEvent( ) : string
 	{
-		if( $this->Payload->action === 'edited' )
-		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
-		}
-
-		if( $this->Payload->action !== 'created'
-		&&  $this->Payload->action !== 'closed'
-		&&  $this->Payload->action !== 'reopened'
-		&&  $this->Payload->action !== 'deleted' )
-		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
-		}
-
-		return sprintf( '[%s] %s %s project %s: %s. %s',
-						$this->FormatRepoName( ),
-						$this->FormatName( $this->Payload->sender->login ),
-						$this->FormatAction( ),
-						$this->FormatNumber( sprintf( '#%d', $this->Payload->project->number ) ),
-						rtrim( $this->Payload->project->name, '.' ),
-						$this->FormatURL( $this->Payload->project->html_url )
+		return $this->FormatProject(
+			$this->Payload->project->number,
+			$this->Payload->project->name,
+			$this->Payload->project->html_url
 		);
 	}
 
@@ -1125,6 +1102,18 @@ class IrcConverter extends BaseConverter
 	 * Formats a project event.
 	 */
 	private function FormatProjectV2Event( ) : string
+	{
+		return $this->FormatProject(
+			$this->Payload->projects_v2->number,
+			$this->Payload->projects_v2->title,
+			$this->ProjectV2URL( )
+		);
+	}
+
+	/**
+	 * Formats a project of either kind, which only differ in where their fields are.
+	 */
+	private function FormatProject( int $Number, string $Name, string $URL ) : string
 	{
 		if( $this->Payload->action === 'edited' )
 		{
@@ -1143,9 +1132,9 @@ class IrcConverter extends BaseConverter
 						$this->FormatRepoName( ),
 						$this->FormatName( $this->Payload->sender->login ),
 						$this->FormatAction( ),
-						$this->FormatNumber( sprintf( '#%d', $this->Payload->projects_v2->number ) ),
-						rtrim( $this->Payload->projects_v2->title, '.' ),
-						$this->FormatURL( $this->ProjectV2URL( ) )
+						$this->FormatNumber( '#' . $Number ),
+						rtrim( $Name, '.' ),
+						$this->FormatURL( $URL )
 		);
 	}
 

@@ -29,6 +29,11 @@ class DiscordConverter extends BaseConverter
 	private const int MAX_DESCRIPTION_LENGTH = 4096;
 	private const int MAX_FOOTER_LENGTH = 2048;
 
+	// How much of a body is quoted as the description of an embed
+	private const int MAX_SHORT_DESCRIPTION = 250;
+	// How much of the first line of a commit or wiki message is quoted
+	private const int MAX_SHORT_MESSAGE = 100;
+
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.
 	 *
@@ -36,8 +41,6 @@ class DiscordConverter extends BaseConverter
 	 */
 	public function GetEmbed( ) : array
 	{
-		$Embed = null;
-
 		switch( $this->EventType )
 		{
 			case 'ping'          : $Embed = $this->FormatPingEvent( ); break;
@@ -77,11 +80,7 @@ class DiscordConverter extends BaseConverter
 			case 'team'          : $Embed = $this->FormatTeamEvent( ); break;
 			case 'sponsorship'   : $Embed = $this->FormatSponsorshipEvent( ); break;
 			case 'workflow_run'  : $Embed = $this->FormatWorkflowRunEvent( ); break;
-		}
-
-		if( empty( $Embed ) )
-		{
-			throw new NotImplementedException( $this->EventType );
+			default              : throw new NotImplementedException( $this->EventType );
 		}
 
 		// Discord rejects the whole message when an embed is over its limits
@@ -141,6 +140,22 @@ class DiscordConverter extends BaseConverter
 			|| $Action === 'publicly leaked';
 	}
 
+	/**
+	 * The parts every alert of a security feature has in common. A new alert always needs attention,
+	 * what happened to it afterwards is coloured like any other action.
+	 *
+	 * @return mixed[]
+	 */
+	private function AlertEmbed( string $Title, string $Action ) : array
+	{
+		return [
+			'title' => ( self::IsOpenAlert( $Action ) ? '⚠ ' : '' ) . $Title,
+			'url' => $this->Payload->alert->html_url,
+			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
+			'author' => $this->FormatAuthor(),
+		];
+	}
+
 	private static function EscapeCode( string $Message ) : string
 	{
 		// A backtick can only be inside of a code span that is delimited by more of them
@@ -178,6 +193,12 @@ class DiscordConverter extends BaseConverter
 		], $Message );
 	}
 
+	/** Names what something used to be called, after a title that says what it is called now. */
+	private static function FromSuffix( string $Name ) : string
+	{
+		return ' (from **' . self::Escape( $Name ) . '**)';
+	}
+
 	/** @return array{name: string, url: string, icon_url: string} */
 	private function FormatAuthor() : array
 	{
@@ -190,10 +211,7 @@ class DiscordConverter extends BaseConverter
 
 	private function FormatAction( ?string $Action = null ) : int
 	{
-		if( $Action === null )
-		{
-			$Action = $this->Payload->action;
-		}
+		$Action ??= $this->Payload->action;
 
 		switch( $Action )
 		{
@@ -244,7 +262,7 @@ class DiscordConverter extends BaseConverter
 		}
 	}
 
-	private static function ShortDescription( ?string $Message, int $Limit = 250 ) : string
+	private static function ShortDescription( ?string $Message ) : string
 	{
 		$Message ??= '';
 		$Message = preg_replace( self::HTML_COMMENT, '', $Message ) ?? $Message;
@@ -260,24 +278,24 @@ class DiscordConverter extends BaseConverter
 			$Message = implode( "\n", array_slice( $Lines, 0, 11 ) ) . ' ' . implode( ' ', array_slice( $Lines, 11 ) );
 		}
 
-		if( mb_strlen( $Message ) > $Limit )
+		if( mb_strlen( $Message ) > self::MAX_SHORT_DESCRIPTION )
 		{
-			$Message = mb_substr( $Message, 0, $Limit );
+			$Message = mb_substr( $Message, 0, self::MAX_SHORT_DESCRIPTION );
 			$Message .= '…';
 		}
 
 		return $Message;
 	}
 
-	private static function ShortMessage( string $Message, int $Limit = 100 ) : string
+	private static function ShortMessage( string $Message ) : string
 	{
 		$Message = self::Trim( $Message );
 		$NewMessage = explode( "\n", $Message, 2 );
 		$NewMessage = $NewMessage[ 0 ];
 
-		if( mb_strlen( $NewMessage ) > $Limit )
+		if( mb_strlen( $NewMessage ) > self::MAX_SHORT_MESSAGE )
 		{
-			$NewMessage = mb_substr( $NewMessage, 0, $Limit );
+			$NewMessage = mb_substr( $NewMessage, 0, self::MAX_SHORT_MESSAGE );
 		}
 
 		if( $NewMessage !== $Message )
@@ -305,6 +323,7 @@ class DiscordConverter extends BaseConverter
 	{
 		$DistinctCommits = $this->GetDistinctCommits( );
 		$Num = count( $DistinctCommits );
+		$NewCommits = sprintf( '%d new commit%s', $Num, $Num === 1 ? '' : 's' );
 
 		$Embed = [
 			'title' => '',
@@ -313,9 +332,9 @@ class DiscordConverter extends BaseConverter
 			'author' => $this->FormatAuthor(),
 		];
 
-		if( isset( $this->Payload->created ) && $this->Payload->created )
+		if( $this->Payload->created )
 		{
-			if( substr( $this->Payload->ref, 0, 10 ) === 'refs/tags/' )
+			if( str_starts_with( $this->Payload->ref, 'refs/tags/' ) )
 			{
 				$Embed[ 'title' ] = "tagged " . self::EscapeCode( $this->RefName ) . " at " . self::EscapeCode( $this->BaseRefName ?? $this->AfterSHA() );
 			}
@@ -334,18 +353,15 @@ class DiscordConverter extends BaseConverter
 
 				if( $Num > 0 )
 				{
-					$Embed[ 'title' ] .= sprintf( ' (+%d new commit%s)',
-						$Num,
-						$Num === 1 ? '' : 's'
-					);
+					$Embed[ 'title' ] .= " (+{$NewCommits})";
 				}
 			}
 		}
-		else if( isset( $this->Payload->deleted ) && $this->Payload->deleted )
+		else if( $this->Payload->deleted )
 		{
 			throw new NotImplementedException( $this->EventType, 'deleted (use DeleteEvent if needed)' );
 		}
-		else if( isset( $this->Payload->forced ) && $this->Payload->forced )
+		else if( $this->Payload->forced )
 		{
 			$Embed[ 'title' ] = "force-pushed " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
 			$Embed[ 'color' ] = self::COLOR_BAD;
@@ -366,9 +382,8 @@ class DiscordConverter extends BaseConverter
 		else
 		{
 			// Most pushes go to the default branch, so only other branches are worth naming
-			$Embed[ 'title' ] = sprintf( 'pushed %d new commit%s%s',
-				$Num,
-				$Num === 1 ? '' : 's',
+			$Embed[ 'title' ] = sprintf( 'pushed %s%s',
+				$NewCommits,
 				$this->IsDefaultBranch() ? '' : ' to ' . self::EscapeCode( $this->RefName )
 			);
 		}
@@ -821,7 +836,7 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event.
+	 * Formats a discussion event.
 	 *
 	 * @return mixed[]
 	 */
@@ -880,7 +895,7 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Formats a pull request review comment event.
+	 * Formats a discussion comment event.
 	 *
 	 * @return mixed[]
 	 */
@@ -941,18 +956,10 @@ class DiscordConverter extends BaseConverter
 		$Advisory = $this->Payload->alert->security_advisory;
 		$Vulnerability = $this->Payload->alert->security_vulnerability;
 
-		$Embed =
-		[
-			'title' => "Dependabot alert **#{$this->Payload->alert->number}** {$Action} for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
-			'url' => $this->Payload->alert->html_url,
-			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
-			'author' => $this->FormatAuthor(),
-		];
-
-		if( self::IsOpenAlert( $Action ) )
-		{
-			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
-		}
+		$Embed = $this->AlertEmbed(
+			"Dependabot alert **#{$this->Payload->alert->number}** {$Action} for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
+			$Action
+		);
 
 		if( $Action === 'created' )
 		{
@@ -985,18 +992,10 @@ class DiscordConverter extends BaseConverter
 			default => throw new NotImplementedException( $this->EventType, $this->Payload->action ),
 		};
 
-		$Embed =
-		[
-			'title' => "Code scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $this->Payload->alert->rule->description ),
-			'url' => $this->Payload->alert->html_url,
-			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
-			'author' => $this->FormatAuthor(),
-		];
-
-		if( self::IsOpenAlert( $Action ) )
-		{
-			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
-		}
+		$Embed = $this->AlertEmbed(
+			"Code scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $this->Payload->alert->rule->description ),
+			$Action
+		);
 
 		if( $Action === 'created' )
 		{
@@ -1034,18 +1033,10 @@ class DiscordConverter extends BaseConverter
 
 		$SecretType = $this->Payload->alert->secret_type_display_name ?? $this->Payload->alert->secret_type ?? 'unknown';
 
-		$Embed =
-		[
-			'title' => "Secret scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $SecretType ),
-			'url' => $this->Payload->alert->html_url,
-			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
-			'author' => $this->FormatAuthor(),
-		];
-
-		if( self::IsOpenAlert( $Action ) )
-		{
-			$Embed[ 'title' ] = '⚠ ' . $Embed[ 'title' ];
-		}
+		$Embed = $this->AlertEmbed(
+			"Secret scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $SecretType ),
+			$Action
+		);
 
 		if( $Action === 'created' && isset( $this->Payload->alert->push_protection_bypassed_by ) )
 		{
@@ -1191,7 +1182,7 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Triggered when a repository is created.
+	 * Formats a repository event.
 	 *
 	 * @return mixed[]
 	 */
@@ -1218,7 +1209,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $this->Payload->action === 'renamed' )
 		{
-			$Title .= " (from **" . self::Escape( $this->Payload->changes->repository->name->from ) . "**)";
+			$Title .= self::FromSuffix( $this->Payload->changes->repository->name->from );
 		}
 		else if( $this->Payload->action === 'transferred' )
 		{
@@ -1226,7 +1217,7 @@ class DiscordConverter extends BaseConverter
 
 			if( $Owner !== null )
 			{
-				$Title .= " (from **" . self::Escape( $Owner->login ) . "**)";
+				$Title .= self::FromSuffix( $Owner->login );
 			}
 		}
 
@@ -1245,26 +1236,12 @@ class DiscordConverter extends BaseConverter
 	 */
 	private function FormatProjectEvent( ) : array
 	{
-		if( $this->Payload->action === 'edited' )
-		{
-			throw new IgnoredEventException( $this->EventType . ' - ' . $this->Payload->action );
-		}
-
-		if( $this->Payload->action !== 'created'
-		&&  $this->Payload->action !== 'closed'
-		&&  $this->Payload->action !== 'reopened'
-		&&  $this->Payload->action !== 'deleted' )
-		{
-			throw new NotImplementedException( $this->EventType, $this->Payload->action );
-		}
-
-		return [
-			'title' => "{$this->Payload->action} project **#{$this->Payload->project->number}**: " . self::Escape( $this->Payload->project->name ),
-			'description' => $this->Payload->action === 'created' ? self::ShortDescription( $this->Payload->project->body ) : '',
-			'url' => $this->Payload->project->html_url,
-			'color' => $this->FormatAction(),
-			'author' => $this->FormatAuthor(),
-		];
+		return $this->FormatProject(
+			$this->Payload->project->number,
+			$this->Payload->project->name,
+			$this->Payload->project->body,
+			$this->Payload->project->html_url
+		);
 	}
 
 	/**
@@ -1273,6 +1250,24 @@ class DiscordConverter extends BaseConverter
 	 * @return mixed[]
 	 */
 	private function FormatProjectV2Event( ) : array
+	{
+		$Project = $this->Payload->projects_v2;
+
+		return $this->FormatProject(
+			$Project->number,
+			$Project->title,
+			$Project->short_description,
+			// Projects have no url of their own in the payload, they live under the organization that owns them
+			sprintf( 'https://github.com/orgs/%s/projects/%d', $this->Payload->organization->login, $Project->number )
+		);
+	}
+
+	/**
+	 * Formats a project of either kind, which only differ in where their fields are.
+	 *
+	 * @return mixed[]
+	 */
+	private function FormatProject( int $Number, string $Title, ?string $Body, string $URL ) : array
 	{
 		if( $this->Payload->action === 'edited' )
 		{
@@ -1287,13 +1282,10 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		$Project = $this->Payload->projects_v2;
-
-		// Projects have no url of their own in the payload, they live under the organization that owns them
 		return [
-			'title' => "{$this->Payload->action} project **#{$Project->number}**: " . self::Escape( $Project->title ),
-			'description' => $this->Payload->action === 'created' ? self::ShortDescription( $Project->short_description ) : '',
-			'url' => sprintf( 'https://github.com/orgs/%s/projects/%d', $this->Payload->organization->login, $Project->number ),
+			'title' => "{$this->Payload->action} project **#{$Number}**: " . self::Escape( $Title ),
+			'description' => $this->Payload->action === 'created' ? self::ShortDescription( $Body ) : '',
+			'url' => $URL,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
 		];
@@ -1477,7 +1469,7 @@ class DiscordConverter extends BaseConverter
 
 			if( $From !== null )
 			{
-				$Title .= " (from **" . self::Escape( $From ) . "**)";
+				$Title .= self::FromSuffix( $From );
 			}
 		}
 		else
@@ -1680,7 +1672,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $From !== null )
 		{
-			$Title .= " (from **" . self::Escape( $From ) . "**)";
+			$Title .= self::FromSuffix( $From );
 		}
 
 		return [

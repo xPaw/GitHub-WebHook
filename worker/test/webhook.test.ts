@@ -7,6 +7,7 @@ import { verifySignature } from '../src/github.js';
 const ID = '123456789012345678';
 const THREAD = '987654321098765432';
 const TOKEN = 'aBc-123_xYz';
+const PATH = `/discordhook/${ID}/${TOKEN}`;
 
 function parse(path: string) {
 	return parseTarget(new URL(`https://example.workers.dev${path}`));
@@ -14,15 +15,15 @@ function parse(path: string) {
 
 describe('parseTarget', () => {
 	it('reads the id and the token from the path', () => {
-		expect(parse(`/discordhook/${ID}/${TOKEN}`)).toEqual({ id: ID, token: TOKEN });
+		expect(parse(PATH)).toEqual({ id: ID, token: TOKEN });
 	});
 
 	it('reads the thread from the query', () => {
-		expect(parse(`/discordhook/${ID}/${TOKEN}?thread_id=${THREAD}`)).toEqual({ id: ID, token: TOKEN, threadId: THREAD });
+		expect(parse(`${PATH}?thread_id=${THREAD}`)).toEqual({ id: ID, token: TOKEN, threadId: THREAD });
 	});
 
 	it('ignores every other query parameter', () => {
-		expect(parse(`/discordhook/${ID}/${TOKEN}?wait=true&thread_name=x`)).toEqual({ id: ID, token: TOKEN });
+		expect(parse(`${PATH}?wait=true&thread_name=x`)).toEqual({ id: ID, token: TOKEN });
 	});
 
 	it.each([
@@ -32,9 +33,9 @@ describe('parseTarget', () => {
 		['a prefix in another case', `/DiscordHook/${ID}/${TOKEN}`],
 		['no token', `/discordhook/${ID}`],
 		['an empty token', `/discordhook/${ID}/`],
-		['a trailing slash', `/discordhook/${ID}/${TOKEN}/`],
-		['an extra segment', `/discordhook/${ID}/${TOKEN}/github`],
-		['a leading empty segment', `//discordhook/${ID}/${TOKEN}`],
+		['a trailing slash', `${PATH}/`],
+		['an extra segment', `${PATH}/github`],
+		['a leading empty segment', `/${PATH}`],
 		['a short id', `/discordhook/1234567890123456/${TOKEN}`],
 		['a long id', `/discordhook/123456789012345678901/${TOKEN}`],
 		['an id that is not a number', `/discordhook/12345678901234567a/${TOKEN}`],
@@ -43,9 +44,9 @@ describe('parseTarget', () => {
 		['a dot in the token', `/discordhook/${ID}/abc.def`],
 		['an encoded parent directory as the token', `/discordhook/${ID}/%2e%2e`],
 		['a space in the token', `/discordhook/${ID}/abc%20def`],
-		['an empty thread', `/discordhook/${ID}/${TOKEN}?thread_id=`],
-		['a thread that is not a number', `/discordhook/${ID}/${TOKEN}?thread_id=general`],
-		['a short thread', `/discordhook/${ID}/${TOKEN}?thread_id=123`],
+		['an empty thread', `${PATH}?thread_id=`],
+		['a thread that is not a number', `${PATH}?thread_id=general`],
+		['a short thread', `${PATH}?thread_id=123`],
 	])('rejects %s', (_, path) => {
 		expect(() => parse(path)).toThrow(BadRequestError);
 	});

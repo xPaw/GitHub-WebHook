@@ -76,23 +76,24 @@ class GitHubWebHook
 				$Name = 'repositories';
 				$Label = 'org: ';
 			}
-			else if( isset( $this->Payload->sponsorship->sponsorable->login ) )
-			{
-				// Events of a sponsors listing have neither, they are reported as "<sponsored account>/sponsors"
-				$Owner = $this->Payload->sponsorship->sponsorable->login;
-				$Name = 'sponsors';
-				$Label = 'sponsors: ';
-			}
-			else if( ( $this->Payload->hook->type ?? null ) === 'SponsorsListing' && isset( $this->Payload->sender->login ) )
-			{
-				// The ping of a sponsors listing only knows who set the webhook up
-				$Owner = $this->Payload->sender->login;
-				$Name = 'sponsors';
-				$Label = 'sponsors: ';
-			}
 			else
 			{
-				throw new Exception( 'Missing repository information.' );
+				// Events of a sponsors listing have neither, they are reported as "<sponsored account>/sponsors"
+				$Owner = $this->Payload->sponsorship->sponsorable->login ?? null;
+
+				if( $Owner === null && ( $this->Payload->hook->type ?? null ) === 'SponsorsListing' )
+				{
+					// The ping of such a listing has no sponsorship, it only knows who set the webhook up
+					$Owner = $this->Payload->sender->login ?? null;
+				}
+
+				if( $Owner === null )
+				{
+					throw new Exception( 'Missing repository information.' );
+				}
+
+				$Name = 'sponsors';
+				$Label = 'sponsors: ';
 			}
 
 			$this->Payload->repository = (object)[
