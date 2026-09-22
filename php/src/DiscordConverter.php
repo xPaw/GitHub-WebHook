@@ -553,14 +553,23 @@ class DiscordConverter extends BaseConverter
 		if( $Num > 0 )
 		{
 			$CommitMessages = [];
-			$CommitsLimit = 5;
+			$CommitsLimit = 15;
+
+			// A push of a single commit has the room to say what the commit itself says,
+			// everything past the summary that the line above it already carries
+			$Message = $Num === 1 ? trim( $DistinctCommits[ 0 ]->message ) : '';
+			$Newline = strpos( $Message, "\n" );
+			$Body = $Newline === false ? '' : self::FormatBody( substr( $Message, $Newline + 1 ) );
 
 			while( --$Num >= 0 && --$CommitsLimit >= 0 )
 			{
 				$DistinctCommit = $DistinctCommits[ $Num ];
 
+				// Where the body follows, the summary no longer has to trail off into it
+				$Summary = $Body === '' ? $DistinctCommit->message : substr( $Message, 0, $Newline );
+
 				$Commit = "[" . self::EscapeCode( substr( $DistinctCommit->id, 0, 6 ) ) . "]({$DistinctCommit->url}) ";
-				$Commit .= self::ShortMessage( $DistinctCommit->message );
+				$Commit .= self::ShortMessage( $Summary );
 
 				if( isset( $DistinctCommit->author->username ) )
 				{
@@ -578,6 +587,11 @@ class DiscordConverter extends BaseConverter
 			}
 
 			$Embed[ 'description' ] = implode( "\n", $CommitMessages );
+
+			if( $Body !== '' )
+			{
+				$Embed[ 'description' ] .= "\n\n" . $Body;
+			}
 		}
 
 		return $Embed;
@@ -1267,7 +1281,7 @@ class DiscordConverter extends BaseConverter
 	{
 		$Messages = [];
 
-		// Never more than five pages, the same as commits in a push
+		// Never more than a handful of pages
 		foreach( array_slice( $this->Payload->pages, 0, self::MAX_WIKI_PAGES ) as $Page )
 		{
 			// A page title with parentheses ends up in the url, where they would end the markdown link

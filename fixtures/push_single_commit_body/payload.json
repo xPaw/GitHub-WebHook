@@ -1,188 +1,20 @@
 {
 	"ref": "refs/heads/master",
 	"before": "14e514deb5f85f4de5e2ed24e85cfa038f36d60e",
-	"after": "7777777777777777777777777777777777777777",
+	"after": "8ddec647cc7a5a819669ad55d08cfabe49925311",
 	"created": false,
 	"deleted": false,
 	"forced": false,
 	"base_ref": null,
-	"compare": "https://github.com/monalisa/Hello-World/compare/14e514deb5f8...777777777777",
+	"compare": "https://github.com/monalisa/Hello-World/compare/14e514deb5f8...8ddec647cc7a",
 	"commits": [
 		{
-			"id": "1111111111111111111111111111111111111111",
-			"tree_id": "1cbab702b7f94f03bada763216b07f5a8a1cccd1",
+			"id": "8ddec647cc7a5a819669ad55d08cfabe49925311",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "Short subject\n\nWith a body that should be dropped",
+			"message": "Delimit code spans with more backticks than the text contains\n\nA run of backticks can only be closed by a longer one, so the delimiter\nnow grows to fit whatever is being quoted.\n\n* Keeps a backtick at either end apart from the delimiter\n* Leaves the rest of the message alone",
 			"timestamp": "2016-02-13T14:45:18+02:00",
-			"url": "https://github.com/monalisa/Hello-World/commit/1111111111111111111111111111111111111111",
-			"author": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"committer": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"added": [
-				"tests/parser.test.js",
-				"tests/fixtures/ping/expected.txt",
-				"tests/fixtures/ping/payload.json",
-				"tests/config.json"
-			],
-			"removed": [],
-			"modified": [
-				"src/index.js"
-			]
-		},
-		{
-			"id": "2222222222222222222222222222222222222222",
-			"tree_id": "63aca10fa8c43dea00fece93e4fd54eaf773e574",
-			"distinct": true,
-			"message": "A subject that goes on for far longer than one hundred characters so that it has to be truncated somewhere around here, not later",
-			"timestamp": "2016-02-13T14:45:18+02:00",
-			"url": "https://github.com/monalisa/Hello-World/commit/2222222222222222222222222222222222222222",
-			"author": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"committer": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"added": [
-				"tests/parser.test.js",
-				"tests/fixtures/ping/expected.txt",
-				"tests/fixtures/ping/payload.json",
-				"tests/config.json"
-			],
-			"removed": [],
-			"modified": [
-				"src/index.js"
-			]
-		},
-		{
-			"id": "3333333333333333333333333333333333333333",
-			"tree_id": "c034a2c0357cfe921ecad0c5ad46de617e3badfb",
-			"distinct": true,
-			"message": "Ünïcödé subject with emoji 🎉🎉🎉 and *markdown* [chars] that is also well over the limit of one hundred characters 🚀🚀🚀 the end",
-			"timestamp": "2016-02-13T14:45:18+02:00",
-			"url": "https://github.com/monalisa/Hello-World/commit/3333333333333333333333333333333333333333",
-			"author": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"committer": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"added": [
-				"tests/parser.test.js",
-				"tests/fixtures/ping/expected.txt",
-				"tests/fixtures/ping/payload.json",
-				"tests/config.json"
-			],
-			"removed": [],
-			"modified": [
-				"src/index.js"
-			]
-		},
-		{
-			"id": "4444444444444444444444444444444444444444",
-			"tree_id": "7b221725174b672a458277e0818a26f41e2f5f13",
-			"distinct": true,
-			"message": "Subject ending in dots...\n\nBody",
-			"timestamp": "2016-02-13T14:45:18+02:00",
-			"url": "https://github.com/monalisa/Hello-World/commit/4444444444444444444444444444444444444444",
-			"author": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"committer": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"added": [
-				"tests/parser.test.js",
-				"tests/fixtures/ping/expected.txt",
-				"tests/fixtures/ping/payload.json",
-				"tests/config.json"
-			],
-			"removed": [],
-			"modified": [
-				"src/index.js"
-			]
-		},
-		{
-			"id": "5555555555555555555555555555555555555555",
-			"tree_id": "6ce5106ea809a8dd2dc43761206a3d82f47f39f5",
-			"distinct": true,
-			"message": "Exactly one line",
-			"timestamp": "2016-02-13T14:45:18+02:00",
-			"url": "https://github.com/monalisa/Hello-World/commit/5555555555555555555555555555555555555555",
-			"author": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"committer": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"added": [
-				"tests/parser.test.js",
-				"tests/fixtures/ping/expected.txt",
-				"tests/fixtures/ping/payload.json",
-				"tests/config.json"
-			],
-			"removed": [],
-			"modified": [
-				"src/index.js"
-			]
-		},
-		{
-			"id": "6666666666666666666666666666666666666666",
-			"tree_id": "c59e36846bb15a3e081c8e68010f5c0b70cc3321",
-			"distinct": true,
-			"message": "Sixth commit",
-			"timestamp": "2016-02-13T14:45:18+02:00",
-			"url": "https://github.com/monalisa/Hello-World/commit/6666666666666666666666666666666666666666",
-			"author": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"committer": {
-				"name": "Mona Lisa",
-				"email": "monalisa@users.noreply.github.com",
-				"username": "monalisa"
-			},
-			"added": [
-				"tests/parser.test.js",
-				"tests/fixtures/ping/expected.txt",
-				"tests/fixtures/ping/payload.json",
-				"tests/config.json"
-			],
-			"removed": [],
-			"modified": [
-				"src/index.js"
-			]
-		},
-		{
-			"id": "7777777777777777777777777777777777777777",
-			"tree_id": "6aee01ccf0f3754d975253f130cbc2a3be887e56",
-			"distinct": true,
-			"message": "Seventh commit",
-			"timestamp": "2016-02-13T14:45:18+02:00",
-			"url": "https://github.com/monalisa/Hello-World/commit/7777777777777777777777777777777777777777",
+			"url": "https://github.com/monalisa/Hello-World/commit/8ddec647cc7a5a819669ad55d08cfabe49925311",
 			"author": {
 				"name": "Mona Lisa",
 				"email": "monalisa@users.noreply.github.com",
@@ -206,12 +38,12 @@
 		}
 	],
 	"head_commit": {
-		"id": "7777777777777777777777777777777777777777",
-		"tree_id": "6aee01ccf0f3754d975253f130cbc2a3be887e56",
+		"id": "8ddec647cc7a5a819669ad55d08cfabe49925311",
+		"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 		"distinct": true,
-		"message": "Seventh commit",
+		"message": "Delimit code spans with more backticks than the text contains\n\nA run of backticks can only be closed by a longer one, so the delimiter\nnow grows to fit whatever is being quoted.\n\n* Keeps a backtick at either end apart from the delimiter\n* Leaves the rest of the message alone",
 		"timestamp": "2016-02-13T14:45:18+02:00",
-		"url": "https://github.com/monalisa/Hello-World/commit/7777777777777777777777777777777777777777",
+		"url": "https://github.com/monalisa/Hello-World/commit/8ddec647cc7a5a819669ad55d08cfabe49925311",
 		"author": {
 			"name": "Mona Lisa",
 			"email": "monalisa@users.noreply.github.com",

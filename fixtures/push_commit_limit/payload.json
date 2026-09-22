@@ -1,18 +1,18 @@
 {
 	"ref": "refs/heads/master",
-	"before": "14e514deb5f85f4de5e2ed24e85cfa038f36d60e",
-	"after": "7777777777777777777777777777777777777777",
+	"before": "1111111111111111111111111111111111111111",
+	"after": "1717171717171717171717171717171717171717",
 	"created": false,
 	"deleted": false,
 	"forced": false,
 	"base_ref": null,
-	"compare": "https://github.com/monalisa/Hello-World/compare/14e514deb5f8...777777777777",
+	"compare": "https://github.com/monalisa/Hello-World/compare/111111111111...171717171717",
 	"commits": [
 		{
 			"id": "1111111111111111111111111111111111111111",
-			"tree_id": "1cbab702b7f94f03bada763216b07f5a8a1cccd1",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "Short subject\n\nWith a body that should be dropped",
+			"message": "Commit number 1",
 			"timestamp": "2016-02-13T14:45:18+02:00",
 			"url": "https://github.com/monalisa/Hello-World/commit/1111111111111111111111111111111111111111",
 			"author": {
@@ -38,9 +38,9 @@
 		},
 		{
 			"id": "2222222222222222222222222222222222222222",
-			"tree_id": "63aca10fa8c43dea00fece93e4fd54eaf773e574",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "A subject that goes on for far longer than one hundred characters so that it has to be truncated somewhere around here, not later",
+			"message": "Commit number 2",
 			"timestamp": "2016-02-13T14:45:18+02:00",
 			"url": "https://github.com/monalisa/Hello-World/commit/2222222222222222222222222222222222222222",
 			"author": {
@@ -66,9 +66,9 @@
 		},
 		{
 			"id": "3333333333333333333333333333333333333333",
-			"tree_id": "c034a2c0357cfe921ecad0c5ad46de617e3badfb",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "Ünïcödé subject with emoji 🎉🎉🎉 and *markdown* [chars] that is also well over the limit of one hundred characters 🚀🚀🚀 the end",
+			"message": "Commit number 3",
 			"timestamp": "2016-02-13T14:45:18+02:00",
 			"url": "https://github.com/monalisa/Hello-World/commit/3333333333333333333333333333333333333333",
 			"author": {
@@ -94,9 +94,9 @@
 		},
 		{
 			"id": "4444444444444444444444444444444444444444",
-			"tree_id": "7b221725174b672a458277e0818a26f41e2f5f13",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "Subject ending in dots...\n\nBody",
+			"message": "Commit number 4",
 			"timestamp": "2016-02-13T14:45:18+02:00",
 			"url": "https://github.com/monalisa/Hello-World/commit/4444444444444444444444444444444444444444",
 			"author": {
@@ -122,9 +122,9 @@
 		},
 		{
 			"id": "5555555555555555555555555555555555555555",
-			"tree_id": "6ce5106ea809a8dd2dc43761206a3d82f47f39f5",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "Exactly one line",
+			"message": "Commit number 5",
 			"timestamp": "2016-02-13T14:45:18+02:00",
 			"url": "https://github.com/monalisa/Hello-World/commit/5555555555555555555555555555555555555555",
 			"author": {
@@ -150,9 +150,9 @@
 		},
 		{
 			"id": "6666666666666666666666666666666666666666",
-			"tree_id": "c59e36846bb15a3e081c8e68010f5c0b70cc3321",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "Sixth commit",
+			"message": "Commit number 6",
 			"timestamp": "2016-02-13T14:45:18+02:00",
 			"url": "https://github.com/monalisa/Hello-World/commit/6666666666666666666666666666666666666666",
 			"author": {
@@ -178,11 +178,291 @@
 		},
 		{
 			"id": "7777777777777777777777777777777777777777",
-			"tree_id": "6aee01ccf0f3754d975253f130cbc2a3be887e56",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 			"distinct": true,
-			"message": "Seventh commit",
+			"message": "Commit number 7",
 			"timestamp": "2016-02-13T14:45:18+02:00",
 			"url": "https://github.com/monalisa/Hello-World/commit/7777777777777777777777777777777777777777",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "8888888888888888888888888888888888888888",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 8",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/8888888888888888888888888888888888888888",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "9999999999999999999999999999999999999999",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 9",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/9999999999999999999999999999999999999999",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1010101010101010101010101010101010101010",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 10",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1010101010101010101010101010101010101010",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1111111111111111111111111111111111111111",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 11",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1111111111111111111111111111111111111111",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1212121212121212121212121212121212121212",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 12",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1212121212121212121212121212121212121212",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1313131313131313131313131313131313131313",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 13",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1313131313131313131313131313131313131313",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1414141414141414141414141414141414141414",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 14",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1414141414141414141414141414141414141414",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1515151515151515151515151515151515151515",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 15",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1515151515151515151515151515151515151515",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1616161616161616161616161616161616161616",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 16",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1616161616161616161616161616161616161616",
+			"author": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"committer": {
+				"name": "Mona Lisa",
+				"email": "monalisa@users.noreply.github.com",
+				"username": "monalisa"
+			},
+			"added": [
+				"tests/parser.test.js",
+				"tests/fixtures/ping/expected.txt",
+				"tests/fixtures/ping/payload.json",
+				"tests/config.json"
+			],
+			"removed": [],
+			"modified": [
+				"src/index.js"
+			]
+		},
+		{
+			"id": "1717171717171717171717171717171717171717",
+			"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
+			"distinct": true,
+			"message": "Commit number 17",
+			"timestamp": "2016-02-13T14:45:18+02:00",
+			"url": "https://github.com/monalisa/Hello-World/commit/1717171717171717171717171717171717171717",
 			"author": {
 				"name": "Mona Lisa",
 				"email": "monalisa@users.noreply.github.com",
@@ -206,12 +486,12 @@
 		}
 	],
 	"head_commit": {
-		"id": "7777777777777777777777777777777777777777",
-		"tree_id": "6aee01ccf0f3754d975253f130cbc2a3be887e56",
+		"id": "1717171717171717171717171717171717171717",
+		"tree_id": "14411eace0f0f66d71efcd39c4b4f08126b7c107",
 		"distinct": true,
-		"message": "Seventh commit",
+		"message": "Commit number 17",
 		"timestamp": "2016-02-13T14:45:18+02:00",
-		"url": "https://github.com/monalisa/Hello-World/commit/7777777777777777777777777777777777777777",
+		"url": "https://github.com/monalisa/Hello-World/commit/1717171717171717171717171717171717171717",
 		"author": {
 			"name": "Mona Lisa",
 			"email": "monalisa@users.noreply.github.com",

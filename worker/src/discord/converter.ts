@@ -87,7 +87,7 @@ const IS_COMPONENTS_V2: MessageFlags.IsComponentsV2 = 32768;
 const MAX_MESSAGE_LENGTH = 4000;
 
 const MAX_WIKI_PAGES = 5;
-const MAX_PUSH_COMMITS = 5;
+const MAX_PUSH_COMMITS = 15;
 
 /**
  * Converts a GitHub webhook payload into a Discord webhook message.
@@ -479,12 +479,20 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	}
 
 	if (commits.length > 0) {
+		// A push of a single commit has the room to say what the commit itself says, everything past
+		// the summary that the line above it already carries
+		const message = commits.length === 1 ? commits[0].message.trim() : '';
+		const newline = message.indexOf('\n');
+		const body = newline === -1 ? '' : formatBody(message.slice(newline + 1));
+
 		// Newest commits first, and never more than a handful of them
 		embed.description = commits
 			.slice(-MAX_PUSH_COMMITS)
 			.reverse()
 			.map((commit) => {
-				let line = `[${escapeCode(shortSha(commit.id))}](${commit.url}) ${shortMessage(commit.message)}`;
+				// Where the body follows, the summary no longer has to trail off into it
+				const summary = body === '' ? commit.message : message.slice(0, newline);
+				let line = `[${escapeCode(shortSha(commit.id))}](${commit.url}) ${shortMessage(summary)}`;
 
 				if (commit.author.username) {
 					if (commit.author.username !== payload.sender?.login) {
@@ -497,6 +505,10 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 				return line;
 			})
 			.join('\n');
+
+		if (body !== '') {
+			embed.description += `\n\n${body}`;
+		}
 	}
 
 	return embed;
@@ -880,7 +892,7 @@ function formatMember(payload: MemberEvent): DiscordEmbed {
 }
 
 function formatGollum(payload: GollumEvent): DiscordEmbed {
-	// Never more than five pages, the same as commits in a push
+	// Never more than a handful of pages
 	const lines = payload.pages.slice(0, MAX_WIKI_PAGES).map((page) => {
 		// A page title with parentheses ends up in the url, where they would end the markdown link
 		const pageUrl = page.html_url.replaceAll('(', '%28').replaceAll(')', '%29');
