@@ -1,6 +1,13 @@
 import type { operations } from '@octokit/openapi-webhooks-types';
+import type {
+	APIContainerComponent,
+	APIMessageTopLevelComponent,
+	APITextDisplayComponent,
+	ComponentType,
+	MessageFlags,
+} from 'discord-api-types/v10';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../errors.js';
-import { escape, escapeCode, limitLength, shortDescription, shortMessage } from './text.js';
+import { escape, escapeCode, formatBody, limitLength, shortMessage } from './text.js';
 
 /** Every payload of an event, the operations are keyed as `event` or `event/action`. */
 type Payload<Event extends string> =
@@ -44,26 +51,41 @@ type TeamEvent = Payload<'team'>;
 type SponsorshipEvent = Payload<'sponsorship'>;
 type WorkflowRunEvent = Payload<'workflow-run'>;
 
+/** What every event is formatted into, before it is laid out as components. */
 export interface DiscordEmbed {
 	title: string;
 	description?: string;
 	url?: string;
 	color?: number;
-	author: { name: string; url?: string; icon_url?: string };
+	author: { name: string; icon_url: string };
 	footer?: { text: string };
 }
 
 export interface DiscordMessage {
-	/** Overrides the name of the Discord webhook for this message. */
+	flags: MessageFlags.IsComponentsV2;
+	/** Who the message is shown as being from, left out when Discord will not take the name. */
 	username?: string;
-	/** Overrides the avatar of the Discord webhook for this message. */
 	avatar_url?: string;
-	embeds: DiscordEmbed[];
+	components: APIMessageTopLevelComponent[];
 }
 
-const MAX_TITLE_LENGTH = 256;
-const MAX_DESCRIPTION_LENGTH = 4096;
-const MAX_FOOTER_LENGTH = 2048;
+/**
+ * Discord turns down a webhook username holding either of these, in any case and anywhere in it,
+ * so that nothing can pass itself off as Discord or as its own bot. Neither is documented,
+ * and a GitHub login is allowed to contain both.
+ */
+const BLOCKED_USERNAME = /discord|clyde/i;
+
+// The enums of discord-api-types are values, and importing one would put the whole of it in the
+// bundle. Every number here is checked against the member it names, which is all they are wanted for.
+const TEXT_DISPLAY: ComponentType.TextDisplay = 10;
+const CONTAINER: ComponentType.Container = 17;
+/** Turns the message into components, which take the place of `content` and `embeds`. */
+const IS_COMPONENTS_V2: MessageFlags.IsComponentsV2 = 32768;
+
+/** Discord turns a message down when the text of all of its components adds up to more than this. */
+const MAX_MESSAGE_LENGTH = 4000;
+
 const MAX_WIKI_PAGES = 5;
 const MAX_PUSH_COMMITS = 5;
 
@@ -75,23 +97,53 @@ const MAX_PUSH_COMMITS = 5;
  */
 export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 	const embed = format(eventType, payload);
+	const scope = formatScope(payload as ScopePayload);
 
-	// Discord rejects the whole message when an embed is over its limits
-	embed.title = limitLength(embed.title, MAX_TITLE_LENGTH);
+	// The sender opens the sentence the title finishes, and the whole of it links to the event.
+	// Who did it is in the card itself, so a message that can not be sent as them still says so.
+	const subject = `${escape(embed.author.name)} ${embed.title}`;
+	const heading = `### ${embed.url === undefined ? subject : `[${subject}](${embed.url})`}`;
 
-	if (embed.description) {
-		embed.description = limitLength(embed.description, MAX_DESCRIPTION_LENGTH);
-	} else {
-		delete embed.description;
-	}
+	// Several repositories usually share a webhook, so the card says where the event happened
+	const parts = [scope === null ? heading : `-# ${escape(scope)}\n${heading}`];
 
 	if (embed.footer) {
-		embed.footer.text = limitLength(embed.footer.text, MAX_FOOTER_LENGTH);
-	} else {
-		delete embed.footer;
+		// Everything the layout did not compose itself is somebody else's text in a markdown line
+		parts.push(`-# ${escape(embed.footer.text)}`);
 	}
 
-	return { embeds: [embed] };
+	if (embed.description) {
+		parts.push(embed.description);
+	}
+
+	// Each part in turn takes what the ones before it left, so the body gives way to the heading
+	// rather than the message being turned down for the two of them together
+	let room = MAX_MESSAGE_LENGTH;
+	const components: APITextDisplayComponent[] = [];
+
+	for (const part of parts) {
+		// An ellipsis of its own would say nothing, and would still be over the limit
+		if (room < 1) {
+			break;
+		}
+
+		const cut = limitLength(part, room);
+
+		room -= [...cut].length;
+		components.push({ type: TEXT_DISPLAY, content: cut });
+	}
+
+	const container: APIContainerComponent = { type: CONTAINER, accent_color: embed.color, components };
+	const message: DiscordMessage = { flags: IS_COMPONENTS_V2, components: [container] };
+
+	if (!BLOCKED_USERNAME.test(embed.author.name)) {
+		// Saying where the name is from keeps it from reading as a Discord account of the same name,
+		// and it is what stops a sender called "everyone" or "here" being turned down as well
+		message.username = `${embed.author.name} on GitHub`;
+		message.avatar_url = embed.author.icon_url;
+	}
+
+	return message;
 }
 
 function format(eventType: string, payload: unknown): DiscordEmbed {
@@ -188,9 +240,31 @@ function formatAuthor(sender: Sender): DiscordEmbed['author'] {
 
 	return {
 		name: sender.login,
-		url: sender.html_url,
-		icon_url: sender.avatar_url,
+		// GitHub always sends an avatar, and its own url for one stands in if it ever does not
+		icon_url: sender.avatar_url ?? `https://github.com/${sender.login}.png`,
 	};
+}
+
+interface ScopePayload {
+	repository?: { name: string };
+	organization?: { login: string };
+	sponsorship?: { sponsorable?: { login: string } | null };
+	hook?: { type?: string };
+	sender?: { login: string } | null;
+}
+
+/**
+ * Names the repository of an event, or with an `@` the account of an event that has no repository:
+ * the organization, or the sponsored account of a sponsors listing, whose ping only knows who set the webhook up.
+ */
+function formatScope({ repository, organization, sponsorship, hook, sender }: ScopePayload): string | null {
+	if (repository) {
+		return repository.name;
+	}
+
+	const account = organization ?? sponsorship?.sponsorable ?? (hook?.type === 'SponsorsListing' ? sender : null);
+
+	return account ? `@${account.login}` : null;
 }
 
 /** Something new, or something that went well. */
@@ -303,23 +377,20 @@ function actionPhrase(action: string): [verb: string, suffix: string] {
 	}
 }
 
-/** Actions after which an alert is open, and so needs attention. */
-const OPEN_ALERT_ACTIONS = new Set(['created', 'reopened', 'reintroduced', 'publicly leaked']);
-
 /**
  * The parts every alert of a security feature has in common. A new alert always needs attention,
  * what happened to it afterwards is coloured like any other action.
  */
 function alertEmbed(title: string, action: string, url: DiscordEmbed['url'], sender: Sender): DiscordEmbed {
 	return {
-		title: OPEN_ALERT_ACTIONS.has(action) ? `⚠ ${title}` : title,
+		title,
 		url,
 		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
 		author: formatAuthor(sender),
 	};
 }
 
-/** Footers are plain text, so the names need no escaping. */
+/** The layout escapes what it is given, so the names are passed on as they are. */
 function labelsFooter(labels: { name: string }[] | null | undefined): DiscordEmbed['footer'] {
 	return labels && labels.length > 0 ? { text: labels.map((label) => label.name).join(' · ') } : undefined;
 }
@@ -340,7 +411,7 @@ function shortSha(sha: string): string {
 
 function formatPing(payload: PingEvent): DiscordEmbed {
 	return {
-		title: `Hook ${payload.hook_id} worked!`,
+		title: `set up hook **${payload.hook_id}** — it works!`,
 		description: escape(payload.zen ?? ''),
 		color: COLOR_NEUTRAL,
 		author: formatAuthor(payload.sender),
@@ -465,7 +536,7 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 	};
 
 	if (payload.action === 'opened') {
-		embed.description = shortDescription(payload.issue.body);
+		embed.description = formatBody(payload.issue.body);
 
 		embed.footer = labelsFooter(payload.issue.labels);
 	}
@@ -529,7 +600,7 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 	};
 
 	if (action === 'opened') {
-		embed.description = shortDescription(payload.pull_request.body);
+		embed.description = formatBody(payload.pull_request.body);
 		embed.footer = labelsFooter(payload.pull_request.labels);
 	} else if (action === 'merged') {
 		embed.description = `Merged from **${escape(payload.pull_request.user?.login ?? 'ghost')}** to ${escapeCode(payload.pull_request.base.ref)}`;
@@ -546,7 +617,7 @@ function formatMilestone(payload: MilestoneEvent): DiscordEmbed {
 
 	return {
 		title: `${action} milestone **#${payload.milestone.number}**: ${escape(payload.milestone.title)}`,
-		description: action === 'created' ? shortDescription(payload.milestone.description) : '',
+		description: action === 'created' ? formatBody(payload.milestone.description) : '',
 		url: payload.milestone.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -564,7 +635,7 @@ function formatPackage(event: string, payload: PackageEvent | RegistryPackageEve
 	return {
 		title: `${payload.action} ${escape(pkg.package_type.toLowerCase())} package: **${escape(pkg.name)}**${version ? ` ${escape(version)}` : ''}`,
 		// Container packages have an empty object as their body
-		description: payload.action === 'published' && typeof body === 'string' ? shortDescription(body) : '',
+		description: payload.action === 'published' && typeof body === 'string' ? formatBody(body) : '',
 		url: pkg.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -585,7 +656,7 @@ function formatRelease(payload: ReleaseEvent): DiscordEmbed {
 	return {
 		title: `${payload.action} a ${kind}: ${escape(name)}`,
 		// Release notes are only worth showing when the release appears
-		description: payload.action === 'published' ? shortDescription(payload.release.body) : '',
+		description: payload.action === 'published' ? formatBody(payload.release.body) : '',
 		url: payload.release.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -597,7 +668,7 @@ function formatCommitComment(payload: CommitCommentEvent): DiscordEmbed {
 
 	return {
 		title: `commented on commit ${escapeCode(shortSha(payload.comment.commit_id))}`,
-		description: shortDescription(payload.comment.body),
+		description: formatBody(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -616,7 +687,7 @@ function formatComment(event: string, payload: IssueCommentEvent | DiscussionCom
 		title: deleted
 			? `deleted comment in ${kind} **#${subject.number}** from **${escape(payload.comment.user?.login ?? 'ghost')}**`
 			: `commented on ${kind} **#${subject.number}**: ${escape(subject.title)}`,
-		description: deleted ? '' : shortDescription(payload.comment.body),
+		description: deleted ? '' : formatBody(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -639,7 +710,7 @@ function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed 
 	return {
 		title: `${state}${state === 'dismissed' ? ' a review on' : ''} PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
 		// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
-		description: state === 'dismissed' ? '' : shortDescription(payload.review.body),
+		description: state === 'dismissed' ? '' : formatBody(payload.review.body),
 		url: payload.review.html_url,
 		color: state === 'dismissed' ? COLOR_BAD : actionColor(state),
 		author: formatAuthor(payload.sender),
@@ -651,7 +722,7 @@ function formatPullRequestReviewComment(payload: PullRequestReviewCommentEvent):
 
 	return {
 		title: `commented on the code of PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
-		description: shortDescription(payload.comment.body),
+		description: formatBody(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -678,10 +749,10 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 	};
 
 	if (action === 'created') {
-		embed.description = shortDescription(payload.discussion.body);
+		embed.description = formatBody(payload.discussion.body);
 		embed.footer = labelsFooter(payload.discussion.labels);
 	} else if (payload.action === 'answered') {
-		embed.description = shortDescription(payload.answer?.body);
+		embed.description = formatBody(payload.answer?.body);
 	}
 
 	return embed;
@@ -702,14 +773,14 @@ function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 	const vulnerability = payload.alert.security_vulnerability;
 
 	const embed = alertEmbed(
-		`Dependabot alert **#${payload.alert.number}** ${action} for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
+		`${action} Dependabot alert **#${payload.alert.number}** for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
 		action,
 		payload.alert.html_url,
 		payload.sender,
 	);
 
 	if (action === 'created') {
-		embed.description = shortDescription(advisory.description);
+		embed.description = formatBody(advisory.description);
 		embed.footer = { text: `${advisory.severity} · ${advisory.cve_id ?? advisory.ghsa_id}` };
 	}
 
@@ -728,14 +799,14 @@ function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed 
 	assertAction('code_scanning_alert', action, ['created', 'fixed', 'dismissed', 'reopened'], ['appeared_in_branch', 'updated_assignment']);
 
 	const embed = alertEmbed(
-		`Code scanning alert **#${payload.alert.number}** ${action}: ${escape(payload.alert.rule.description)}`,
+		`${action} Code scanning alert **#${payload.alert.number}**: ${escape(payload.alert.rule.description)}`,
 		action,
 		payload.alert.html_url,
 		payload.sender,
 	);
 
 	if (action === 'created') {
-		embed.description = shortDescription(payload.alert.most_recent_instance?.message?.text);
+		embed.description = formatBody(payload.alert.most_recent_instance?.message?.text);
 		embed.footer = { text: `${payload.alert.rule.severity ?? 'none'} · ${payload.alert.rule.id}` };
 	}
 
@@ -756,7 +827,7 @@ function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEm
 	const secretType = alert.secret_type_display_name ?? alert.secret_type ?? 'unknown';
 
 	const embed = alertEmbed(
-		`Secret scanning alert **#${alert.number}** ${action}: ${escape(secretType)}`,
+		`${action} Secret scanning alert **#${alert.number}**: ${escape(secretType)}`,
 		action,
 		alert.html_url,
 		payload.sender,
@@ -779,7 +850,7 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 	if (payload.action === 'reported') {
 		// Reported advisories are private, so do not reveal what they are about
 		return {
-			title: `⚠ privately reported a vulnerability: **${escape(advisory.ghsa_id)}**`,
+			title: `privately reported a vulnerability: **${escape(advisory.ghsa_id)}**`,
 			url: advisory.html_url,
 			color: COLOR_ATTENTION,
 			author: formatAuthor(payload.sender),
@@ -787,8 +858,8 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 	}
 
 	return {
-		title: `⚠ published a security advisory: ${escape(advisory.summary)}`,
-		description: shortDescription(advisory.description),
+		title: `published a security advisory: ${escape(advisory.summary)}`,
+		description: formatBody(advisory.description),
 		url: advisory.html_url,
 		color: COLOR_ATTENTION,
 		author: formatAuthor(payload.sender),
@@ -837,7 +908,7 @@ function formatGollum(payload: GollumEvent): DiscordEmbed {
 
 function formatPublic(payload: PublicEvent): DiscordEmbed {
 	return {
-		title: `**${escape(payload.repository.name)}** is now open source and available to everyone!`,
+		title: `open sourced **${escape(payload.repository.name)}** — now available to everyone!`,
 		url: payload.repository.html_url,
 		color: COLOR_DEFAULT,
 		author: formatAuthor(payload.sender),
@@ -885,7 +956,7 @@ function projectEmbed(
 
 	return {
 		title: `${action} project **#${project.number}**: ${escape(project.title)}`,
-		description: action === 'created' ? shortDescription(project.body) : '',
+		description: action === 'created' ? formatBody(project.body) : '',
 		url: project.url,
 		color: actionColor(action),
 		author: formatAuthor(sender),
@@ -926,7 +997,7 @@ function formatProjectStatusUpdate(payload: ProjectStatusUpdateEvent): DiscordEm
 
 	return {
 		title: `posted a project status update${status === null ? '' : ` (${status})`}`,
-		description: shortDescription(update.body),
+		description: formatBody(update.body),
 		// The payload only has the node id of the project, so there is nothing to link but the list of them
 		url: `https://github.com/orgs/${payload.organization.login}/projects`,
 		color: status === null ? COLOR_DEFAULT : actionColor(status),
@@ -1120,7 +1191,7 @@ function formatWorkflowRun(payload: WorkflowRunEvent): DiscordEmbed {
 	}
 
 	return {
-		title: `workflow **${escape(run.name || payload.workflow?.name || 'unknown')}** ${outcome} on ${escapeCode(payload.repository.default_branch)}`,
+		title: `broke ${escapeCode(payload.repository.default_branch)} — workflow **${escape(run.name || payload.workflow?.name || 'unknown')}** ${outcome}`,
 		description: shortMessage(run.head_commit.message),
 		url: run.html_url,
 		color: actionColor(outcome),

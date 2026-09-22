@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "github on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4",
+    "components": [
         {
-            "title": "\u26a0 Secret scanning alert **#3** created: github\\_personal\\_access\\_token",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3",
-            "color": 16750592,
-            "author": {
-                "name": "github",
-                "url": "https:\/\/github.com\/github",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
-            }
+            "type": 17,
+            "accent_color": 16750592,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [github created Secret scanning alert **#3**: github\\_personal\\_access\\_token](https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3)"
+                }
+            ]
         }
     ]
 }

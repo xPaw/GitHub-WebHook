@@ -56,6 +56,9 @@ export function parseTarget(url: URL): Target {
 export function targetUrl({ id, token, threadId }: Target): string {
 	const url = new URL(`https://discord.com/api/webhooks/${id}/${token}`);
 
+	// A webhook that no application owns has its components ignored without this
+	url.searchParams.set('with_components', 'true');
+
 	if (threadId !== undefined) {
 		url.searchParams.set('thread_id', threadId);
 	}

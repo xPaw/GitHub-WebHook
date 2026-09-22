@@ -1,18 +1,25 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "dependabot[bot] on GitHub",
+    "avatar_url": "https:\/\/avatars0.githubusercontent.com\/in\/29110?v=4",
+    "components": [
         {
-            "title": "opened PR **#311**: Bump Microsoft.NET.Test.Sdk from 16.7.1 to 16.8.0",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/311",
-            "color": 5025616,
-            "author": {
-                "name": "dependabot[bot]",
-                "url": "https:\/\/github.com\/apps\/dependabot",
-                "icon_url": "https:\/\/avatars0.githubusercontent.com\/in\/29110?v=4"
-            },
-            "description": "Bumps [Microsoft.NET.Test.Sdk](https:\/\/github.com\/microsoft\/vstest) from 16.7.1 to 16.8.0.\nRelease notes\nSourced from Microsoft.NET.Test.Sdk's releases.\nv16.8.0\nSee the release notes here.\nv16.8.0-preview-20200921-01\nSee the release notes here.\nv16.8\u2026",
-            "footer": {
-                "text": "dependencies \u00b7 help wanted"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [dependabot\\[bot\\] opened PR **#311**: Bump Microsoft.NET.Test.Sdk from 16.7.1 to 16.8.0](https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/311)"
+                },
+                {
+                    "type": 10,
+                    "content": "-# dependencies \u00b7 help wanted"
+                },
+                {
+                    "type": 10,
+                    "content": "Bumps [Microsoft.NET.Test.Sdk](https:\/\/github.com\/microsoft\/vstest) from 16.7.1 to 16.8.0.\nRelease notes\nSourced from Microsoft.NET.Test.Sdk's releases.\nv16.8.0\nSee the release notes here.\nv16.8.0-preview-20200921-01\nSee the release notes here.\u2026"
+                }
+            ]
         }
     ]
 }

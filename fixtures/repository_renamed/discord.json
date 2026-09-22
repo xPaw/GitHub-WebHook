@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4",
+    "components": [
         {
-            "title": "renamed **git-consortium** (from **old-git-consortium**)",
-            "url": "https:\/\/github.com\/octo-org\/git-consortium",
-            "color": 3113463,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# git-consortium\n### [monalisa renamed **git-consortium** (from **old-git-consortium**)](https:\/\/github.com\/octo-org\/git-consortium)"
+                }
+            ]
         }
     ]
 }

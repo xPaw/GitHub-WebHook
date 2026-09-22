@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "unpublished a pre-release: 0.0.4",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/releases\/tag\/0.0.4",
-            "color": 16007990,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 16007990,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa unpublished a pre-release: 0.0.4](https:\/\/github.com\/octo-org\/Spoon-Knife\/releases\/tag\/0.0.4)"
+                }
+            ]
         }
     ]
 }

@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "fast-forwarded `master` from `14e514` to `8ddec6`",
-            "url": "https:\/\/github.com\/monalisa\/Hello-World\/compare\/14e514deb5f8...8ddec647cc7a",
-            "color": 3113463,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [monalisa fast-forwarded `master` from `14e514` to `8ddec6`](https:\/\/github.com\/monalisa\/Hello-World\/compare\/14e514deb5f8...8ddec647cc7a)"
+                }
+            ]
         }
     ]
 }

@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "deleted milestone **#1**: v1.0",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/milestone\/1",
-            "color": 16007990,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 16007990,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat deleted milestone **#1**: v1.0](https:\/\/github.com\/Codertocat\/Hello-World\/milestone\/1)"
+                }
+            ]
         }
     ]
 }

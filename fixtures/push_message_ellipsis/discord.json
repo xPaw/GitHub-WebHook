@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "pushed 3 new commits",
-            "url": "https:\/\/github.com\/monalisa\/Hello-World\/compare\/14e514deb5f8...cccccccccccc",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            },
-            "description": "[`cccccc`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/cccccccccccccccccccccccccccccccccccccccc) Subject\u2026\n[`bbbbbb`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\u2026\n[`aaaaaa`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) 0"
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [monalisa pushed 3 new commits](https:\/\/github.com\/monalisa\/Hello-World\/compare\/14e514deb5f8...cccccccccccc)"
+                },
+                {
+                    "type": 10,
+                    "content": "[`cccccc`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/cccccccccccccccccccccccccccccccccccccccc) Subject\u2026\n[`bbbbbb`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\u2026\n[`aaaaaa`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) 0"
+                }
+            ]
         }
     ]
 }

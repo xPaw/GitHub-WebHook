@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "posted a project status update (on track)",
-            "description": "Two of the four milestones are done, the rest is on schedule.",
-            "url": "https:\/\/github.com\/orgs\/Octocoders\/projects",
-            "color": 5025616,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# @Octocoders\n### [Codertocat posted a project status update (on track)](https:\/\/github.com\/orgs\/Octocoders\/projects)"
+                },
+                {
+                    "type": 10,
+                    "content": "Two of the four milestones are done, the rest is on schedule."
+                }
+            ]
         }
     ]
 }

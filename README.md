@@ -10,8 +10,9 @@ A push, a merged pull request and a release look like this on IRC, with colors:
 [Spoon-Knife] monalisa published a pre-release 0.0.4: https://github.com/octo-org/Spoon-Knife/releases/tag/0.0.4
 ```
 
-On Discord the same events are embeds with the user as the author, a linked title such as "pushed 1 new commit",
-and the commits, the comment or the release notes as the description.
+On Discord the same events are cards built with [components](https://docs.discord.com/developers/components/reference),
+sent under the name and avatar of the GitHub user who set the event off, headed by a link
+such as "monalisa pushed 1 new commit", with the commits, the comment or the release notes below it.
 
 Discord can accept GitHub webhooks on its own when `/github` is added to the url of a webhook,
 but it only formats a handful of events and silently drops the rest, such as security alerts, wiki edits
@@ -28,7 +29,7 @@ There are two versions, use whichever is easier for you to host:
 | [`worker/`](worker/) | Discord | A Cloudflare Worker that is ready to deploy, it posts to the Discord webhook that is named in the url |
 
 Both versions are kept in sync: they support the same events, ignore the same actions,
-and produce the same Discord embed for the same payload.
+and produce the same Discord message for the same payload.
 Every event in [`fixtures/`](fixtures/) has a payload along with the messages that are expected for it,
 and the tests of both versions run against these same fixtures.
 A change to how an event is formatted has to be made in both versions.
@@ -41,14 +42,14 @@ Every folder in `fixtures/` is one event:
 | `type.txt` | The name of the event, as sent in the `X-GitHub-Event` header |
 | `payload.json` | The payload as sent by GitHub |
 | `expected.bin` | The IRC message that is expected for it, with its color codes |
-| `discord.json` | The Discord embed that is expected for it |
+| `discord.json` | The Discord message that is expected for it |
 
-The PHP tests check both messages, the Worker tests check the embed
+The PHP tests check both messages, the Worker tests check the Discord one
 and validate the payload against the webhook schemas of GitHub.
 
 To add or change an event, add a folder with its type and payload, make the change in `php/`,
 and run its tests with `UPDATE_FIXTURES=1` to write the expected messages.
-Review them with git, then make the same change in `worker/` until its tests pass against the same embed.
+Review them with git, then make the same change in `worker/` until its tests pass against the same message.
 
 ## Events [\[ref\]](https://docs.github.com/en/webhooks/webhook-events-and-payloads)
 

@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "created project **#1**: Space 2.0",
-            "description": "Project tasks for a trip to Space",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/projects\/1",
-            "color": 5025616,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat created project **#1**: Space 2.0](https:\/\/github.com\/Codertocat\/Hello-World\/projects\/1)"
+                },
+                {
+                    "type": 10,
+                    "content": "Project tasks for a trip to Space"
+                }
+            ]
         }
     ]
 }

@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "created deploy key: **hey-its-a-deploy-key** (read-only)",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys",
-            "color": 5025616,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat created deploy key: **hey-its-a-deploy-key** (read-only)](https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys)"
+                }
+            ]
         }
     ]
 }

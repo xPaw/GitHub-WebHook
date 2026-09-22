@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "tagged `0.0.4` at `master`",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/compare\/0000000000000000000000000000000000000000..291b9dd498f2e61f9e26981aef691166c23a80a4",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa tagged `0.0.4` at `master`](https:\/\/github.com\/octo-org\/Spoon-Knife\/compare\/0000000000000000000000000000000000000000..291b9dd498f2e61f9e26981aef691166c23a80a4)"
+                }
+            ]
         }
     ]
 }

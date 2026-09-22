@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "closed project **#1**: Space 2.0",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/projects\/1",
-            "color": 8540383,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 8540383,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat closed project **#1**: Space 2.0](https:\/\/github.com\/Codertocat\/Hello-World\/projects\/1)"
+                }
+            ]
         }
     ]
 }

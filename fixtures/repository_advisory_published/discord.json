@@ -1,18 +1,25 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "\u26a0 published a security advisory: Path traversal in the static file handler",
-            "description": "### Impact\nA crafted request path lets an attacker read files outside of the public directory.\n### Patches\nUpgrade to 1.4.2.",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p",
-            "color": 16750592,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            },
-            "footer": {
-                "text": "high \u00b7 CVE-2023-31415"
-            }
+            "type": 17,
+            "accent_color": 16750592,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat published a security advisory: Path traversal in the static file handler](https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p)"
+                },
+                {
+                    "type": 10,
+                    "content": "-# high \u00b7 CVE-2023-31415"
+                },
+                {
+                    "type": 10,
+                    "content": "**Impact**\nA crafted request path lets an attacker read files outside of the public directory.\n**Patches**\nUpgrade to 1.4.2."
+                }
+            ]
         }
     ]
 }

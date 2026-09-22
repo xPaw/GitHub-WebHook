@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4",
+    "components": [
         {
-            "title": "enabled auto-merge on PR **#328**: Fix a rendering glitch",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/328",
-            "color": 3113463,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa enabled auto-merge on PR **#328**: Fix a rendering glitch](https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/328)"
+                }
+            ]
         }
     ]
 }

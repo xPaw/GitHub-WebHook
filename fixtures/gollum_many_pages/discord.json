@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "updated wiki",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki",
-            "description": "[created Foo \\(bar\\)](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Foo-%28bar%29)\n[edited Page 1](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-1\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36): Fixed a typo\n[created Page 2](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-2)\n[edited Page 3](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-3\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36)\n[created Page 4](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-4)\nand 2 more pages",
-            "color": 3113463,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa updated wiki](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki)"
+                },
+                {
+                    "type": 10,
+                    "content": "[created Foo \\(bar\\)](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Foo-%28bar%29)\n[edited Page 1](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-1\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36): Fixed a typo\n[created Page 2](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-2)\n[edited Page 3](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-3\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36)\n[created Page 4](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-4)\nand 2 more pages"
+                }
+            ]
         }
     ]
 }

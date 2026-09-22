@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "Secret scanning alert **#3** resolved: GitHub Personal Access Token",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3",
-            "color": 5025616,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            },
-            "description": "Resolved as false positive"
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat resolved Secret scanning alert **#3**: GitHub Personal Access Token](https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3)"
+                },
+                {
+                    "type": 10,
+                    "content": "Resolved as false positive"
+                }
+            ]
         }
     ]
 }

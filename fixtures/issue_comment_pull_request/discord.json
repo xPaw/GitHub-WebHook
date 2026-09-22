@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4",
+    "components": [
         {
-            "title": "commented on PR **#501**: Optimise a hot loop",
-            "description": "Merged in f0e5515ea394d6a2dec54283942c66920193f747",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/501#issuecomment-90002004",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa commented on PR **#501**: Optimise a hot loop](https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/501#issuecomment-90002004)"
+                },
+                {
+                    "type": 10,
+                    "content": "Merged in f0e5515ea394d6a2dec54283942c66920193f747"
+                }
+            ]
         }
     ]
 }

@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "renamed team **github** (from **opensource**)",
-            "url": "https:\/\/github.com\/orgs\/Octocoders\/teams\/github",
-            "color": 3113463,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# @Octocoders\n### [Codertocat renamed team **github** (from **opensource**)](https:\/\/github.com\/orgs\/Octocoders\/teams\/github)"
+                }
+            ]
         }
     ]
 }

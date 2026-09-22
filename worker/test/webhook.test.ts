@@ -54,12 +54,12 @@ describe('parseTarget', () => {
 
 describe('targetUrl', () => {
 	it('builds the url of the Discord webhook', () => {
-		expect(targetUrl({ id: ID, token: TOKEN })).toBe(`https://discord.com/api/webhooks/${ID}/${TOKEN}`);
+		expect(targetUrl({ id: ID, token: TOKEN })).toBe(`https://discord.com/api/webhooks/${ID}/${TOKEN}?with_components=true`);
 	});
 
 	it('adds the thread', () => {
 		expect(targetUrl({ id: ID, token: TOKEN, threadId: THREAD })).toBe(
-			`https://discord.com/api/webhooks/${ID}/${TOKEN}?thread_id=${THREAD}`,
+			`https://discord.com/api/webhooks/${ID}/${TOKEN}?with_components=true&thread_id=${THREAD}`,
 		);
 	});
 });

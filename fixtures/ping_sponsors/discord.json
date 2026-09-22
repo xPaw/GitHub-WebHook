@@ -1,14 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "octocat on GitHub",
+    "avatar_url": "https:\/\/avatars2.githubusercontent.com\/u\/5?",
+    "components": [
         {
-            "title": "Hook 624672630 worked!",
-            "description": "Avoid administrative distraction.",
-            "color": 3113463,
-            "author": {
-                "name": "octocat",
-                "url": "https:\/\/github.com\/octocat",
-                "icon_url": "https:\/\/avatars2.githubusercontent.com\/u\/5?"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# @octocat\n### octocat set up hook **624672630** \u2014 it works!"
+                },
+                {
+                    "type": 10,
+                    "content": "Avoid administrative distraction."
+                }
+            ]
         }
     ]
 }

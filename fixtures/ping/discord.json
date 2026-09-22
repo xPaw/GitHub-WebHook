@@ -1,14 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "Hook 7292732 worked!",
-            "description": "Anything added dilutes everything else.",
-            "color": 3113463,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### monalisa set up hook **7292732** \u2014 it works!"
+                },
+                {
+                    "type": 10,
+                    "content": "Anything added dilutes everything else."
+                }
+            ]
         }
     ]
 }

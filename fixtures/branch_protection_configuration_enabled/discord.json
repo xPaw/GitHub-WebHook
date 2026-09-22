@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "enabled branch protection for all branches",
-            "url": "https:\/\/github.com\/octo-org\/octo-repo\/settings\/branches",
-            "color": 5025616,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# octo-repo\n### [Codertocat enabled branch protection for all branches](https:\/\/github.com\/octo-org\/octo-repo\/settings\/branches)"
+                }
+            ]
         }
     ]
 }

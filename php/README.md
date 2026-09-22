@@ -57,14 +57,19 @@ Some events, such as wiki updates, return multiple lines separated by a new line
 
 #### GetEmbed()
 Returns an array which can be encoded as JSON and sent to a Discord webhook as is.
-It contains a single embed whose author is the GitHub user that triggered the event.
-Titles and descriptions are cut to fit within the limits of Discord.
+It is a single card, headed by the GitHub user that set the event off and what they did, linked to it,
+under the name of the repository, or `@` and the account for events that have no repository.
+The message is sent as that user, unless Discord will not take their login as a username.
+Bodies keep their markdown, but headings in them are flattened so that they can not out-shout the card.
+
+The message sets the `IS_COMPONENTS_V2` flag, so the webhook has to be posted to with
+`?with_components=true` or Discord ignores the components and rejects the message.
 
 ## Development
 `composer install` installs phpunit and phpstan.
 
 `php vendor/bin/phpunit` runs the tests. Every event in `../fixtures` is converted and compared against
-its expected `expected.bin` IRC message and `discord.json` embed.
+its expected `expected.bin` IRC message and `discord.json` message.
 Run the tests with `UPDATE_FIXTURES=1` to write the current output as the expected one,
 then review what changed with git.
 

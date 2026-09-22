@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "hubot on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/90000004?v=4",
+    "components": [
         {
-            "title": "pushed 1 new commit",
-            "url": "https:\/\/github.com\/Octocoders\/test-repo1\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171",
-            "color": 5025616,
-            "author": {
-                "name": "hubot",
-                "url": "https:\/\/github.com\/hubot",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/90000004?v=4"
-            },
-            "description": "[`560082`](https:\/\/github.com\/Octocoders\/test-repo1\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171) Update gitignore and add a readme - *Octo \\*test\\* Cat*"
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# test-repo1\n### [hubot pushed 1 new commit](https:\/\/github.com\/Octocoders\/test-repo1\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171)"
+                },
+                {
+                    "type": 10,
+                    "content": "[`560082`](https:\/\/github.com\/Octocoders\/test-repo1\/commit\/56008277f8643ad2f56ec9ef1a4bf265280ee171) Update gitignore and add a readme - *Octo \\*test\\* Cat*"
+                }
+            ]
         }
     ]
 }

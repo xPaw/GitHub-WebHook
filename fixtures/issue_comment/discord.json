@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "commented on issue **#5**: Add tests",
-            "description": "test issue comment :heart:",
-            "url": "https:\/\/github.com\/monalisa\/Hello-World\/issues\/5#issuecomment-183873315",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [monalisa commented on issue **#5**: Add tests](https:\/\/github.com\/monalisa\/Hello-World\/issues\/5#issuecomment-183873315)"
+                },
+                {
+                    "type": 10,
+                    "content": "test issue comment :heart:"
+                }
+            ]
         }
     ]
 }

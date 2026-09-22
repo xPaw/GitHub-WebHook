@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4",
+    "components": [
         {
-            "title": "deleted issue **#508**: Something isn't rendering correctly",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/issues\/508",
-            "color": 16007990,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
-            }
+            "type": 17,
+            "accent_color": 16007990,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa deleted issue **#508**: Something isn't rendering correctly](https:\/\/github.com\/octo-org\/Spoon-Knife\/issues\/508)"
+                }
+            ]
         }
     ]
 }

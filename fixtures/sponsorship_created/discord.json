@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars2.githubusercontent.com\/u\/2?",
+    "components": [
         {
-            "title": "is now sponsoring **octocat**",
-            "url": "https:\/\/github.com\/sponsors\/octocat",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars2.githubusercontent.com\/u\/2?"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# @octocat\n### [monalisa is now sponsoring **octocat**](https:\/\/github.com\/sponsors\/octocat)"
+                }
+            ]
         }
     ]
 }

@@ -55,18 +55,11 @@ async function handle(request: Request, secret: string): Promise<Response> {
 
 	// The Discord webhook is part of the url, which is only looked at once the request is known to be ours
 	const target = parseTarget(new URL(request.url));
-	const { eventType, repositoryName, displayName, avatarUrl, payload } = parseRequest(request, body);
+	const { eventType, repositoryName, payload } = parseRequest(request, body);
 
 	assertNotNoise(eventType, payload);
 
-	// Several repositories usually share a webhook, the name and the avatar of the owner tell their messages apart.
-	// The sender is already shown as the author of the embed.
-	const message = {
-		username: webhookUsername(displayName),
-		avatar_url: avatarUrl,
-		allowed_mentions: { parse: [] },
-		...getEmbed(eventType, payload),
-	};
+	const message = { allowed_mentions: { parse: [] }, ...getEmbed(eventType, payload) };
 
 	// Awaited rather than deferred so that GitHub's delivery log shows the real outcome
 	const result = await sendToDiscord(target, message);
@@ -76,11 +69,6 @@ async function handle(request: Request, secret: string): Promise<Response> {
 	];
 
 	return text(result.ok ? 202 : 502, lines.join('\n'));
-}
-
-/** Discord rejects messages whose username is empty, too long or contains one of its reserved words. */
-function webhookUsername(name: string): string | undefined {
-	return name === '' || name.length > 80 || /discord|clyde|^(everyone|here)$/i.test(name) ? undefined : name;
 }
 
 /** Deliberately the same response whether the signature is missing or wrong. */

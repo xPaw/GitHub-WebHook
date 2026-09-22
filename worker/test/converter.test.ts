@@ -1,5 +1,10 @@
+import type {
+	APIContainerComponent,
+	APITextDisplayComponent,
+} from 'discord-api-types/v10';
 import { describe, expect, it } from 'vitest';
 import { getEmbed } from '../src/discord/converter.js';
+import { limitLength } from '../src/discord/text.js';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../src/errors.js';
 import { actionFixtures, loadPayload as payload, type Payload, withAction } from './fixtures.js';
 
@@ -135,11 +140,56 @@ describe('unsupported events', () => {
 	});
 });
 
-describe('optional fields', () => {
-	function embed(eventType: string, fixture: string, change: (payload: Payload) => void) {
-		return getEmbed(eventType, payload(fixture, change)).embeds[0];
+/** The one length Discord imposes, over which it turns a whole message down. */
+const MAX_MESSAGE_LENGTH = 4000;
+
+interface Card {
+	scope: string | null;
+	title: string;
+	/** Every character Discord counts towards {@link MAX_MESSAGE_LENGTH}. */
+	size: number;
+	username?: string;
+	avatar?: string;
+	url?: string;
+	description?: string;
+	footer?: { text: string };
+}
+
+/** Takes a card apart again, so that a test can assert on one piece of it. */
+function embed(eventType: string, fixture: string, change: (payload: Payload) => void): Card {
+	const message = getEmbed(eventType, payload(fixture, change));
+	const container = message.components[0] as APIContainerComponent;
+	const [heading, ...rest] = container.components.map((component) => (component as APITextDisplayComponent).content);
+
+	const lines = heading.split('\n');
+	const titleLine = lines[lines.length - 1];
+	const linked = /^### \[(.*)]\((.*)\)$/s.exec(titleLine);
+
+	const card: Card = {
+		scope: lines.length > 1 ? lines[0].slice('-# '.length) : null,
+		title: linked ? linked[1] : titleLine.slice('### '.length),
+		size: [heading, ...rest].reduce((total, part) => total + [...part].length, 0),
+		username: message.username,
+		avatar: message.avatar_url,
+	};
+
+	if (linked) {
+		card.url = linked[2];
 	}
 
+	// The labels come before the body, and are the only one of the two set as subtext
+	if (rest[0]?.startsWith('-# ')) {
+		card.footer = { text: (rest.shift() as string).slice('-# '.length) };
+	}
+
+	if (rest.length > 0) {
+		card.description = rest[0];
+	}
+
+	return card;
+}
+
+describe('optional fields', () => {
 	it('ping without zen has no description', () => {
 		const result = embed('ping', 'ping', (p) => {
 			delete p.zen;
@@ -161,7 +211,7 @@ describe('optional fields', () => {
 			p.member = null;
 		});
 
-		expect(result.title).toBe('added **ghost** as a collaborator');
+		expect(result.title).toBe('monalisa added **ghost** as a collaborator');
 	});
 
 	it('deleted comment from a deleted user', () => {
@@ -169,7 +219,7 @@ describe('optional fields', () => {
 			p.comment.user = null;
 		});
 
-		expect(result.title).toBe('deleted comment in PR **#502** from **ghost**');
+		expect(result.title).toBe('monalisa deleted comment in PR **#502** from **ghost**');
 	});
 
 	it('ping without the id of the hook object', () => {
@@ -177,7 +227,7 @@ describe('optional fields', () => {
 			delete p.hook;
 		});
 
-		expect(result.title).toBe('Hook 7292732 worked!');
+		expect(result.title).toBe('monalisa set up hook **7292732** — it works!');
 	});
 
 	it('answered discussion without an answer links to the discussion', () => {
@@ -204,6 +254,14 @@ describe('optional fields', () => {
 		expect(result).not.toHaveProperty('description');
 	});
 
+	it('escapes the markdown in a label, which is somebody else text', () => {
+		const result = embed('issues', 'issue_opened', (p) => {
+			p.issue.labels = [{ name: '**wontfix**' }, { name: 'good_first_issue' }];
+		});
+
+		expect(result.footer).toEqual({ text: '\\*\\*wontfix\\*\\* · good\\_first\\_issue' });
+	});
+
 	it('code scanning alert without a severity', () => {
 		const result = embed('code_scanning_alert', 'code_scanning_alert_created', (p) => {
 			p.alert.rule.severity = null;
@@ -218,7 +276,7 @@ describe('optional fields', () => {
 			delete p.alert.secret_type_display_name;
 		});
 
-		expect(result.title).toBe('⚠ Secret scanning alert **#3** created: unknown');
+		expect(result.title).toBe('github created Secret scanning alert **#3**: unknown');
 	});
 
 	it('push protection bypassed by a deleted user', () => {
@@ -242,7 +300,7 @@ describe('optional fields', () => {
 			p.ref = 'weird`branch';
 		});
 
-		expect(result.title).toBe('deleted branch `` weird`branch ``');
+		expect(result.title).toBe('Codertocat deleted branch `` weird`branch ``');
 	});
 
 	it('branch with two backticks in a row in its name', () => {
@@ -250,7 +308,7 @@ describe('optional fields', () => {
 			p.ref = 'weird``branch';
 		});
 
-		expect(result.title).toBe('deleted branch ``` weird``branch ```');
+		expect(result.title).toBe('Codertocat deleted branch ``` weird``branch ```');
 	});
 
 	it('transferred repository without a previous owner', () => {
@@ -258,7 +316,7 @@ describe('optional fields', () => {
 			p.changes.owner.from = {};
 		});
 
-		expect(result.title).toBe('transferred **linguist**');
+		expect(result.title).toBe('monalisa transferred **linguist**');
 	});
 
 	it('push to a ref without a refs/ prefix', () => {
@@ -266,7 +324,7 @@ describe('optional fields', () => {
 			p.ref = 'master';
 		});
 
-		expect(result.title).toBe('pushed 1 new commit to `master`');
+		expect(result.title).toBe('monalisa pushed 1 new commit to `master`');
 	});
 
 	it('ruleset of an organization has no page of its own', () => {
@@ -282,7 +340,7 @@ describe('optional fields', () => {
 			delete p.team.privacy;
 		});
 
-		expect(result.title).toBe('changed the privacy of team **github** to **unknown**');
+		expect(result.title).toBe('Codertocat changed the privacy of team **github** to **unknown**');
 	});
 
 	it('answered discussion without the body of the answer', () => {
@@ -298,8 +356,8 @@ describe('optional fields', () => {
 			p.sponsorship.sponsor = null;
 		});
 
-		expect(result.title).toBe('got a new private sponsor');
-		expect(result.author.name).toBe('octocat');
+		expect(result.title).toBe('octocat got a new private sponsor');
+		expect(result.scope).toBe('@octocat');
 	});
 
 	it('private sponsorship does not name the sponsor anywhere', () => {
@@ -313,7 +371,7 @@ describe('optional fields', () => {
 			p.sponsorship.sponsorable = null;
 		});
 
-		expect(result.title).toBe('is now sponsoring **ghost**');
+		expect(result.title).toBe('monalisa is now sponsoring **ghost**');
 	});
 
 	it('workflow run escapes the message of its commit once', () => {
@@ -324,13 +382,24 @@ describe('optional fields', () => {
 		expect(result.description).toBe('fix\\_bug');
 	});
 
+	it('keeps a message of astral characters that fits the limit', () => {
+		// Twice as many code units as characters, which is what the limit counts
+		const message = '🎉'.repeat(60);
+
+		const result = embed('workflow_run', 'workflow_run_failed', (p) => {
+			p.workflow_run.head_commit.message = message;
+		});
+
+		expect(result.description).toBe(message);
+	});
+
 	it('workflow run without a name is named after its workflow', () => {
 		const result = embed('workflow_run', 'workflow_run_failed', (p) => {
 			p.workflow_run.name = '';
 			p.workflow.name = 'Tests';
 		});
 
-		expect(result.title).toBe('workflow **Tests** failed on `master`');
+		expect(result.title).toBe('Codertocat broke `master` — workflow **Tests** failed');
 	});
 
 	it('workflow run without any name', () => {
@@ -339,7 +408,7 @@ describe('optional fields', () => {
 			p.workflow = null;
 		});
 
-		expect(result.title).toBe('workflow **unknown** failed on `master`');
+		expect(result.title).toBe('Codertocat broke `master` — workflow **unknown** failed');
 	});
 
 	it('project without a body', () => {
@@ -355,7 +424,7 @@ describe('optional fields', () => {
 			p.projects_v2_status_update.status = null;
 		});
 
-		expect(result.title).toBe('posted a project status update');
+		expect(result.title).toBe('Codertocat posted a project status update');
 	});
 
 	it('project status update without a body', () => {
@@ -371,7 +440,7 @@ describe('optional fields', () => {
 			p.member = null;
 		});
 
-		expect(result.title).toBe('added **ghost** to team **github**');
+		expect(result.title).toBe('Codertocat added **ghost** to team **github**');
 	});
 
 	it('blocked user that was deleted', () => {
@@ -379,7 +448,7 @@ describe('optional fields', () => {
 			p.blocked_user = null;
 		});
 
-		expect(result.title).toBe('blocked user **ghost**');
+		expect(result.title).toBe('Codertocat blocked user **ghost**');
 	});
 
 	it('organization member that was deleted', () => {
@@ -387,7 +456,7 @@ describe('optional fields', () => {
 			p.membership.user = null;
 		});
 
-		expect(result.title).toBe('added **ghost** (member) to the organization');
+		expect(result.title).toBe('Codertocat added **ghost** (member) to the organization');
 	});
 
 	it('organization invitation by email does not reveal the address', () => {
@@ -397,7 +466,7 @@ describe('optional fields', () => {
 			p.invitation.email = 'hacktocat@example.com';
 		});
 
-		expect(result.title).toBe('invited someone by email (member) to the organization');
+		expect(result.title).toBe('Codertocat invited someone by email (member) to the organization');
 	});
 
 	it('organization invitation names the role in plain words', () => {
@@ -405,7 +474,7 @@ describe('optional fields', () => {
 			p.invitation.role = 'billing_manager';
 		});
 
-		expect(result.title).toBe('invited **hacktocat** (billing manager) to the organization');
+		expect(result.title).toBe('Codertocat invited **hacktocat** (billing manager) to the organization');
 	});
 
 	it('organization invitation that reinstates someone has no role to name', () => {
@@ -413,7 +482,7 @@ describe('optional fields', () => {
 			p.invitation.role = 'reinstate';
 		});
 
-		expect(result.title).toBe('invited **hacktocat** to the organization');
+		expect(result.title).toBe('Codertocat invited **hacktocat** to the organization');
 	});
 
 	it('organization member event without a membership', () => {
@@ -421,7 +490,32 @@ describe('optional fields', () => {
 			delete p.membership;
 		});
 
-		expect(result.title).toBe('removed **ghost** from the organization');
+		expect(result.title).toBe('Codertocat removed **ghost** from the organization');
+	});
+
+	it.each([
+		['a name Discord takes', 'monalisa', 'monalisa on GitHub'],
+		['a name holding discord', 'discordapp', undefined],
+		['a name holding clyde in another case', 'ClydeBot', undefined],
+		// "cannot be everyone" is an exact match, which the suffix is enough to get past
+		['a name Discord reserves on its own', 'everyone', 'everyone on GitHub'],
+	])('%s', (_, login, username) => {
+		const result = embed('issues', 'issue_opened', (p) => {
+			p.sender.login = login;
+		});
+
+		expect(result.username).toBe(username);
+
+		// The card names the sender whether or not the message can be sent as them
+		expect(result.title.startsWith(`${login} `)).toBe(true);
+	});
+
+	it('sender without an avatar falls back to the url GitHub keeps one at', () => {
+		const result = embed('issues', 'issue_opened', (p) => {
+			delete p.sender.avatar_url;
+		});
+
+		expect(result.avatar).toBe('https://github.com/monalisa.png');
 	});
 
 	it('renamed organization without the previous name', () => {
@@ -429,7 +523,121 @@ describe('optional fields', () => {
 			delete p.changes;
 		});
 
-		expect(result.title).toBe('renamed the organization **Octocoders**');
+		expect(result.title).toBe('Codertocat renamed the organization **Octocoders**');
+	});
+});
+
+describe('markdown in a body', () => {
+	function body(text: string): string | undefined {
+		return embed('issues', 'issue_opened', (p) => {
+			p.issue.body = text;
+		}).description;
+	}
+
+	it('flattens every level of heading to bold', () => {
+		expect(body('# One\n### Three\n###### Six')).toBe('**One**\n**Three**\n**Six**');
+	});
+
+	it('does not nest bold that a heading already had', () => {
+		expect(body('## A **bold** heading')).toBe('**A bold heading**');
+	});
+
+	it('leaves a hash that starts no heading alone', () => {
+		expect(body('#123 is the issue\n#!/bin/sh')).toBe('#123 is the issue\n#!/bin/sh');
+	});
+
+	it('strips subtext, which is what a card sets its own scope in', () => {
+		expect(body('-# a note\nthe body')).toBe('a note\nthe body');
+	});
+
+	it('leaves headings and subtext inside fenced code alone', () => {
+		const fenced = '```sh\n# a comment, not a heading\n-# not subtext either\n```';
+
+		expect(body(fenced)).toBe(fenced);
+	});
+
+	it('demotes around a fence without touching what is inside it', () => {
+		expect(body('## Before\n```\n# inside\n```\n## After')).toBe('**Before**\n```\n# inside\n```\n**After**');
+	});
+
+	it('keeps whole lines when it runs out of room', () => {
+		const lines = Array.from({ length: 12 }, (_, index) => `line ${index}`);
+
+		expect(body(lines.join('\n'))).toBe(`${lines.slice(0, 8).join('\n')}…`);
+	});
+
+	it('counts a long line as the several it wraps into', () => {
+		// Eight lines of seventy characters, one of which is given up to the ellipsis
+		expect(body('x'.repeat(1000))).toBe(`${'x'.repeat(559)}…`);
+	});
+
+	it('closes a fence it had to cut through', () => {
+		const long = `\`\`\`\n${Array.from({ length: 30 }, () => 'a line of code').join('\n')}\n\`\`\``;
+		const result = body(long) as string;
+
+		expect(result.startsWith('```\n')).toBe(true);
+		expect(result.endsWith('\n```')).toBe(true);
+		// The one it opens with, the one it was cut before, and the one added back
+		expect(result.split('```')).toHaveLength(3);
+	});
+
+	it('leaves a body that fits alone', () => {
+		expect(body('short and **bold**')).toBe('short and **bold**');
+	});
+
+	it('takes backticks in the middle of a line for text, not for a fence', () => {
+		expect(body('use ``` in a sentence\n# Heading after it')).toBe('use ``` in a sentence\n**Heading after it**');
+	});
+
+	it('does not close a block that was never opened', () => {
+		expect(body('a line with ``` in it')).toBe('a line with ``` in it');
+	});
+
+	it('opens a block on an indented fence', () => {
+		expect(body('intro\n  ```\n# not a heading\n  ```\n# a heading')).toBe(
+			'intro\n  ```\n# not a heading\n  ```\n**a heading**',
+		);
+	});
+});
+
+describe('limitLength', () => {
+	it('leaves text that fits alone', () => {
+		expect(limitLength('short', 10)).toBe('short');
+	});
+
+	it('does not cut through an escaped character', () => {
+		// Eleven of them fit, but the eleventh is the first half of a pair, so ten go in with the ellipsis
+		expect(limitLength('\\'.repeat(20), 12)).toBe(`${'\\'.repeat(10)}…`);
+	});
+});
+
+describe('the text budget of a message', () => {
+	/** A long body, and enough labels to crowd it out of the message. */
+	const crowded = (count: number) => (p: Payload) => {
+		p.issue.labels = Array.from({ length: count }, (_, index) => ({ name: `label-${index}-${'x'.repeat(40)}` }));
+		p.issue.body = 'x'.repeat(1000);
+	};
+
+	it('cuts the body down to what the labels leave it', () => {
+		const result = embed('issues', 'issue_opened', crowded(70));
+
+		expect(result.description?.endsWith('…')).toBe(true);
+		expect(result.size).toBeLessThanOrEqual(MAX_MESSAGE_LENGTH);
+	});
+
+	it('drops the body outright when nothing is left for it', () => {
+		const result = embed('issues', 'issue_opened', crowded(100));
+
+		expect(result).not.toHaveProperty('description');
+		expect(result.footer?.text.endsWith('…')).toBe(true);
+		expect(result.size).toBeLessThanOrEqual(MAX_MESSAGE_LENGTH);
+	});
+
+	it('leaves a message that fits alone', () => {
+		const result = embed('issues', 'issue_opened', () => {});
+
+		expect(result.size).toBeLessThan(MAX_MESSAGE_LENGTH);
+		expect(result.description?.endsWith('…')).toBe(false);
 	});
 });
 

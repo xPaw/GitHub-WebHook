@@ -39,7 +39,7 @@ try
 	$DiscordConverter = new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() );
 	$DiscordMessage = $DiscordConverter->GetEmbed();
 
-	// Embeds never ping anyone, but make sure nothing else in the message can
+	// The text of a card pings whoever it names, unless the message says not to
 	$DiscordMessage[ 'allowed_mentions' ] = [ 'parse' => [] ];
 
 	if( empty( $DiscordMessage ) )
@@ -98,6 +98,9 @@ function wild( string $string, string $expression ) : bool
 
 function SendToDiscord( string $Url, array $Payload ) : bool
 {
+	// A webhook that no application owns has its components ignored without this
+	$Url .= ( str_contains( $Url, '?' ) ? '&' : '?' ) . 'with_components=true';
+
 	$c = curl_init( );
 	curl_setopt_array( $c, [
 		CURLOPT_USERAGENT      => 'https://github.com/xPaw/GitHub-WebHook',

@@ -1,14 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars3.githubusercontent.com\/u\/90000001?v=4",
+    "components": [
         {
-            "title": "Hook 123 worked!",
-            "description": "Design for failure.",
-            "color": 3113463,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars3.githubusercontent.com\/u\/90000001?v=4"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# @octo-org\n### monalisa set up hook **123** \u2014 it works!"
+                },
+                {
+                    "type": 10,
+                    "content": "Design for failure."
+                }
+            ]
         }
     ]
 }

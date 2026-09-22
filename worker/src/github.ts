@@ -9,19 +9,15 @@ export interface WebhookRequest {
 	eventType: string;
 	/** Full name of the repository, or `<org>/repositories` and `<account>/sponsors` for events that have no repository. */
 	repositoryName: string;
-	/** Short name of the repository, or of the organization for events that have no repository. */
-	displayName: string;
-	/** Avatar of the owner of the repository, or of the organization. */
-	avatarUrl?: string;
 	payload: unknown;
 }
 
 interface RawPayload {
-	repository?: { full_name?: string; name: string; owner: { name?: string | null; login: string; avatar_url?: string } };
-	organization?: { login: string; avatar_url?: string };
-	sponsorship?: { sponsorable?: { login: string; avatar_url?: string } | null };
+	repository?: { full_name?: string; name: string; owner: { name?: string | null; login: string } };
+	organization?: { login: string };
+	sponsorship?: { sponsorable?: { login: string } | null };
 	hook?: { type?: string };
-	sender?: { login: string; avatar_url?: string } | null;
+	sender?: { login: string } | null;
 }
 
 /** Verifies the X-Hub-Signature-256 header against the raw request body. */
@@ -48,25 +44,17 @@ export function parseRequest(request: Request, body: string): WebhookRequest {
 
 	const payload = parsePayload(request.headers.get('Content-Type'), body);
 
-	return { eventType, ...names(payload), payload };
+	return { eventType, repositoryName: repositoryName(payload), payload };
 }
 
-function names({ repository, organization, sponsorship, hook, sender }: RawPayload): Omit<WebhookRequest, 'eventType' | 'payload'> {
+function repositoryName({ repository, organization, sponsorship, hook, sender }: RawPayload): string {
 	if (repository) {
-		return {
-			repositoryName: repository.full_name ?? `${repository.owner.name}/${repository.name}`,
-			displayName: repository.name,
-			avatarUrl: repository.owner.avatar_url ?? organization?.avatar_url,
-		};
+		return repository.full_name ?? `${repository.owner.name}/${repository.name}`;
 	}
 
 	if (organization) {
 		// Events of an organization have no repository, they are reported as "<org>/repositories"
-		return {
-			repositoryName: `${organization.login}/repositories`,
-			displayName: organization.login,
-			avatarUrl: organization.avatar_url,
-		};
+		return `${organization.login}/repositories`;
 	}
 
 	// Events of a sponsors listing have neither, they are reported as "<sponsored account>/sponsors".
@@ -74,11 +62,7 @@ function names({ repository, organization, sponsorship, hook, sender }: RawPaylo
 	const sponsored = sponsorship?.sponsorable ?? (hook?.type === 'SponsorsListing' ? sender : null);
 
 	if (sponsored) {
-		return {
-			repositoryName: `${sponsored.login}/sponsors`,
-			displayName: sponsored.login,
-			avatarUrl: sponsored.avatar_url,
-		};
+		return `${sponsored.login}/sponsors`;
 	}
 
 	throw new BadRequestError('Missing repository information.');

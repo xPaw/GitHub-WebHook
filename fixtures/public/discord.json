@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "**new-private-repo** is now open source and available to everyone!",
-            "url": "https:\/\/github.com\/monalisa\/new-private-repo",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# new-private-repo\n### [monalisa open sourced **new-private-repo** \u2014 now available to everyone!](https:\/\/github.com\/monalisa\/new-private-repo)"
+                }
+            ]
         }
     ]
 }

@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4",
+    "components": [
         {
-            "title": "deleted comment in PR **#502** from **monalisa**",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/502#issuecomment-90002002",
-            "color": 16007990,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
-            }
+            "type": 17,
+            "accent_color": 16007990,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa deleted comment in PR **#502** from **monalisa**](https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/502#issuecomment-90002002)"
+                }
+            ]
         }
     ]
 }

@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "published container package: **hello-world** sha256:9c1e2f",
-            "url": "https:\/\/github.com\/Codertocat\/hello-world-npm\/pkgs\/container\/hello-world",
-            "color": 5025616,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# hello-world-npm\n### [Codertocat published container package: **hello-world** sha256:9c1e2f](https:\/\/github.com\/Codertocat\/hello-world-npm\/pkgs\/container\/hello-world)"
+                }
+            ]
         }
     ]
 }

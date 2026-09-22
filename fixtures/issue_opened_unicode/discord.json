@@ -1,18 +1,25 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4",
+    "components": [
         {
-            "title": "opened issue **#508**: \u00dcn\u00efc\u00f6d\u00e9 \\*title\\* with\\_underscores \ud83c\udf89",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/issues\/508",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=4"
-            },
-            "description": "### Describe \ud83d\udc1b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u2026",
-            "footer": {
-                "text": "bug"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa opened issue **#508**: \u00dcn\u00efc\u00f6d\u00e9 \\*title\\* with\\_underscores \ud83c\udf89](https:\/\/github.com\/octo-org\/Spoon-Knife\/issues\/508)"
+                },
+                {
+                    "type": 10,
+                    "content": "-# bug"
+                },
+                {
+                    "type": 10,
+                    "content": "**Describe \ud83d\udc1b**\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\n\u00c7\u00e0 et l\u00e0, \u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8 \ud83c\udf89 bold a < b\u2026"
+                }
+            ]
         }
     ]
 }

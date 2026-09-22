@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "updated npm package: **hello-world-npm** 1.0.0",
-            "url": "https:\/\/github.com\/Codertocat\/hello-world-npm\/packages\/10696",
-            "color": 3113463,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# hello-world-npm\n### [Codertocat updated npm package: **hello-world-npm** 1.0.0](https:\/\/github.com\/Codertocat\/hello-world-npm\/packages\/10696)"
+                }
+            ]
         }
     ]
 }

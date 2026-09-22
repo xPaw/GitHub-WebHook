@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "\u26a0 Code scanning alert **#10** reopened: Unsafe jQuery plugin",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/code-scanning\/10",
-            "color": 16750592,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 16750592,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat reopened Code scanning alert **#10**: Unsafe jQuery plugin](https:\/\/github.com\/Codertocat\/Hello-World\/security\/code-scanning\/10)"
+                }
+            ]
         }
     ]
 }

@@ -1,14 +1,17 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "closed project **#7**: Roadmap",
-            "url": "https:\/\/github.com\/orgs\/Octocoders\/projects\/7",
-            "color": 8540383,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 8540383,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# @Octocoders\n### [Codertocat closed project **#7**: Roadmap](https:\/\/github.com\/orgs\/Octocoders\/projects\/7)"
+                }
+            ]
         }
     ]
 }

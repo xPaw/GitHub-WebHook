@@ -1,9 +1,11 @@
 # Cloudflare Worker
 A Cloudflare Worker that accepts GitHub webhook events and sends them to Discord.
-It validates the signature, converts the event into an embed
+It validates the signature, converts the event into a card built with
+[components](https://docs.discord.com/developers/components/reference)
 and posts it to the Discord webhook that is named in the url.
-Messages are sent under the name of the repository and the avatar of its owner,
-so that repositories sharing a webhook can be told apart.
+The card is headed by the GitHub user that set the event off and what they did, linked to it,
+under the name of the repository, or `@` and the account for events that have no repository.
+The message is sent as that user, unless Discord will not take their login as a username.
 
 ## Deploying
 You need a [Cloudflare](https://dash.cloudflare.com/sign-up) account (the free plan is enough) and Node.js.
@@ -83,4 +85,4 @@ Some events are ignored because they would only be noise, see `src/ignored.ts`:
 Copy `.dev.vars.example` to `.dev.vars` and run `npm run dev` to start the Worker locally.
 
 `npm test` runs the typecheck and then the tests. Every event in `../fixtures`
-is converted and compared against its expected `discord.json` embed.
+is converted and compared against its expected `discord.json` message.

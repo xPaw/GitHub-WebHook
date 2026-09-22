@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "merged PR **#6**: test pull request",
-            "url": "https:\/\/github.com\/monalisa\/Hello-World\/pull\/6",
-            "color": 8540383,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            },
-            "description": "Merged from **monalisa** to `master`"
+            "type": 17,
+            "accent_color": 8540383,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [monalisa merged PR **#6**: test pull request](https:\/\/github.com\/monalisa\/Hello-World\/pull\/6)"
+                },
+                {
+                    "type": 10,
+                    "content": "Merged from **monalisa** to `master`"
+                }
+            ]
         }
     ]
 }

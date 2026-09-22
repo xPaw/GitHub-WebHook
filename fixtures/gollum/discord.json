@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "updated wiki",
-            "url": "https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki",
-            "description": "[edited \\_Sidebar](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/_Sidebar\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36)",
-            "color": 3113463,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            }
+            "type": 17,
+            "accent_color": 3113463,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Spoon-Knife\n### [monalisa updated wiki](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki)"
+                },
+                {
+                    "type": 10,
+                    "content": "[edited \\_Sidebar](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/_Sidebar\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36)"
+                }
+            ]
         }
     ]
 }

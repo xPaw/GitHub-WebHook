@@ -1,18 +1,25 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "github on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4",
+    "components": [
         {
-            "title": "\u26a0 Dependabot alert **#5** created for **rack**: Rack vulnerable to Denial of Service via crafted multipart requests",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/security\/dependabot\/5",
-            "color": 16750592,
-            "author": {
-                "name": "github",
-                "url": "https:\/\/github.com\/github",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/9919?v=4"
-            },
-            "description": "There is a possible DoS vulnerability in the multipart parser in Rack before 2.0.6. Specially crafted requests can exploit this.",
-            "footer": {
-                "text": "high \u00b7 CVE-2018-16470"
-            }
+            "type": 17,
+            "accent_color": 16750592,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [github created Dependabot alert **#5** for **rack**: Rack vulnerable to Denial of Service via crafted multipart requests](https:\/\/github.com\/Codertocat\/Hello-World\/security\/dependabot\/5)"
+                },
+                {
+                    "type": 10,
+                    "content": "-# high \u00b7 CVE-2018-16470"
+                },
+                {
+                    "type": 10,
+                    "content": "There is a possible DoS vulnerability in the multipart parser in Rack before 2.0.6. Specially crafted requests can exploit this."
+                }
+            ]
         }
     ]
 }

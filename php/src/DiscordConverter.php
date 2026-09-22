@@ -25,19 +25,51 @@ class DiscordConverter extends BaseConverter
 	// Something was set aside
 	private const int COLOR_SET_ASIDE = 7239297;
 
-	private const int MAX_TITLE_LENGTH = 256;
-	private const int MAX_DESCRIPTION_LENGTH = 4096;
-	private const int MAX_FOOTER_LENGTH = 2048;
+	// Discord turns down a webhook username holding either of these, in any case and anywhere in it,
+	// so that nothing can pass itself off as Discord or as its own bot. Neither is documented,
+	// and a GitHub login is allowed to contain both.
+	private const string BLOCKED_USERNAME = '~discord|clyde~i';
 
-	// How much of a body is quoted as the description of an embed
-	private const int MAX_SHORT_DESCRIPTION = 250;
+	private const int TEXT_DISPLAY = 10;
+	private const int CONTAINER = 17;
+	// Turns the message into components, which take the place of content and embeds
+	private const int IS_COMPONENTS_V2 = 32768;
+
+	// Discord turns a message down when the text of all of its components adds up to more than this
+	private const int MAX_MESSAGE_LENGTH = 4000;
+
+
+	// A heading in a body would out-shout the title of the card it is in, so it becomes bold instead
+	private const string HEADING = '~^ {0,2}\#{1,6} +(\S.*)$~';
+	// Subtext is smaller than body text, which is what the scope and the labels of a card are set in
+	private const string SUBTEXT = '~^ {0,2}-\# +~';
+	// Only a line that opens with a run of three backticks fences a block; anywhere else they are text
+	private const string FENCE = '~^ {0,3}```~';
+
+	// How many wrapped lines of a body are quoted as the body of a card
+	private const int MAX_BODY_LINES = 8;
+	// Roughly how many characters fit on one line beside the avatar. Body text is set in a proportional
+	// font, so no count of characters really models where it wraps; this is an estimate at a usual width.
+	private const int PER_LINE = 70;
+	// Fenced code is monospace, and about four fifths the width of prose for it
+	private const int CODE_PER_LINE = 55;
+
 	// How much of the first line of a commit or wiki message is quoted
 	private const int MAX_SHORT_MESSAGE = 100;
 
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.
 	 *
-	 * @return mixed[]
+	 * @return array{
+	 *     flags: int,
+	 *     username?: string,
+	 *     avatar_url?: string,
+	 *     components: list<array{
+	 *         type: int,
+	 *         accent_color: int,
+	 *         components: list<array{type: int, content: string}>,
+	 *     }>,
+	 * }
 	 */
 	public function GetEmbed( ) : array
 	{
@@ -83,33 +115,83 @@ class DiscordConverter extends BaseConverter
 			default              : throw new NotImplementedException( $this->EventType );
 		}
 
-		// Discord rejects the whole message when an embed is over its limits
-		if( is_string( $Embed[ 'title' ] ) )
+		/**
+		 * What every event above is formatted into, before it is laid out as components.
+		 *
+		 * @var array{
+		 *     title: string,
+		 *     url?: ?string,
+		 *     color: int,
+		 *     description?: ?string,
+		 *     author: array{name: string, icon_url: string},
+		 *     footer?: ?array{text: string},
+		 * } $Embed
+		 */
+
+		// The sender opens the sentence the title finishes, and the whole of it links to the event.
+		// Who did it is in the card itself, so a message that can not be sent as them still says so.
+		$Subject = self::Escape( $Embed[ 'author' ][ 'name' ] ) . ' ' . $Embed[ 'title' ];
+		$URL = $Embed[ 'url' ] ?? null;
+		$Heading = '### ' . ( $URL === null ? $Subject : "[{$Subject}]({$URL})" );
+
+		// Several repositories usually share a webhook, so the card says where the event happened
+		$Scope = $this->FormatScope();
+
+		if( $Scope !== null )
 		{
-			$Embed[ 'title' ] = self::LimitLength( $Embed[ 'title' ], self::MAX_TITLE_LENGTH );
+			$Heading = '-# ' . self::Escape( $Scope ) . "\n" . $Heading;
 		}
 
-		if( !is_string( $Embed[ 'description' ] ?? null ) || $Embed[ 'description' ] === '' )
+		$Parts = [ $Heading ];
+
+		if( isset( $Embed[ 'footer' ][ 'text' ] ) )
 		{
-			unset( $Embed[ 'description' ] );
-		}
-		else
-		{
-			$Embed[ 'description' ] = self::LimitLength( $Embed[ 'description' ], self::MAX_DESCRIPTION_LENGTH );
+			// Everything the layout did not compose itself is somebody else's text in a markdown line
+			$Parts[] = '-# ' . self::Escape( $Embed[ 'footer' ][ 'text' ] );
 		}
 
-		if( !isset( $Embed[ 'footer' ] ) )
+		if( is_string( $Embed[ 'description' ] ?? null ) && $Embed[ 'description' ] !== '' )
 		{
-			unset( $Embed[ 'footer' ] );
-		}
-		else if( is_array( $Embed[ 'footer' ] ) && is_string( $Embed[ 'footer' ][ 'text' ] ?? null ) )
-		{
-			$Embed[ 'footer' ][ 'text' ] = self::LimitLength( $Embed[ 'footer' ][ 'text' ], self::MAX_FOOTER_LENGTH );
+			$Parts[] = $Embed[ 'description' ];
 		}
 
-		return [
-			'embeds' => [ $Embed ],
+		// Each part in turn takes what the ones before it left, so the body gives way to the heading
+		// rather than the message being turned down for the two of them together
+		$Room = self::MAX_MESSAGE_LENGTH;
+		$Components = [];
+
+		foreach( $Parts as $Part )
+		{
+			// An ellipsis of its own would say nothing, and would still be over the limit
+			if( $Room < 1 )
+			{
+				break;
+			}
+
+			$Part = self::LimitLength( $Part, $Room );
+			$Room -= mb_strlen( $Part );
+			$Components[] = [ 'type' => self::TEXT_DISPLAY, 'content' => $Part ];
+		}
+
+		$Message = [ 'flags' => self::IS_COMPONENTS_V2 ];
+
+		if( preg_match( self::BLOCKED_USERNAME, $Embed[ 'author' ][ 'name' ] ) !== 1 )
+		{
+			// Saying where the name is from keeps it from reading as a Discord account of the same name,
+			// and it is what stops a sender called "everyone" or "here" being turned down as well
+			$Message[ 'username' ] = $Embed[ 'author' ][ 'name' ] . ' on GitHub';
+			$Message[ 'avatar_url' ] = $Embed[ 'author' ][ 'icon_url' ];
+		}
+
+		$Message[ 'components' ] = [
+			[
+				'type' => self::CONTAINER,
+				'accent_color' => $Embed[ 'color' ],
+				'components' => $Components,
+			],
 		];
+
+		return $Message;
 	}
 
 	private static function LimitLength( string $Message, int $Limit ) : string
@@ -131,15 +213,6 @@ class DiscordConverter extends BaseConverter
 		return $Message;
 	}
 
-	/** Whether an alert is open after this action, and so needs attention. */
-	private static function IsOpenAlert( string $Action ) : bool
-	{
-		return $Action === 'created'
-			|| $Action === 'reopened'
-			|| $Action === 'reintroduced'
-			|| $Action === 'publicly leaked';
-	}
-
 	/**
 	 * The parts every alert of a security feature has in common. A new alert always needs attention,
 	 * what happened to it afterwards is coloured like any other action.
@@ -149,7 +222,7 @@ class DiscordConverter extends BaseConverter
 	private function AlertEmbed( string $Title, string $Action ) : array
 	{
 		return [
-			'title' => ( self::IsOpenAlert( $Action ) ? '⚠ ' : '' ) . $Title,
+			'title' => $Title,
 			'url' => $this->Payload->alert->html_url,
 			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -173,7 +246,7 @@ class DiscordConverter extends BaseConverter
 	}
 
 	/**
-	 * Footers are plain text, so the names need no escaping.
+	 * The layout escapes what it is given, so the names are passed on as they are.
 	 *
 	 * @param ?array<object> $Labels
 	 *
@@ -204,14 +277,33 @@ class DiscordConverter extends BaseConverter
 		return ' (from **' . self::Escape( $Name ) . '**)';
 	}
 
-	/** @return array{name: string, url: string, icon_url: string} */
+	/** @return array{name: string, icon_url: string} */
 	private function FormatAuthor() : array
 	{
 		return [
 			'name' => $this->Payload->sender->login,
-			'url' => $this->Payload->sender->html_url,
-			'icon_url' => $this->Payload->sender->avatar_url,
+			// GitHub always sends an avatar, and its own url for one stands in if it ever does not
+			'icon_url' => $this->Payload->sender->avatar_url ?? 'https://github.com/' . $this->Payload->sender->login . '.png',
 		];
+	}
+
+	/**
+	 * Names the repository of an event, or with an `@` the account of an event that has no repository:
+	 * the organization, or the sponsored account of a sponsors listing, whose ping only knows who set the webhook up.
+	 */
+	private function FormatScope() : ?string
+	{
+		// The repository that GitHubWebHook stands in for events without one has no url
+		if( isset( $this->Payload->repository->html_url ) )
+		{
+			return $this->Payload->repository->name;
+		}
+
+		$Account = $this->Payload->organization->login
+			?? $this->Payload->sponsorship->sponsorable->login
+			?? ( ( $this->Payload->hook->type ?? null ) === 'SponsorsListing' ? $this->Payload->sender->login ?? null : null );
+
+		return $Account === null ? null : "@{$Account}";
 	}
 
 	private function FormatAction( ?string $Action = null ) : int
@@ -267,7 +359,31 @@ class DiscordConverter extends BaseConverter
 		}
 	}
 
-	private static function ShortDescription( ?string $Message ) : string
+	/**
+	 * A body keeps its markdown, but nothing in it may out-shout the card it is quoted in.
+	 * Fenced code is left alone, where a leading # is a comment rather than a heading.
+	 */
+	private static function Demote( string $Line ) : string
+	{
+		$Line = preg_replace_callback(
+			self::HEADING,
+			static fn( array $Match ) : string => '**' . str_replace( '*', '', $Match[ 1 ] ) . '**',
+			$Line
+		) ?? $Line;
+
+		return preg_replace( self::SUBTEXT, '', $Line ) ?? $Line;
+	}
+
+	/**
+	 * Formats a body of text (issue, release, comment…) for use as the body of a card: html stripped,
+	 * blank lines collapsed, headings flattened and height limited.
+	 *
+	 * How tall a card gets is what there is to limit, so a body is measured in the lines it takes up
+	 * once each of them has wrapped; a count of characters says very little about that. Which lines are
+	 * fenced is worked out once here, because it decides all three of how wide they wrap, whether their
+	 * markdown is left as written, and whether a cut has left a block open.
+	 */
+	private static function FormatBody( ?string $Message ) : string
 	{
 		$Message ??= '';
 		$Message = preg_replace( self::HTML_COMMENT, '', $Message ) ?? $Message;
@@ -275,21 +391,47 @@ class DiscordConverter extends BaseConverter
 		$Message = str_replace( [ "\r", "\n\n" ], [ "", "\n" ], $Message );
 		$Message = self::Trim( $Message );
 
-		// Limit amount of new lines
-		$Lines = explode( "\n", $Message );
+		$Kept = [];
+		$Used = 0;
+		$Fenced = false;
 
-		if( count( $Lines ) > 11 )
+		foreach( explode( "\n", $Message ) as $Line )
 		{
-			$Message = implode( "\n", array_slice( $Lines, 0, 11 ) ) . ' ' . implode( ' ', array_slice( $Lines, 11 ) );
+			$Fence = preg_match( self::FENCE, $Line ) === 1;
+			// Inside a block a leading # is a comment rather than a heading, and is quoted as written
+			$Shown = $Fenced || $Fence ? $Line : self::Demote( $Line );
+			$PerLine = $Fenced ? self::CODE_PER_LINE : self::PER_LINE;
+			$Height = max( 1, (int)ceil( mb_strlen( $Shown ) / $PerLine ) );
+
+			if( $Used + $Height > self::MAX_BODY_LINES )
+			{
+				$Room = ( self::MAX_BODY_LINES - $Used ) * $PerLine - 1;
+
+				// Without room for even one character there is a line already kept to mark instead,
+				// because the budget can only be used up by one
+				if( $Room > 0 )
+				{
+					$Kept[] = mb_substr( $Shown, 0, $Room ) . '…';
+				}
+				else
+				{
+					$Kept[ count( $Kept ) - 1 ] .= '…';
+				}
+
+				break;
+			}
+
+			$Used += $Height;
+			$Kept[] = $Shown;
+
+			if( $Fence )
+			{
+				$Fenced = !$Fenced;
+			}
 		}
 
-		if( mb_strlen( $Message ) > self::MAX_SHORT_DESCRIPTION )
-		{
-			$Message = mb_substr( $Message, 0, self::MAX_SHORT_DESCRIPTION );
-			$Message .= '…';
-		}
-
-		return $Message;
+		// A cut inside a block would leave it open, and an open block swallows the rest of the card
+		return implode( "\n", $Kept ) . ( $Fenced ? "\n```" : '' );
 	}
 
 	private static function ShortMessage( string $Message ) : string
@@ -515,7 +657,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $Action === 'opened' )
 		{
-			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->issue->body );
+			$Embed[ 'description' ] = self::FormatBody( $this->Payload->issue->body );
 
 			$Embed[ 'footer' ] = self::LabelsFooter( $this->Payload->issue->labels ?? null );
 		}
@@ -599,7 +741,7 @@ class DiscordConverter extends BaseConverter
 
 		if( $Action === 'opened' )
 		{
-			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->pull_request->body );
+			$Embed[ 'description' ] = self::FormatBody( $this->Payload->pull_request->body );
 			$Embed[ 'footer' ] = self::LabelsFooter( $this->Payload->pull_request->labels ?? null );
 		}
 		else if( $Action === 'merged' )
@@ -635,7 +777,7 @@ class DiscordConverter extends BaseConverter
 
 		return [
 			'title' => "{$Action} milestone **#{$this->Payload->milestone->number}**: " . self::Escape( $this->Payload->milestone->title ),
-			'description' => $Action === 'created' ? self::ShortDescription( $this->Payload->milestone->description ) : '',
+			'description' => $Action === 'created' ? self::FormatBody( $this->Payload->milestone->description ) : '',
 			'url' => $this->Payload->milestone->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -663,7 +805,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "{$this->Payload->action} " . self::Escape( strtolower( $Package->package_type ) ) . " package: **" . self::Escape( $Package->name ) . "**" . ( $Version === '' ? '' : ' ' . self::Escape( $Version ) ),
 			// Container packages have an empty object as their body
-			'description' => $this->Payload->action === 'published' && is_string( $Body ) ? self::ShortDescription( $Body ) : '',
+			'description' => $this->Payload->action === 'published' && is_string( $Body ) ? self::FormatBody( $Body ) : '',
 			'url' => $Package->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -702,7 +844,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: " . self::Escape( $Name ),
 			// Release notes are only worth showing when the release appears
-			'description' => $this->Payload->action === 'published' ? self::ShortDescription( $this->Payload->release->body ) : '',
+			'description' => $this->Payload->action === 'published' ? self::FormatBody( $this->Payload->release->body ) : '',
 			'url' => $this->Payload->release->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -723,7 +865,7 @@ class DiscordConverter extends BaseConverter
 
 		return [
 			'title' => "commented on commit " . self::EscapeCode( substr( $this->Payload->comment->commit_id, 0, 6 ) ),
-			'description' => self::ShortDescription( $this->Payload->comment->body ),
+			'description' => self::FormatBody( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -750,7 +892,7 @@ class DiscordConverter extends BaseConverter
 		{
 			return [
 				'title' => "commented on " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}**: " . self::Escape( $this->Payload->issue->title ),
-				'description' => self::ShortDescription( $this->Payload->comment->body ),
+				'description' => self::FormatBody( $this->Payload->comment->body ),
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -806,7 +948,7 @@ class DiscordConverter extends BaseConverter
 		return [
 			'title' => $State . ( $State === 'dismissed' ? ' a review on' : '' ) . " PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
 			// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
-			'description' => $State === 'dismissed' ? '' : self::ShortDescription( $this->Payload->review->body ),
+			'description' => $State === 'dismissed' ? '' : self::FormatBody( $this->Payload->review->body ),
 			'url' => $this->Payload->review->html_url,
 			'color' => $State === 'dismissed' ? self::COLOR_BAD : $this->FormatAction( $State ),
 			'author' => $this->FormatAuthor(),
@@ -833,7 +975,7 @@ class DiscordConverter extends BaseConverter
 
 		return [
 			'title' => "commented on the code of PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
-			'description' => self::ShortDescription( $this->Payload->comment->body ),
+			'description' => self::FormatBody( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -888,12 +1030,12 @@ class DiscordConverter extends BaseConverter
 
 		if( $Action === 'created' )
 		{
-			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->discussion->body );
+			$Embed[ 'description' ] = self::FormatBody( $this->Payload->discussion->body );
 			$Embed[ 'footer' ] = self::LabelsFooter( $this->Payload->discussion->labels ?? null );
 		}
 		else if( $Action === 'answered' )
 		{
-			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->answer->body ?? null );
+			$Embed[ 'description' ] = self::FormatBody( $this->Payload->answer->body ?? null );
 		}
 
 		return $Embed;
@@ -915,7 +1057,7 @@ class DiscordConverter extends BaseConverter
 		{
 			return [
 				'title' => "commented on discussion **#{$this->Payload->discussion->number}**: " . self::Escape( $this->Payload->discussion->title ),
-				'description' => self::ShortDescription( $this->Payload->comment->body ),
+				'description' => self::FormatBody( $this->Payload->comment->body ),
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -962,13 +1104,13 @@ class DiscordConverter extends BaseConverter
 		$Vulnerability = $this->Payload->alert->security_vulnerability;
 
 		$Embed = $this->AlertEmbed(
-			"Dependabot alert **#{$this->Payload->alert->number}** {$Action} for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
+			"{$Action} Dependabot alert **#{$this->Payload->alert->number}** for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
 			$Action
 		);
 
 		if( $Action === 'created' )
 		{
-			$Embed[ 'description' ] = self::ShortDescription( $Advisory->description ?? null );
+			$Embed[ 'description' ] = self::FormatBody( $Advisory->description ?? null );
 			$Embed[ 'footer' ] = [ 'text' => $Advisory->severity . ' · ' . ( $Advisory->cve_id ?? $Advisory->ghsa_id ) ];
 		}
 
@@ -998,13 +1140,13 @@ class DiscordConverter extends BaseConverter
 		};
 
 		$Embed = $this->AlertEmbed(
-			"Code scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $this->Payload->alert->rule->description ),
+			"{$Action} Code scanning alert **#{$this->Payload->alert->number}**: " . self::Escape( $this->Payload->alert->rule->description ),
 			$Action
 		);
 
 		if( $Action === 'created' )
 		{
-			$Embed[ 'description' ] = self::ShortDescription( $this->Payload->alert->most_recent_instance->message->text ?? null );
+			$Embed[ 'description' ] = self::FormatBody( $this->Payload->alert->most_recent_instance->message->text ?? null );
 			$Embed[ 'footer' ] = [ 'text' => ( $this->Payload->alert->rule->severity ?? 'none' ) . ' · ' . $this->Payload->alert->rule->id ];
 		}
 
@@ -1039,7 +1181,7 @@ class DiscordConverter extends BaseConverter
 		$SecretType = $this->Payload->alert->secret_type_display_name ?? $this->Payload->alert->secret_type ?? 'unknown';
 
 		$Embed = $this->AlertEmbed(
-			"Secret scanning alert **#{$this->Payload->alert->number}** {$Action}: " . self::Escape( $SecretType ),
+			"{$Action} Secret scanning alert **#{$this->Payload->alert->number}**: " . self::Escape( $SecretType ),
 			$Action
 		);
 
@@ -1068,7 +1210,7 @@ class DiscordConverter extends BaseConverter
 		{
 			// Reported advisories are private, so do not reveal what they are about
 			return [
-				'title' => "⚠ privately reported a vulnerability: **" . self::Escape( $Advisory->ghsa_id ) . "**",
+				'title' => "privately reported a vulnerability: **" . self::Escape( $Advisory->ghsa_id ) . "**",
 				'url' => $Advisory->html_url,
 				'color' => self::COLOR_ATTENTION,
 				'author' => $this->FormatAuthor(),
@@ -1081,8 +1223,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "⚠ published a security advisory: " . self::Escape( $Advisory->summary ),
-			'description' => self::ShortDescription( $Advisory->description ),
+			'title' => "published a security advisory: " . self::Escape( $Advisory->summary ),
+			'description' => self::FormatBody( $Advisory->description ),
 			'url' => $Advisory->html_url,
 			'color' => self::COLOR_ATTENTION,
 			'author' => $this->FormatAuthor(),
@@ -1164,7 +1306,7 @@ class DiscordConverter extends BaseConverter
 	private function FormatPingEvent( ) : array
 	{
 		return [
-			'title' => "Hook {$this->Payload->hook_id} worked!",
+			'title' => "set up hook **{$this->Payload->hook_id}** — it works!",
 			'description' => self::Escape( $this->Payload->zen ?? '' ),
 			'color' => self::COLOR_NEUTRAL,
 			'author' => $this->FormatAuthor(),
@@ -1179,7 +1321,7 @@ class DiscordConverter extends BaseConverter
 	private function FormatPublicEvent( ) : array
 	{
 		return [
-			'title' => "**" . self::Escape( $this->Payload->repository->name ) . "** is now open source and available to everyone!",
+			'title' => "open sourced **" . self::Escape( $this->Payload->repository->name ) . "** — now available to everyone!",
 			'url' => $this->Payload->repository->html_url,
 			'color' => self::COLOR_DEFAULT,
 			'author' => $this->FormatAuthor(),
@@ -1289,7 +1431,7 @@ class DiscordConverter extends BaseConverter
 
 		return [
 			'title' => "{$this->Payload->action} project **#{$Number}**: " . self::Escape( $Title ),
-			'description' => $this->Payload->action === 'created' ? self::ShortDescription( $Body ) : '',
+			'description' => $this->Payload->action === 'created' ? self::FormatBody( $Body ) : '',
 			'url' => $URL,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -1320,7 +1462,7 @@ class DiscordConverter extends BaseConverter
 		// The payload only has the node id of the project, so there is nothing to link but the list of them
 		return [
 			'title' => 'posted a project status update' . ( $Status === null ? '' : " ({$Status})" ),
-			'description' => self::ShortDescription( $Update->body ?? null ),
+			'description' => self::FormatBody( $Update->body ?? null ),
 			'url' => 'https://github.com/orgs/' . $this->Payload->organization->login . '/projects',
 			'color' => $Status === null ? self::COLOR_DEFAULT : $this->FormatAction( $Status ),
 			'author' => $this->FormatAuthor(),
@@ -1603,7 +1745,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "workflow **" . self::Escape( $Name ) . "** {$Outcome} on " . self::EscapeCode( $Run->head_branch ),
+			'title' => "broke " . self::EscapeCode( $Run->head_branch ) . " — workflow **" . self::Escape( $Name ) . "** {$Outcome}",
 			'description' => self::ShortMessage( $Run->head_commit->message ?? '' ),
 			'url' => $Run->html_url,
 			'color' => $this->FormatAction( $Outcome ),

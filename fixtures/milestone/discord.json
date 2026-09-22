@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "Codertocat on GitHub",
+    "avatar_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4",
+    "components": [
         {
-            "title": "created milestone **#1**: v1.0",
-            "description": "Add new space flight simulator",
-            "url": "https:\/\/github.com\/Codertocat\/Hello-World\/milestone\/1",
-            "color": 5025616,
-            "author": {
-                "name": "Codertocat",
-                "url": "https:\/\/github.com\/Codertocat",
-                "icon_url": "https:\/\/avatars1.githubusercontent.com\/u\/21031067?v=4"
-            }
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [Codertocat created milestone **#1**: v1.0](https:\/\/github.com\/Codertocat\/Hello-World\/milestone\/1)"
+                },
+                {
+                    "type": 10,
+                    "content": "Add new space flight simulator"
+                }
+            ]
         }
     ]
 }

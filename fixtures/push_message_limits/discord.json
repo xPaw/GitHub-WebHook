@@ -1,15 +1,21 @@
 {
-    "embeds": [
+    "flags": 32768,
+    "username": "monalisa on GitHub",
+    "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3",
+    "components": [
         {
-            "title": "pushed 5 new commits",
-            "url": "https:\/\/github.com\/monalisa\/Hello-World\/compare\/14e514deb5f8...eeeeeeeeeeee",
-            "color": 5025616,
-            "author": {
-                "name": "monalisa",
-                "url": "https:\/\/github.com\/monalisa",
-                "icon_url": "https:\/\/avatars.githubusercontent.com\/u\/90000001?v=3"
-            },
-            "description": "[`eeeeee`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee) Subject\r\u2026\n[`dddddd`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/dddddddddddddddddddddddddddddddddddddddd) Work in progress...\n[`cccccc`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/cccccccccccccccccccccccccccccccccccccccc) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\u2026\n[`bbbbbb`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\u2026\n[`aaaaaa`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            "type": 17,
+            "accent_color": 5025616,
+            "components": [
+                {
+                    "type": 10,
+                    "content": "-# Hello-World\n### [monalisa pushed 5 new commits](https:\/\/github.com\/monalisa\/Hello-World\/compare\/14e514deb5f8...eeeeeeeeeeee)"
+                },
+                {
+                    "type": 10,
+                    "content": "[`eeeeee`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee) Subject\r\u2026\n[`dddddd`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/dddddddddddddddddddddddddddddddddddddddd) Work in progress...\n[`cccccc`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/cccccccccccccccccccccccccccccccccccccccc) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\u2026\n[`bbbbbb`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\u2026\n[`aaaaaa`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+                }
+            ]
         }
     ]
 }
