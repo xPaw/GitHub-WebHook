@@ -4,6 +4,8 @@ import type { DiscordMessage } from './converter.js';
 const USER_AGENT = 'https://github.com/xPaw/GitHub-WebHook';
 const TIMEOUT_MS = 8000;
 const PREFIX = 'discordhook';
+/** How much of what Discord said is worth keeping, its errors are a sentence or two. */
+const MAX_REASON_LENGTH = 500;
 
 /** The Discord webhook an event is proxied to, taken from the url of the request. */
 export interface Target {
@@ -17,6 +19,7 @@ export interface SendResult {
 	/** HTTP status returned by Discord, or null when the request never completed. */
 	status: number | null;
 	ok: boolean;
+	/** What Discord said when it turned the message down, or why the request never completed. */
 	error?: string;
 }
 
@@ -84,18 +87,23 @@ export async function sendToDiscord(target: Target, message: DiscordMessage): Pr
 
 	try {
 		let response = await post(url, body, deadline - Date.now());
+		// Discord says in the body why it turned a message down, which is the only account of it there is
+		let reason = response.ok ? '' : await readBody(response);
 
 		if (response.status === 429) {
-			const retryAfter = await retryAfterMs(response);
+			const retryAfter = retryAfterMs(reason);
 			const remaining = deadline - Date.now();
 
 			if (retryAfter !== null && retryAfter < remaining) {
 				await new Promise((resolve) => setTimeout(resolve, retryAfter));
 				response = await post(url, body, deadline - Date.now());
+				reason = response.ok ? '' : await readBody(response);
 			}
 		}
 
-		return { status: response.status, ok: response.ok };
+		return response.ok
+			? { status: response.status, ok: true }
+			: { status: response.status, ok: false, error: reason.slice(0, MAX_REASON_LENGTH) };
 	} catch (error) {
 		return { status: null, ok: false, error: (error as Error).message };
 	}
@@ -113,11 +121,23 @@ function post(url: string, body: string, timeout: number): Promise<Response> {
 	});
 }
 
-async function retryAfterMs(response: Response): Promise<number | null> {
+/**
+ * The body can only be read once, so what it says is kept whole for both the retry and the log.
+ * Cutting it here would make longer json unparseable, and the delay to retry after is in it.
+ */
+async function readBody(response: Response): Promise<string> {
 	try {
-		const body = (await response.json()) as { retry_after?: number };
+		return await response.text();
+	} catch (error) {
+		return (error as Error).message;
+	}
+}
 
-		return typeof body.retry_after === 'number' ? body.retry_after * 1000 : null;
+function retryAfterMs(body: string): number | null {
+	try {
+		const parsed = JSON.parse(body) as { retry_after?: number };
+
+		return typeof parsed.retry_after === 'number' ? parsed.retry_after * 1000 : null;
 	} catch {
 		return null;
 	}

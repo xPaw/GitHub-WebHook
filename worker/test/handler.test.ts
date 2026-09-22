@@ -451,6 +451,7 @@ describe('worker', () => {
 	});
 
 	it('returns 502 when Discord rejects the message', async () => {
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 		fetchMock.mockImplementation(async () => new Response('nope', { status: 500 }));
 
 		const response = await worker.fetch(await buildRequest('push', fixture('push')), env);
@@ -458,6 +459,25 @@ describe('worker', () => {
 		expect(response.status).toBe(502);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(await response.text()).toContain('Discord HTTP 500');
+
+		// Whatever Discord objected to is the only account of it there is, so it goes to the log
+		expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('push'), 500, 'nope');
+		consoleError.mockRestore();
+	});
+
+	it('logs the status when the reason Discord gave cannot be read', async () => {
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+		fetchMock.mockImplementation(async () => ({
+			ok: false,
+			status: 400,
+			text: () => Promise.reject(new Error('connection reset')),
+		}));
+
+		const response = await worker.fetch(await buildRequest('push', fixture('push')), env);
+
+		expect(response.status).toBe(502);
+		expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('push'), 400, 'connection reset');
+		consoleError.mockRestore();
 	});
 
 	it.each([

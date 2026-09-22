@@ -63,6 +63,13 @@ async function handle(request: Request, secret: string): Promise<Response> {
 
 	// Awaited rather than deferred so that GitHub's delivery log shows the real outcome
 	const result = await sendToDiscord(target, message);
+
+	// GitHub only keeps the response for a few weeks, and nobody reads it until something is wrong,
+	// so what Discord objected to goes to the log as well. The url is left out of it, it holds the token.
+	if (!result.ok) {
+		console.error(`Discord did not take ${eventType} of ${repositoryName}:`, result.status, result.error);
+	}
+
 	const lines = [
 		`Received ${eventType} in repository ${repositoryName}`,
 		result.status === null ? `Discord request failed: ${result.error}` : `Discord HTTP ${result.status}`,
