@@ -245,6 +245,14 @@ describe('optional fields', () => {
 		expect(result.title).toBe('deleted branch `` weird`branch ``');
 	});
 
+	it('branch with two backticks in a row in its name', () => {
+		const result = embed('delete', 'delete_branch', (p) => {
+			p.ref = 'weird``branch';
+		});
+
+		expect(result.title).toBe('deleted branch ``` weird``branch ```');
+	});
+
 	it('transferred repository without a previous owner', () => {
 		const result = embed('repository', 'repository_transferred', (p) => {
 			p.changes.owner.from = {};

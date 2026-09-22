@@ -101,6 +101,11 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { $Payload->ref = 'weird`branch'; },
 				'title', 'deleted branch `` weird`branch ``',
 			],
+			'branch with two backticks in a row in its name' => [
+				'delete', 'delete_branch',
+				static function( stdClass $Payload ) : void { $Payload->ref = 'weird``branch'; },
+				'title', 'deleted branch ``` weird``branch ```',
+			],
 			'package without a version' => [
 				'registry_package', 'registry_package',
 				static function( stdClass $Payload ) : void { $Payload->registry_package->package_version->version = ''; },

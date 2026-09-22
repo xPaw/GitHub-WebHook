@@ -1,4 +1,5 @@
 const MARKDOWN_SPECIAL = /[\\*|`[\]()<>_~]/g;
+const BACKTICK_RUNS = /`+/g;
 // An unclosed comment hides the rest of the text, which is also how GitHub renders it
 const HTML_COMMENT = /<!--[\s\S]*?(?:-->|$)/g;
 // Requires a tag name, so that a lone "<" in text such as "a < b" is left alone.
@@ -21,8 +22,17 @@ export function escape(message: string): string {
 
 /** Wraps a string in an inline code span. */
 export function escapeCode(message: string): string {
-	// A backtick can only be inside of a code span that is delimited by more of them
-	return message.includes('`') ? `\`\` ${message} \`\`` : `\`${message}\``;
+	// A run of backticks can only be inside of a code span that is delimited by a longer run
+	const runs = message.match(BACKTICK_RUNS);
+
+	if (runs === null) {
+		return `\`${message}\``;
+	}
+
+	const delimiter = '`'.repeat(Math.max(...runs.map((run) => run.length)) + 1);
+
+	// The spaces keep a backtick at either end of the message apart from the delimiter
+	return `${delimiter} ${message} ${delimiter}`;
 }
 
 /** Truncates to a number of code points, so that emoji and other astral characters stay intact. */

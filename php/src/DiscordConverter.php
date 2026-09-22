@@ -158,13 +158,18 @@ class DiscordConverter extends BaseConverter
 
 	private static function EscapeCode( string $Message ) : string
 	{
-		// A backtick can only be inside of a code span that is delimited by more of them
-		if( str_contains( $Message, '`' ) )
+		// A run of backticks can only be inside of a code span that is delimited by a longer run
+		preg_match_all( '/`+/', $Message, $Runs );
+
+		if( $Runs[ 0 ] === [] )
 		{
-			return '`` ' . $Message . ' ``';
+			return '`' . $Message . '`';
 		}
 
-		return '`' . $Message . '`';
+		$Delimiter = str_repeat( '`', max( array_map( strlen( ... ), $Runs[ 0 ] ) ) + 1 );
+
+		// The spaces keep a backtick at either end of the message apart from the delimiter
+		return $Delimiter . ' ' . $Message . ' ' . $Delimiter;
 	}
 
 	/**
