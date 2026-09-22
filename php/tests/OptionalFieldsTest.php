@@ -153,7 +153,12 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 		$Heading = $Message[ 'components' ][ 0 ][ 'components' ][ 0 ][ 'content' ];
 
 		self::assertStringEndsWith( '…', $Heading );
-		self::assertSame( 1, preg_match( '/(\\\\*)…$/', $Heading, $Match ) );
+
+		if( preg_match( '/(\\\\*)…$/', $Heading, $Match ) !== 1 )
+		{
+			self::fail( 'the heading does not end in an ellipsis' );
+		}
+
 		self::assertSame( 0, strlen( $Match[ 1 ] ) % 2, 'half of an escaped backslash was left behind' );
 	}
 
