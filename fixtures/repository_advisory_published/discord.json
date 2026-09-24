@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat published a security advisory: Path traversal in the static file handler](https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p)"
+                    "content": "-# Hello-World\n### [Codertocat published a security advisory](https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p): Path traversal in the static file handler"
                 },
                 {
                     "type": 10,

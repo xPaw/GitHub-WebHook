@@ -13,7 +13,7 @@
                 },
                 {
                     "type": 10,
-                    "content": "[created Foo \\(bar\\)](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Foo-%28bar%29)\n[edited Page 1](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-1\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36): Fixed a typo\n[created Page 2](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-2)\n[edited Page 3](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-3\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36)\n[created Page 4](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-4)\nand 1 more page"
+                    "content": "[created](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Foo-%28bar%29) Foo \\(bar\\)\n[edited](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-1\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36) Page 1: Fixed a typo\n[created](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-2) Page 2\n[edited](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-3\/_compare\/94b8720e6a96a73ddbb639b06e5b29b98eb81a36) Page 3\n[created](https:\/\/github.com\/octo-org\/Spoon-Knife\/wiki\/Page-4) Page 4\nand 1 more page"
                 }
             ]
         }

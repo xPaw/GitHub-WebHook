@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Spoon-Knife\n### [monalisa reopened issue **#508**: Something isn't rendering correctly](https:\/\/github.com\/octo-org\/Spoon-Knife\/issues\/508)"
+                    "content": "-# Spoon-Knife\n### [monalisa reopened issue **#508**](https:\/\/github.com\/octo-org\/Spoon-Knife\/issues\/508): Something isn't rendering correctly"
                 }
             ]
         }

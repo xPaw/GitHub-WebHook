@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# new-private-repo\n### [monalisa open sourced **new-private-repo** \u2014 now available to everyone!](https:\/\/github.com\/monalisa\/new-private-repo)"
+                    "content": "-# new-private-repo\n### [monalisa open sourced](https:\/\/github.com\/monalisa\/new-private-repo) **new-private-repo** \u2014 now available to everyone!"
                 }
             ]
         }

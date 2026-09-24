@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat dismissed Code scanning alert **#10**: Unsafe jQuery plugin](https:\/\/github.com\/Codertocat\/Hello-World\/security\/code-scanning\/10)"
+                    "content": "-# Hello-World\n### [Codertocat dismissed Code scanning alert **#10**](https:\/\/github.com\/Codertocat\/Hello-World\/security\/code-scanning\/10): Unsafe jQuery plugin"
                 }
             ]
         }

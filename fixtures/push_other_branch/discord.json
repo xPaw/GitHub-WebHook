@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [monalisa pushed 1 new commit to `feature\/some-branch`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/8ddec647cc7a5a819669ad55d08cfabe49925311)"
+                    "content": "-# Hello-World\n### [monalisa pushed 1 new commit](https:\/\/github.com\/monalisa\/Hello-World\/commit\/8ddec647cc7a5a819669ad55d08cfabe49925311) to `feature\/some-branch`"
                 },
                 {
                     "type": 10,

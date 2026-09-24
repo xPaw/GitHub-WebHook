@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat created deploy key: **hey-its-a-deploy-key** (read-only)](https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys)"
+                    "content": "-# Hello-World\n### [Codertocat created deploy key](https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys): **hey-its-a-deploy-key** (read-only)"
                 }
             ]
         }

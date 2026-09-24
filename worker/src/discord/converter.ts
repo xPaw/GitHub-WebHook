@@ -53,7 +53,14 @@ type WorkflowRunEvent = Payload<'workflow-run'>;
 
 /** What every event is formatted into, before it is laid out as components. */
 export interface DiscordEmbed {
+	/**
+	 * The start of the sentence that the sender opens, which links to the event. Discord renders
+	 * markdown in the text of a link but can not escape any of it there, so this only ever holds
+	 * our own words, numbers, logins and hashes, none of which have anything in them to escape.
+	 */
 	title: string;
+	/** The rest of the sentence, after the link: whatever somebody else wrote, escaped. */
+	titleEnd?: string;
 	description?: string;
 	url?: string;
 	color?: number;
@@ -99,10 +106,15 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 	const embed = format(eventType, payload);
 	const scope = formatScope(payload as ScopePayload);
 
-	// The sender opens the sentence the title finishes, and the whole of it links to the event.
+	// The sender opens the sentence the title finishes, and the start of it links to the event.
 	// Who did it is in the card itself, so a message that can not be sent as them still says so.
-	const subject = `${escape(embed.author.name)} ${embed.title}`;
-	const heading = `### ${embed.url === undefined ? subject : `[${subject}](${embed.url})`}`;
+	// A login is only letters, digits and hyphens, and the "[bot]" of an app is a pair of brackets
+	// that the text of a link may hold, so the sender needs no escaping in there.
+	const end = embed.titleEnd ?? '';
+	const heading =
+		embed.url === undefined
+			? `### ${escape(embed.author.name)} ${embed.title}${end}`
+			: `### [${embed.author.name} ${embed.title}](${embed.url})${end}`;
 
 	// Several repositories usually share a webhook, so the card says where the event happened
 	const parts = [scope === null ? heading : `-# ${escape(scope)}\n${heading}`];
@@ -381,9 +393,10 @@ function actionPhrase(action: string): [verb: string, suffix: string] {
  * The parts every alert of a security feature has in common. A new alert always needs attention,
  * what happened to it afterwards is coloured like any other action.
  */
-function alertEmbed(title: string, action: string, url: DiscordEmbed['url'], sender: Sender): DiscordEmbed {
+function alertEmbed(title: string, titleEnd: string, action: string, url: DiscordEmbed['url'], sender: Sender): DiscordEmbed {
 	return {
 		title,
+		titleEnd,
 		url,
 		color: action === 'created' ? COLOR_ATTENTION : actionColor(action),
 		author: formatAuthor(sender),
@@ -424,8 +437,10 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	const baseRef = payload.base_ref ? escapeCode(refName(payload.base_ref)) : null;
 	const newCommits = `${commits.length} new commit${commits.length === 1 ? '' : 's'}`;
 
+	// A ref is named by whoever made it, so it goes after the link with anything else from the payload
 	const embed: DiscordEmbed = {
 		title: '',
+		titleEnd: '',
 		url: payload.compare,
 		color: COLOR_DEFAULT,
 		author: formatAuthor(payload.sender),
@@ -433,38 +448,44 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 
 	if (payload.created) {
 		if (payload.ref.startsWith('refs/tags/')) {
-			embed.title = `tagged ${ref} at ${baseRef ?? escapeCode(shortSha(payload.after))}`;
+			embed.title = 'tagged';
+			embed.titleEnd = ` ${ref} at ${baseRef ?? escapeCode(shortSha(payload.after))}`;
 		} else {
-			embed.title = `created ${ref}`;
+			embed.title = 'created';
+			embed.titleEnd = ` ${ref}`;
 
 			if (baseRef) {
-				embed.title += ` from ${baseRef}`;
+				embed.titleEnd += ` from ${baseRef}`;
 			} else if (commits.length > 0) {
-				embed.title += ` at ${escapeCode(shortSha(payload.after))}`;
+				embed.titleEnd += ` at ${escapeCode(shortSha(payload.after))}`;
 			}
 
 			if (commits.length > 0) {
-				embed.title += ` (+${newCommits})`;
+				embed.titleEnd += ` (+${newCommits})`;
 			}
 		}
 	} else if (payload.deleted) {
 		throw new NotImplementedError('push', 'deleted (use DeleteEvent if needed)');
 	} else if (payload.forced) {
-		embed.title = `force-pushed ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
+		embed.title = 'force-pushed';
+		embed.titleEnd = ` ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
 		embed.color = COLOR_BAD;
 	} else if (commits.length === 0 && payload.commits.length > 0) {
 		if (baseRef) {
-			embed.title = `merged ${baseRef} into ${ref}`;
+			embed.title = 'merged';
+			embed.titleEnd = ` ${baseRef} into ${ref}`;
 			embed.color = COLOR_CLOSED;
 		} else {
-			embed.title = `fast-forwarded ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
+			embed.title = 'fast-forwarded';
+			embed.titleEnd = ` ${ref} from ${escapeCode(shortSha(payload.before))} to ${escapeCode(shortSha(payload.after))}`;
 			embed.color = COLOR_NEUTRAL;
 		}
 	} else {
 		// Most pushes go to the default branch, so only other branches are worth naming
 		const isDefaultBranch = payload.ref === `refs/heads/${payload.repository.default_branch}`;
 
-		embed.title = `pushed ${newCommits}${isDefaultBranch ? '' : ` to ${ref}`}`;
+		embed.title = `pushed ${newCommits}`;
+		embed.titleEnd = isDefaultBranch ? '' : ` to ${ref}`;
 	}
 
 	if (payload.forced) {
@@ -520,7 +541,8 @@ function formatDelete(payload: DeleteEvent): DiscordEmbed {
 	}
 
 	return {
-		title: `deleted ${payload.ref_type} ${escapeCode(payload.ref)}`,
+		title: `deleted ${payload.ref_type}`,
+		titleEnd: ` ${escapeCode(payload.ref)}`,
 		url: payload.repository.html_url,
 		color: COLOR_BAD,
 		author: formatAuthor(payload.sender),
@@ -541,7 +563,8 @@ function formatIssues(payload: IssuesEvent): DiscordEmbed {
 	const [verb, suffix] = actionPhrase(action);
 
 	const embed: DiscordEmbed = {
-		title: `${verb} issue **#${payload.issue.number}**${suffix}: ${escape(payload.issue.title)}`,
+		title: `${verb} issue **#${payload.issue.number}**${suffix}`,
+		titleEnd: `: ${escape(payload.issue.title)}`,
 		url: payload.issue.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -605,7 +628,8 @@ function formatPullRequest(payload: PullRequestEvent): DiscordEmbed {
 	const draft = payload.pull_request.draft && action !== 'converted to draft' ? 'draft ' : '';
 
 	const embed: DiscordEmbed = {
-		title: `${verb} ${draft}PR **#${payload.pull_request.number}**${suffix}: ${escape(payload.pull_request.title)}`,
+		title: `${verb} ${draft}PR **#${payload.pull_request.number}**${suffix}`,
+		titleEnd: `: ${escape(payload.pull_request.title)}`,
 		url: payload.pull_request.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -628,7 +652,8 @@ function formatMilestone(payload: MilestoneEvent): DiscordEmbed {
 	const action = payload.action === 'opened' ? 'reopened' : payload.action;
 
 	return {
-		title: `${action} milestone **#${payload.milestone.number}**: ${escape(payload.milestone.title)}`,
+		title: `${action} milestone **#${payload.milestone.number}**`,
+		titleEnd: `: ${escape(payload.milestone.title)}`,
 		description: action === 'created' ? formatBody(payload.milestone.description) : '',
 		url: payload.milestone.html_url,
 		color: actionColor(action),
@@ -645,7 +670,9 @@ function formatPackage(event: string, payload: PackageEvent | RegistryPackageEve
 	const version = pkg.package_version?.version;
 
 	return {
-		title: `${payload.action} ${escape(pkg.package_type.toLowerCase())} package: **${escape(pkg.name)}**${version ? ` ${escape(version)}` : ''}`,
+		// The type is one of a handful that GitHub names, such as npm or maven
+		title: `${payload.action} ${pkg.package_type.toLowerCase()} package`,
+		titleEnd: `: **${escape(pkg.name)}**${version ? ` ${escape(version)}` : ''}`,
 		// Container packages have an empty object as their body
 		description: payload.action === 'published' && typeof body === 'string' ? formatBody(body) : '',
 		url: pkg.html_url,
@@ -666,7 +693,8 @@ function formatRelease(payload: ReleaseEvent): DiscordEmbed {
 	const kind = `${payload.release.draft ? 'draft ' : ''}${payload.release.prerelease ? 'pre-' : ''}release`;
 
 	return {
-		title: `${payload.action} a ${kind}: ${escape(name)}`,
+		title: `${payload.action} a ${kind}`,
+		titleEnd: `: ${escape(name)}`,
 		// Release notes are only worth showing when the release appears
 		description: payload.action === 'published' ? formatBody(payload.release.body) : '',
 		url: payload.release.html_url,
@@ -697,8 +725,9 @@ function formatComment(event: string, payload: IssueCommentEvent | DiscussionCom
 
 	return {
 		title: deleted
-			? `deleted comment in ${kind} **#${subject.number}** from **${escape(payload.comment.user?.login ?? 'ghost')}**`
-			: `commented on ${kind} **#${subject.number}**: ${escape(subject.title)}`,
+			? `deleted comment in ${kind} **#${subject.number}** from **${payload.comment.user?.login ?? 'ghost'}**`
+			: `commented on ${kind} **#${subject.number}**`,
+		titleEnd: deleted ? '' : `: ${escape(subject.title)}`,
 		description: deleted ? '' : formatBody(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
@@ -720,7 +749,8 @@ function formatPullRequestReview(payload: PullRequestReviewEvent): DiscordEmbed 
 	}
 
 	return {
-		title: `${state}${state === 'dismissed' ? ' a review on' : ''} PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
+		title: `${state}${state === 'dismissed' ? ' a review on' : ''} PR **#${payload.pull_request.number}**`,
+		titleEnd: `: ${escape(payload.pull_request.title)}`,
 		// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
 		description: state === 'dismissed' ? '' : formatBody(payload.review.body),
 		url: payload.review.html_url,
@@ -733,7 +763,8 @@ function formatPullRequestReviewComment(payload: PullRequestReviewCommentEvent):
 	assertAction('pull_request_review_comment', payload.action, ['created'], ['edited', 'deleted']);
 
 	return {
-		title: `commented on the code of PR **#${payload.pull_request.number}**: ${escape(payload.pull_request.title)}`,
+		title: `commented on the code of PR **#${payload.pull_request.number}**`,
+		titleEnd: `: ${escape(payload.pull_request.title)}`,
 		description: formatBody(payload.comment.body),
 		url: payload.comment.html_url,
 		color: actionColor(payload.action),
@@ -754,7 +785,9 @@ function formatDiscussion(payload: DiscussionEvent): DiscordEmbed {
 	const [verb, suffix] = actionPhrase(action);
 
 	const embed: DiscordEmbed = {
-		title: `${verb} discussion **#${payload.discussion.number}**${suffix}: ${payload.discussion.category.emoji} ${escape(payload.discussion.title)}`,
+		title: `${verb} discussion **#${payload.discussion.number}**${suffix}`,
+		// The emoji of a category is a shortcode, which would keep Discord from making a link of the title
+		titleEnd: `: ${payload.discussion.category.emoji} ${escape(payload.discussion.title)}`,
 		url: payload.action === 'answered' ? (payload.answer?.html_url ?? payload.discussion.html_url) : payload.discussion.html_url,
 		color: actionColor(action),
 		author: formatAuthor(payload.sender),
@@ -785,7 +818,8 @@ function formatDependabotAlert(payload: DependabotAlertEvent): DiscordEmbed {
 	const vulnerability = payload.alert.security_vulnerability;
 
 	const embed = alertEmbed(
-		`${action} Dependabot alert **#${payload.alert.number}** for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
+		`${action} Dependabot alert **#${payload.alert.number}**`,
+		` for **${escape(vulnerability.package.name)}**: ${escape(advisory.summary)}`,
 		action,
 		payload.alert.html_url,
 		payload.sender,
@@ -811,7 +845,8 @@ function formatCodeScanningAlert(payload: CodeScanningAlertEvent): DiscordEmbed 
 	assertAction('code_scanning_alert', action, ['created', 'fixed', 'dismissed', 'reopened'], ['appeared_in_branch', 'updated_assignment']);
 
 	const embed = alertEmbed(
-		`${action} Code scanning alert **#${payload.alert.number}**: ${escape(payload.alert.rule.description)}`,
+		`${action} Code scanning alert **#${payload.alert.number}**`,
+		`: ${escape(payload.alert.rule.description)}`,
 		action,
 		payload.alert.html_url,
 		payload.sender,
@@ -839,7 +874,8 @@ function formatSecretScanningAlert(payload: SecretScanningAlertEvent): DiscordEm
 	const secretType = alert.secret_type_display_name ?? alert.secret_type ?? 'unknown';
 
 	const embed = alertEmbed(
-		`${action} Secret scanning alert **#${alert.number}**: ${escape(secretType)}`,
+		`${action} Secret scanning alert **#${alert.number}**`,
+		`: ${escape(secretType)}`,
 		action,
 		alert.html_url,
 		payload.sender,
@@ -862,7 +898,8 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 	if (payload.action === 'reported') {
 		// Reported advisories are private, so do not reveal what they are about
 		return {
-			title: `privately reported a vulnerability: **${escape(advisory.ghsa_id)}**`,
+			title: 'privately reported a vulnerability',
+			titleEnd: `: **${escape(advisory.ghsa_id)}**`,
 			url: advisory.html_url,
 			color: COLOR_ATTENTION,
 			author: formatAuthor(payload.sender),
@@ -870,7 +907,8 @@ function formatRepositoryAdvisory(payload: RepositoryAdvisoryEvent): DiscordEmbe
 	}
 
 	return {
-		title: `published a security advisory: ${escape(advisory.summary)}`,
+		title: 'published a security advisory',
+		titleEnd: `: ${escape(advisory.summary)}`,
 		description: formatBody(advisory.description),
 		url: advisory.html_url,
 		color: COLOR_ATTENTION,
@@ -884,7 +922,7 @@ function formatMember(payload: MemberEvent): DiscordEmbed {
 	assertAction('member', payload.action, ['added', 'removed'], ['edited']);
 
 	return {
-		title: `${payload.action} **${escape(payload.member?.login ?? 'ghost')}** as a collaborator`,
+		title: `${payload.action} **${payload.member?.login ?? 'ghost'}** as a collaborator`,
 		url: payload.repository.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -900,7 +938,8 @@ function formatGollum(payload: GollumEvent): DiscordEmbed {
 		const url = page.action === 'edited' ? `${pageUrl}/_compare/${page.sha}` : pageUrl;
 		const summary = page.summary ? `: ${shortMessage(page.summary)}` : '';
 
-		return `[${page.action} ${escape(page.title)}](${url})${summary}`;
+		// Nothing can be escaped in the text of a link, so the title of the page goes after it
+		return `[${page.action}](${url}) ${escape(page.title)}${summary}`;
 	});
 
 	const remaining = payload.pages.length - MAX_WIKI_PAGES;
@@ -920,7 +959,8 @@ function formatGollum(payload: GollumEvent): DiscordEmbed {
 
 function formatPublic(payload: PublicEvent): DiscordEmbed {
 	return {
-		title: `open sourced **${escape(payload.repository.name)}** — now available to everyone!`,
+		title: 'open sourced',
+		titleEnd: ` **${escape(payload.repository.name)}** — now available to everyone!`,
 		url: payload.repository.html_url,
 		color: COLOR_DEFAULT,
 		author: formatAuthor(payload.sender),
@@ -935,22 +975,23 @@ function formatRepository(payload: RepositoryEvent): DiscordEmbed {
 		['edited'],
 	);
 
-	let title = `${payload.action} **${escape(payload.repository.name)}**`;
+	let titleEnd = ` **${escape(payload.repository.name)}**`;
 
 	if (payload.action === 'renamed') {
-		title += fromSuffix(payload.changes.repository.name.from);
+		titleEnd += fromSuffix(payload.changes.repository.name.from);
 	} else if (payload.action === 'transferred') {
 		const from = payload.changes.owner.from;
 
 		const owner = from.user ?? from.organization;
 
 		if (owner) {
-			title += fromSuffix(owner.login);
+			titleEnd += fromSuffix(owner.login);
 		}
 	}
 
 	return {
-		title,
+		title: payload.action,
+		titleEnd,
 		url: payload.repository.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -967,7 +1008,8 @@ function projectEmbed(
 	assertAction(event, action, ['created', 'closed', 'reopened', 'deleted'], ['edited']);
 
 	return {
-		title: `${action} project **#${project.number}**: ${escape(project.title)}`,
+		title: `${action} project **#${project.number}**`,
+		titleEnd: `: ${escape(project.title)}`,
 		description: action === 'created' ? formatBody(project.body) : '',
 		url: project.url,
 		color: actionColor(action),
@@ -1033,7 +1075,8 @@ function formatBranchProtectionRule(payload: BranchProtectionRuleEvent): Discord
 	assertAction('branch_protection_rule', payload.action, ['created', 'deleted'], ['edited']);
 
 	return {
-		title: `${payload.action} branch protection rule ${escapeCode(payload.rule.name)}`,
+		title: `${payload.action} branch protection rule`,
+		titleEnd: ` ${escapeCode(payload.rule.name)}`,
 		url: `${payload.repository.html_url}/settings/branches`,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -1046,7 +1089,8 @@ function formatRepositoryRuleset(payload: RepositoryRulesetEvent): DiscordEmbed 
 	const ruleset = payload.repository_ruleset;
 
 	return {
-		title: `${payload.action} ruleset: **${escape(ruleset.name)}** (${escape(ruleset.enforcement)})`,
+		title: `${payload.action} ruleset`,
+		titleEnd: `: **${escape(ruleset.name)}** (${escape(ruleset.enforcement)})`,
 		// Rulesets of an organization have no page of their own
 		url: ruleset._links?.html?.href,
 		color: actionColor(payload.action),
@@ -1061,7 +1105,8 @@ function formatDeployKey(payload: DeployKeyEvent): DiscordEmbed {
 	const access = payload.key.read_only ? 'read-only' : 'read-write';
 
 	return {
-		title: `${payload.action} deploy key: **${escape(payload.key.title)}** (${access})`,
+		title: `${payload.action} deploy key`,
+		titleEnd: `: **${escape(payload.key.title)}** (${access})`,
 		url: `${payload.repository.html_url}/settings/keys`,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -1180,7 +1225,7 @@ function formatSponsorship(payload: SponsorshipEvent): DiscordEmbed {
 	}
 
 	return {
-		title: `is now sponsoring **${escape(sponsored)}**`,
+		title: `is now sponsoring **${sponsored}**`,
 		url,
 		color: COLOR_DEFAULT,
 		author: formatAuthor(sponsor),
@@ -1203,7 +1248,8 @@ function formatWorkflowRun(payload: WorkflowRunEvent): DiscordEmbed {
 	}
 
 	return {
-		title: `broke ${escapeCode(payload.repository.default_branch)} — workflow **${escape(run.name || payload.workflow?.name || 'unknown')}** ${outcome}`,
+		title: 'broke',
+		titleEnd: ` ${escapeCode(payload.repository.default_branch)} — workflow **${escape(run.name || payload.workflow?.name || 'unknown')}** ${outcome}`,
 		description: shortMessage(run.head_commit.message),
 		url: run.html_url,
 		color: actionColor(outcome),
@@ -1217,7 +1263,8 @@ function formatMembership(payload: MembershipEvent): DiscordEmbed {
 	const where = payload.action === 'added' ? 'to' : 'from';
 
 	return {
-		title: `${payload.action} **${escape(payload.member?.login ?? 'ghost')}** ${where} team **${escape(payload.team.name)}**`,
+		title: `${payload.action} **${payload.member?.login ?? 'ghost'}** ${where} team`,
+		titleEnd: ` **${escape(payload.team.name)}**`,
 		url: payload.team.html_url,
 		color: actionColor(payload.action),
 		author: formatAuthor(payload.sender),
@@ -1243,7 +1290,8 @@ function formatTeam(payload: TeamEvent): DiscordEmbed {
 	const from = payload.action === 'edited' ? payload.changes.name?.from : null;
 	const verb = from ? 'renamed' : action;
 
-	let title = `${verb} team **${escape(payload.team.name)}**${where}`;
+	let title = `${verb} team`;
+	let titleEnd = ` **${escape(payload.team.name)}**${where}`;
 
 	// An edit is worth telling when it renames a team or changes who can see it
 	if (payload.action === 'edited' && !from) {
@@ -1251,15 +1299,17 @@ function formatTeam(payload: TeamEvent): DiscordEmbed {
 			throw new IgnoredEventError(`team - ${payload.action}`);
 		}
 
-		title = `changed the privacy of team **${escape(payload.team.name)}** to **${escape(payload.team.privacy ?? 'unknown')}**`;
+		title = 'changed the privacy of team';
+		titleEnd = ` **${escape(payload.team.name)}** to **${escape(payload.team.privacy ?? 'unknown')}**`;
 	}
 
 	if (from) {
-		title += fromSuffix(from);
+		titleEnd += fromSuffix(from);
 	}
 
 	return {
 		title,
+		titleEnd,
 		url: payload.team.html_url,
 		color: actionColor(verb),
 		author: formatAuthor(payload.sender),

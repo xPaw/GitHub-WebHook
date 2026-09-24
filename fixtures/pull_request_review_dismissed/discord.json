@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat dismissed a review on PR **#2**: Update the README with new information.](https:\/\/github.com\/Codertocat\/Hello-World\/pull\/2#pullrequestreview-237895671)"
+                    "content": "-# Hello-World\n### [Codertocat dismissed a review on PR **#2**](https:\/\/github.com\/Codertocat\/Hello-World\/pull\/2#pullrequestreview-237895671): Update the README with new information."
                 }
             ]
         }

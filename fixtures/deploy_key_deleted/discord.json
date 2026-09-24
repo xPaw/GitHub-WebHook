@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat deleted deploy key: **deploys from the build server** (read-write)](https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys)"
+                    "content": "-# Hello-World\n### [Codertocat deleted deploy key](https:\/\/github.com\/Codertocat\/Hello-World\/settings\/keys): **deploys from the build server** (read-write)"
                 }
             ]
         }

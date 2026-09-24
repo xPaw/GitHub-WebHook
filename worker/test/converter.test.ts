@@ -145,7 +145,10 @@ const MAX_MESSAGE_LENGTH = 4000;
 
 interface Card {
 	scope: string | null;
+	/** The whole of the sentence, whether it is linked or not. */
 	title: string;
+	/** What of the sentence is the text of the link. */
+	linked?: string;
 	/** Every character Discord counts towards {@link MAX_MESSAGE_LENGTH}. */
 	size: number;
 	username?: string;
@@ -163,17 +166,19 @@ function embed(eventType: string, fixture: string, change: (payload: Payload) =>
 
 	const lines = heading.split('\n');
 	const titleLine = lines[lines.length - 1];
-	const linked = /^### \[(.*)]\((.*)\)$/s.exec(titleLine);
+	// The text of the link is ours and has no "](" in it, and the url has no parentheses or spaces
+	const linked = /^### \[(.*?)]\(([^()\s]*)\)(.*)$/s.exec(titleLine);
 
 	const card: Card = {
 		scope: lines.length > 1 ? lines[0].slice('-# '.length) : null,
-		title: linked ? linked[1] : titleLine.slice('### '.length),
+		title: linked ? linked[1] + linked[3] : titleLine.slice('### '.length),
 		size: [heading, ...rest].reduce((total, part) => total + [...part].length, 0),
 		username: message.username,
 		avatar: message.avatar_url,
 	};
 
 	if (linked) {
+		card.linked = linked[1];
 		card.url = linked[2];
 	}
 
@@ -300,7 +305,7 @@ describe('optional fields', () => {
 			p.ref = 'weird`branch';
 		});
 
-		expect(result.title).toBe('Codertocat deleted branch `` weird`branch ``');
+		expect(result.title).toBe('Codertocat deleted branch ``weird`branch``');
 	});
 
 	it('branch with two backticks in a row in its name', () => {
@@ -308,7 +313,18 @@ describe('optional fields', () => {
 			p.ref = 'weird``branch';
 		});
 
-		expect(result.title).toBe('Codertocat deleted branch ``` weird``branch ```');
+		expect(result.title).toBe('Codertocat deleted branch ```weird``branch```');
+	});
+
+	it.each([
+		['starts', '`weird', 'Codertocat deleted branch `` `weird``'],
+		['ends', 'weird`', 'Codertocat deleted branch ``weird` ``'],
+	])('branch whose name %s with a backtick keeps it apart from the delimiter', (_, ref, title) => {
+		const result = embed('delete', 'delete_branch', (p) => {
+			p.ref = ref;
+		});
+
+		expect(result.title).toBe(title);
 	});
 
 	it('transferred repository without a previous owner', () => {
@@ -527,6 +543,122 @@ describe('optional fields', () => {
 	});
 });
 
+describe('markdown in a title', () => {
+	function issue(title: string, sender = 'monalisa'): Card {
+		return embed('issues', 'issue_opened', (p) => {
+			p.issue.title = title;
+			p.sender.login = sender;
+		});
+	}
+
+	it('keeps the title out of the link, where Discord shows a backslash rather than escaping', () => {
+		const result = issue('Overscaled in the skybox (HL:A)');
+
+		expect(result.linked).toBe('monalisa opened issue **#508**');
+		expect(result.title).toBe('monalisa opened issue **#508**: Overscaled in the skybox \\(HL:A\\)');
+	});
+
+	it('names an app in the link as it is', () => {
+		expect(issue('Crash', 'github-actions[bot]').linked).toBe('github-actions[bot] opened issue **#508**');
+	});
+
+	it('escapes an app where the heading is not a link', () => {
+		const result = embed('org_block', 'org_block_blocked', (p) => {
+			p.sender.login = 'github-actions[bot]';
+		});
+
+		expect(result.url).toBeUndefined();
+		expect(result.title.startsWith('github-actions\\[bot\\] blocked')).toBe(true);
+	});
+
+	it.each([
+		['leaves a url as it is', 'see https://example.com/a_b', 'see https://example.com/a_b'],
+		['escapes around a url', '__init__ in https://example.com/a_b', '\\_\\_init\\_\\_ in https://example.com/a_b'],
+		['leaves a closing parenthesis without an opening one out of a url', '(https://example.com/a_b)', '\\(https://example.com/a_b\\)'],
+		['keeps a pair of parentheses in a url', 'https://example.com/a_(b)', 'https://example.com/a_(b)'],
+		['escapes what only looks like the start of a url', 'https:// and https://)', 'https:// and https://\\)'],
+	])('%s', (_, title, escaped) => {
+		expect(issue(title).title).toBe(`monalisa opened issue **#508**: ${escaped}`);
+	});
+
+	/** Sets a field of a payload by the path to it, such as `issue.title`. */
+	function set(payload: Payload, path: string, value: string): void {
+		const keys = path.split('.');
+		const last = keys.pop() as string;
+		let target = payload;
+
+		for (const key of keys) {
+			target = target[key];
+		}
+
+		target[last] = value;
+	}
+
+	// Discord shows a backslash in the text of a link, formats markdown there, and does not make a link
+	// at all of text that holds a url, an emoji, a mention or a bracket that is never closed
+	const WRITTEN = 'www.example.com [x :bug: <@1> @everyone _y_';
+
+	it.each<[event: string, fixture: string, paths: string[], prefix?: string]>([
+		['issues', 'issue_opened', ['issue.title']],
+		['pull_request', 'pull_request_reopened', ['pull_request.title']],
+		['pull_request_review', 'pull_request_review_approved', ['pull_request.title']],
+		['pull_request_review_comment', 'pull_request_review_comment', ['pull_request.title']],
+		['issue_comment', 'issue_comment', ['issue.title']],
+		['discussion_comment', 'discussion_comment_created', ['discussion.title']],
+		['discussion', 'discussion_created', ['discussion.title']],
+		['discussion', 'discussion_created', ['discussion.category.emoji']],
+		['milestone', 'milestone', ['milestone.title']],
+		['release', 'release', ['release.name']],
+		['package', 'package', ['package.name']],
+		['registry_package', 'registry_package', ['registry_package.package_version.version']],
+		['dependabot_alert', 'dependabot_alert_created', ['alert.security_vulnerability.package.name']],
+		['dependabot_alert', 'dependabot_alert_created', ['alert.security_advisory.summary']],
+		['code_scanning_alert', 'code_scanning_alert_created', ['alert.rule.description']],
+		['secret_scanning_alert', 'secret_scanning_alert_created', ['alert.secret_type_display_name']],
+		['repository_advisory', 'repository_advisory_published', ['repository_advisory.summary']],
+		['repository_advisory', 'repository_advisory_reported', ['repository_advisory.ghsa_id']],
+		['public', 'public', ['repository.name']],
+		['repository', 'repository_renamed', ['repository.name']],
+		['repository', 'repository_renamed', ['changes.repository.name.from']],
+		['project', 'project', ['project.name']],
+		['projects_v2', 'projects_v2_created', ['projects_v2.title']],
+		['branch_protection_rule', 'branch_protection_rule_created', ['rule.name']],
+		['repository_ruleset', 'repository_ruleset_created', ['repository_ruleset.name']],
+		['deploy_key', 'deploy_key_created', ['key.title']],
+		['workflow_run', 'workflow_run_failed', ['workflow_run.name']],
+		['workflow_run', 'workflow_run_failed', ['workflow_run.head_branch', 'repository.default_branch']],
+		['membership', 'membership_added', ['team.name']],
+		['team', 'team_created', ['team.name']],
+		['team', 'team_edited', ['changes.name.from']],
+		['team', 'team_edited_privacy', ['team.name']],
+		['delete', 'delete_branch', ['ref']],
+		['push', 'push_other_branch', ['ref'], 'refs/heads/'],
+		['push', 'push_created', ['ref'], 'refs/heads/'],
+		['push', 'push_tag', ['ref'], 'refs/tags/'],
+		['push', 'push_forced', ['ref'], 'refs/heads/'],
+		['push', 'push_merged', ['base_ref'], 'refs/heads/'],
+		['push', 'push_fast_forward', ['ref'], 'refs/heads/'],
+	])('%s (%s) keeps %j out of the link', (event, fixture, paths, prefix = '') => {
+		const result = embed(event, fixture, (p) => {
+			for (const path of paths) {
+				set(p, path, prefix + WRITTEN);
+			}
+		});
+
+		expect(result.linked).toBeDefined();
+		expect(result.linked).not.toMatch(/www|\[x|:bug:|<@1>|@everyone|_y_/);
+		expect(result.title).toContain('www.example.com');
+	});
+
+	it('keeps the title of a wiki page out of its link', () => {
+		const result = embed('gollum', 'gollum', (p) => {
+			p.pages[0].title = 'Home_(draft)';
+		});
+
+		expect(result.description).toMatch(/^\[edited]\(\S+\) Home\\_\\\(draft\\\)$/);
+	});
+});
+
 describe('markdown in a body', () => {
 	function body(text: string): string | undefined {
 		return embed('issues', 'issue_opened', (p) => {
@@ -540,6 +672,10 @@ describe('markdown in a body', () => {
 
 	it('does not nest bold that a heading already had', () => {
 		expect(body('## A **bold** heading')).toBe('**A bold heading**');
+	});
+
+	it('flattens a heading however far it is indented', () => {
+		expect(body('    # Indented\n#\tTabbed\n     -# a note')).toBe('**Indented**\n**Tabbed**\na note');
 	});
 
 	it('leaves a hash that starts no heading alone', () => {

@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# octo-repo\n### [Codertocat deleted branch protection rule `production`](https:\/\/github.com\/octo-org\/octo-repo\/settings\/branches)"
+                    "content": "-# octo-repo\n### [Codertocat deleted branch protection rule](https:\/\/github.com\/octo-org\/octo-repo\/settings\/branches) `production`"
                 }
             ]
         }

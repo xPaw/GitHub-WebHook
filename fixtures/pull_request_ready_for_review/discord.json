@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [monalisa marked PR **#6** as ready for review: test pull request](https:\/\/github.com\/monalisa\/Hello-World\/pull\/6)"
+                    "content": "-# Hello-World\n### [monalisa marked PR **#6** as ready for review](https:\/\/github.com\/monalisa\/Hello-World\/pull\/6): test pull request"
                 }
             ]
         }

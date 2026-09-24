@@ -1,15 +1,21 @@
 const MARKDOWN_SPECIAL = /[\\*|`[\]()<>_~]/g;
+// Discord links a url wherever it starts, backslashes and all, and a browser reads those as slashes
+const BARE_URL = /(?:https?|steam):\/\/[^\s<]+[^<.,:;"'\]\s]/g;
 const BACKTICK_RUNS = /`+/g;
+// Discord only drops the space that pads a code span when there is a backtick beside it
+const LEADING_BACKTICK = /^ *`/;
+const TRAILING_BACKTICK = /` *$/;
 // An unclosed comment hides the rest of the text, which is also how GitHub renders it
 const HTML_COMMENT = /<!--[\s\S]*?(?:-->|$)/g;
 // Requires a tag name, so that a lone "<" in text such as "a < b" is left alone.
 // A tag never contains another "<", which keeps text full of unclosed tags cheap to scan.
 const HTML_TAG = /<\/?[a-z](?:[^<>"']|"[^"<]*"|'[^'<]*')*>/gi;
 
-// A heading in a body would out-shout the title of the card it is in, so it becomes bold instead
-const HEADING = /^ {0,2}#{1,6} +(\S.*)$/;
+// A heading in a body would out-shout the title of the card it is in, so it becomes bold instead.
+// Discord takes a heading and subtext however far they are indented, and a tab after the hashes.
+const HEADING = /^ *#{1,6}\s+(\S.*)$/;
 // Subtext is smaller than body text, which is what the scope and the labels of a card are set in
-const SUBTEXT = /^ {0,2}-# +/;
+const SUBTEXT = /^ *-# +/;
 // Only a line that opens with a run of three backticks fences a block; anywhere else they are text
 const FENCE = /^ {0,3}```/;
 
@@ -27,9 +33,39 @@ const MAX_SHORT_MESSAGE = 100;
 /** Backslashes at the very end of a string, which may be half of an escaped character. */
 const TRAILING_BACKSLASHES = /\\+$/;
 
-/** Escapes characters that Discord would otherwise interpret as markdown. */
+/**
+ * Escapes characters that Discord would otherwise interpret as markdown, everywhere but in a link
+ * of its own. Nothing can be escaped in the text of a masked link, so none of this may end up there.
+ */
 export function escape(message: string): string {
-	return message.replace(MARKDOWN_SPECIAL, (character) => `\\${character}`);
+	let escaped = '';
+	let from = 0;
+
+	for (const match of message.matchAll(BARE_URL)) {
+		const url = trimParenthesis(match[0]);
+
+		escaped += message.slice(from, match.index).replace(MARKDOWN_SPECIAL, (character) => `\\${character}`) + url;
+		from = match.index + url.length;
+	}
+
+	return escaped + message.slice(from).replace(MARKDOWN_SPECIAL, (character) => `\\${character}`);
+}
+
+/** Discord leaves a closing parenthesis out of a url when there is no opening one for it. */
+function trimParenthesis(url: string): string {
+	let from = 0;
+
+	for (let i = url.length - 1; i >= 0 && url[i] === ')'; i--) {
+		const open = url.indexOf('(', from);
+
+		if (open === -1) {
+			return url.slice(0, -1);
+		}
+
+		from = open + 1;
+	}
+
+	return url;
 }
 
 /** Wraps a string in an inline code span. */
@@ -43,8 +79,11 @@ export function escapeCode(message: string): string {
 
 	const delimiter = '`'.repeat(Math.max(...runs.map((run) => run.length)) + 1);
 
-	// The spaces keep a backtick at either end of the message apart from the delimiter
-	return `${delimiter} ${message} ${delimiter}`;
+	// A space keeps a backtick at either end of the message apart from the delimiter
+	const start = LEADING_BACKTICK.test(message) ? ' ' : '';
+	const end = TRAILING_BACKTICK.test(message) ? ' ' : '';
+
+	return `${delimiter}${start}${message}${end}${delimiter}`;
 }
 
 /** Truncates to a number of code points, so that emoji and other astral characters stay intact. */

@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# hello-world-npm\n### [Codertocat published container package: **hello-world** sha256:9c1e2f](https:\/\/github.com\/Codertocat\/hello-world-npm\/pkgs\/container\/hello-world)"
+                    "content": "-# hello-world-npm\n### [Codertocat published container package](https:\/\/github.com\/Codertocat\/hello-world-npm\/pkgs\/container\/hello-world): **hello-world** sha256:9c1e2f"
                 }
             ]
         }

@@ -39,10 +39,11 @@ class DiscordConverter extends BaseConverter
 	private const int MAX_MESSAGE_LENGTH = 4000;
 
 
-	// A heading in a body would out-shout the title of the card it is in, so it becomes bold instead
-	private const string HEADING = '~^ {0,2}\#{1,6} +(\S.*)$~';
+	// A heading in a body would out-shout the title of the card it is in, so it becomes bold instead.
+	// Discord takes a heading and subtext however far they are indented, and a tab after the hashes.
+	private const string HEADING = '~^ *\#{1,6}\s+(\S.*)$~';
 	// Subtext is smaller than body text, which is what the scope and the labels of a card are set in
-	private const string SUBTEXT = '~^ {0,2}-\# +~';
+	private const string SUBTEXT = '~^ *-\# +~';
 	// Only a line that opens with a run of three backticks fences a block; anywhere else they are text
 	private const string FENCE = '~^ {0,3}```~';
 
@@ -118,8 +119,14 @@ class DiscordConverter extends BaseConverter
 		/**
 		 * What every event above is formatted into, before it is laid out as components.
 		 *
+		 * The title is the start of the sentence that the sender opens, which links to the event.
+		 * Discord renders markdown in the text of a link but can not escape any of it there, so the title
+		 * only ever holds our own words, numbers, logins and hashes, none of which have anything in them
+		 * to escape. Whatever somebody else wrote is escaped and goes after the link, as the end of the title.
+		 *
 		 * @var array{
 		 *     title: string,
+		 *     titleEnd?: string,
 		 *     url?: ?string,
 		 *     color: int,
 		 *     description?: ?string,
@@ -128,11 +135,16 @@ class DiscordConverter extends BaseConverter
 		 * } $Embed
 		 */
 
-		// The sender opens the sentence the title finishes, and the whole of it links to the event.
+		// The sender opens the sentence the title finishes, and the start of it links to the event.
 		// Who did it is in the card itself, so a message that can not be sent as them still says so.
-		$Subject = self::Escape( $Embed[ 'author' ][ 'name' ] ) . ' ' . $Embed[ 'title' ];
+		// A login is only letters, digits and hyphens, and the "[bot]" of an app is a pair of brackets
+		// that the text of a link may hold, so the sender needs no escaping in there.
+		$Name = $Embed[ 'author' ][ 'name' ];
+		$End = $Embed[ 'titleEnd' ] ?? '';
 		$URL = $Embed[ 'url' ] ?? null;
-		$Heading = '### ' . ( $URL === null ? $Subject : "[{$Subject}]({$URL})" );
+		$Heading = $URL === null
+			? '### ' . self::Escape( $Name ) . " {$Embed[ 'title' ]}{$End}"
+			: "### [{$Name} {$Embed[ 'title' ]}]({$URL}){$End}";
 
 		// Several repositories usually share a webhook, so the card says where the event happened
 		$Scope = $this->FormatScope();
@@ -219,10 +231,11 @@ class DiscordConverter extends BaseConverter
 	 *
 	 * @return mixed[]
 	 */
-	private function AlertEmbed( string $Title, string $Action ) : array
+	private function AlertEmbed( string $Title, string $TitleEnd, string $Action ) : array
 	{
 		return [
 			'title' => $Title,
+			'titleEnd' => $TitleEnd,
 			'url' => $this->Payload->alert->html_url,
 			'color' => $Action === 'created' ? self::COLOR_ATTENTION : $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -241,8 +254,12 @@ class DiscordConverter extends BaseConverter
 
 		$Delimiter = str_repeat( '`', max( array_map( strlen( ... ), $Runs[ 0 ] ) ) + 1 );
 
-		// The spaces keep a backtick at either end of the message apart from the delimiter
-		return $Delimiter . ' ' . $Message . ' ' . $Delimiter;
+		// A space keeps a backtick at either end of the message apart from the delimiter,
+		// and Discord only drops the space that pads a code span when there is a backtick beside it
+		$Start = preg_match( '/^ *`/', $Message ) === 1 ? ' ' : '';
+		$End = preg_match( '/` *$/', $Message ) === 1 ? ' ' : '';
+
+		return $Delimiter . $Start . $Message . $End . $Delimiter;
 	}
 
 	/**
@@ -262,13 +279,58 @@ class DiscordConverter extends BaseConverter
 		return [ 'text' => implode( ' · ', array_map( static fn( object $Label ) : string => $Label->name, $Labels ) ) ];
 	}
 
+	/**
+	 * Escapes characters that Discord would otherwise interpret as markdown, everywhere but in a link
+	 * of its own. Nothing can be escaped in the text of a masked link, so none of this may end up there.
+	 */
 	private static function Escape( string $Message ) : string
+	{
+		// Discord links a url wherever it starts, backslashes and all, and a browser reads those as slashes
+		if( preg_match_all( '~(?:https?|steam)://[^\s<]+[^<.,:;"\'\]\s]~u', $Message, $URLs, PREG_OFFSET_CAPTURE ) === false )
+		{
+			return self::EscapeText( $Message );
+		}
+
+		$Escaped = '';
+		$From = 0;
+
+		foreach( $URLs[ 0 ] as [ $URL, $Offset ] )
+		{
+			$URL = self::TrimParenthesis( $URL );
+			$Escaped .= self::EscapeText( substr( $Message, $From, $Offset - $From ) ) . $URL;
+			$From = $Offset + strlen( $URL );
+		}
+
+		return $Escaped . self::EscapeText( substr( $Message, $From ) );
+	}
+
+	private static function EscapeText( string $Message ) : string
 	{
 		return str_replace( [
 			'\\',   '*',  '|',  '`',  '[',  ']',  '(',  ')',  '<',  '>',  '_',  '~',
 		], [
 			'\\\\', '\*', '\|', '\`', '\[', '\]', '\(', '\)', '\<', '\>', '\_', '\~',
 		], $Message );
+	}
+
+	/** Discord leaves a closing parenthesis out of a url when there is no opening one for it. */
+	private static function TrimParenthesis( string $URL ) : string
+	{
+		$From = 0;
+
+		for( $i = strlen( $URL ) - 1; $i >= 0 && $URL[ $i ] === ')'; $i-- )
+		{
+			$Open = strpos( $URL, '(', $From );
+
+			if( $Open === false )
+			{
+				return substr( $URL, 0, -1 );
+			}
+
+			$From = $Open + 1;
+		}
+
+		return $URL;
 	}
 
 	/** Names what something used to be called, after a title that says what it is called now. */
@@ -472,8 +534,10 @@ class DiscordConverter extends BaseConverter
 		$Num = count( $DistinctCommits );
 		$NewCommits = sprintf( '%d new commit%s', $Num, $Num === 1 ? '' : 's' );
 
+		// A ref is named by whoever made it, so it goes after the link with anything else from the payload
 		$Embed = [
 			'title' => '',
+			'titleEnd' => '',
 			'url' => $this->Payload->compare,
 			'color' => self::COLOR_DEFAULT,
 			'author' => $this->FormatAuthor(),
@@ -483,24 +547,26 @@ class DiscordConverter extends BaseConverter
 		{
 			if( str_starts_with( $this->Payload->ref, 'refs/tags/' ) )
 			{
-				$Embed[ 'title' ] = "tagged " . self::EscapeCode( $this->RefName ) . " at " . self::EscapeCode( $this->BaseRefName ?? $this->AfterSHA() );
+				$Embed[ 'title' ] = 'tagged';
+				$Embed[ 'titleEnd' ] = " " . self::EscapeCode( $this->RefName ) . " at " . self::EscapeCode( $this->BaseRefName ?? $this->AfterSHA() );
 			}
 			else
 			{
-				$Embed[ 'title' ] = "created " . self::EscapeCode( $this->RefName );
+				$Embed[ 'title' ] = 'created';
+				$Embed[ 'titleEnd' ] = " " . self::EscapeCode( $this->RefName );
 
 				if( $this->BaseRefName !== null )
 				{
-					$Embed[ 'title' ] .= " from " . self::EscapeCode( $this->BaseRefName );
+					$Embed[ 'titleEnd' ] .= " from " . self::EscapeCode( $this->BaseRefName );
 				}
 				else if( $Num > 0 )
 				{
-					$Embed[ 'title' ] .= " at " . self::EscapeCode( $this->AfterSHA() );
+					$Embed[ 'titleEnd' ] .= " at " . self::EscapeCode( $this->AfterSHA() );
 				}
 
 				if( $Num > 0 )
 				{
-					$Embed[ 'title' ] .= " (+{$NewCommits})";
+					$Embed[ 'titleEnd' ] .= " (+{$NewCommits})";
 				}
 			}
 		}
@@ -510,29 +576,30 @@ class DiscordConverter extends BaseConverter
 		}
 		else if( $this->Payload->forced )
 		{
-			$Embed[ 'title' ] = "force-pushed " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
+			$Embed[ 'title' ] = 'force-pushed';
+			$Embed[ 'titleEnd' ] = " " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
 			$Embed[ 'color' ] = self::COLOR_BAD;
 		}
 		else if( $Num === 0 && count( $this->Payload->commits ) > 0 )
 		{
 			if( $this->BaseRefName !== null )
 			{
-				$Embed[ 'title' ] = "merged " . self::EscapeCode( $this->BaseRefName ) . " into " . self::EscapeCode( $this->RefName );
+				$Embed[ 'title' ] = 'merged';
+				$Embed[ 'titleEnd' ] = " " . self::EscapeCode( $this->BaseRefName ) . " into " . self::EscapeCode( $this->RefName );
 				$Embed[ 'color' ] = self::COLOR_CLOSED;
 			}
 			else
 			{
-				$Embed[ 'title' ] = "fast-forwarded " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
+				$Embed[ 'title' ] = 'fast-forwarded';
+				$Embed[ 'titleEnd' ] = " " . self::EscapeCode( $this->RefName ) . " from " . self::EscapeCode( $this->BeforeSHA() ) . " to " . self::EscapeCode( $this->AfterSHA() );
 				$Embed[ 'color' ] = self::COLOR_NEUTRAL;
 			}
 		}
 		else
 		{
 			// Most pushes go to the default branch, so only other branches are worth naming
-			$Embed[ 'title' ] = sprintf( 'pushed %s%s',
-				$NewCommits,
-				$this->IsDefaultBranch() ? '' : ' to ' . self::EscapeCode( $this->RefName )
-			);
+			$Embed[ 'title' ] = "pushed {$NewCommits}";
+			$Embed[ 'titleEnd' ] = $this->IsDefaultBranch() ? '' : ' to ' . self::EscapeCode( $this->RefName );
 		}
 
 		if( $this->Payload->forced )
@@ -611,7 +678,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "deleted {$this->Payload->ref_type} " . self::EscapeCode( $this->Payload->ref ),
+			'title' => "deleted {$this->Payload->ref_type}",
+			'titleEnd' => ' ' . self::EscapeCode( $this->Payload->ref ),
 			'url' => $this->Payload->repository->html_url,
 			'color' => self::COLOR_BAD,
 			'author' => $this->FormatAuthor(),
@@ -663,7 +731,8 @@ class DiscordConverter extends BaseConverter
 		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
 
 		$Embed = [
-			'title' => "{$Verb} issue **#{$this->Payload->issue->number}**{$Suffix}: " . self::Escape( $this->Payload->issue->title ),
+			'title' => "{$Verb} issue **#{$this->Payload->issue->number}**{$Suffix}",
+			'titleEnd' => ': ' . self::Escape( $this->Payload->issue->title ),
 			'url' => $this->Payload->issue->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -747,7 +816,8 @@ class DiscordConverter extends BaseConverter
 		$Draft = $this->Payload->pull_request->draft && $Action !== 'converted to draft' ? 'draft ' : '';
 
 		$Embed = [
-			'title' => "{$Verb} {$Draft}PR **#{$this->Payload->pull_request->number}**{$Suffix}: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => "{$Verb} {$Draft}PR **#{$this->Payload->pull_request->number}**{$Suffix}",
+			'titleEnd' => ': ' . self::Escape( $this->Payload->pull_request->title ),
 			'url' => $this->Payload->pull_request->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -790,7 +860,8 @@ class DiscordConverter extends BaseConverter
 		$Action = $this->Payload->action === 'opened' ? 'reopened' : $this->Payload->action;
 
 		return [
-			'title' => "{$Action} milestone **#{$this->Payload->milestone->number}**: " . self::Escape( $this->Payload->milestone->title ),
+			'title' => "{$Action} milestone **#{$this->Payload->milestone->number}**",
+			'titleEnd' => ': ' . self::Escape( $this->Payload->milestone->title ),
 			'description' => $Action === 'created' ? self::FormatBody( $this->Payload->milestone->description ) : '',
 			'url' => $this->Payload->milestone->html_url,
 			'color' => $this->FormatAction( $Action ),
@@ -817,7 +888,9 @@ class DiscordConverter extends BaseConverter
 		$Version = $Package->package_version->version ?? '';
 
 		return [
-			'title' => "{$this->Payload->action} " . self::Escape( strtolower( $Package->package_type ) ) . " package: **" . self::Escape( $Package->name ) . "**" . ( $Version === '' ? '' : ' ' . self::Escape( $Version ) ),
+			// The type is one of a handful that GitHub names, such as npm or maven
+			'title' => "{$this->Payload->action} " . strtolower( $Package->package_type ) . " package",
+			'titleEnd' => ": **" . self::Escape( $Package->name ) . "**" . ( $Version === '' ? '' : ' ' . self::Escape( $Version ) ),
 			// Container packages have an empty object as their body
 			'description' => $this->Payload->action === 'published' && is_string( $Body ) ? self::FormatBody( $Body ) : '',
 			'url' => $Package->html_url,
@@ -856,7 +929,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release: " . self::Escape( $Name ),
+			'title' => "{$this->Payload->action} a " . ( $this->Payload->release->draft ? 'draft ' : '' ) . ( $this->Payload->release->prerelease ? 'pre-' : '' ) . "release",
+			'titleEnd' => ': ' . self::Escape( $Name ),
 			// Release notes are only worth showing when the release appears
 			'description' => $this->Payload->action === 'published' ? self::FormatBody( $this->Payload->release->body ) : '',
 			'url' => $this->Payload->release->html_url,
@@ -905,7 +979,8 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'created' )
 		{
 			return [
-				'title' => "commented on " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}**: " . self::Escape( $this->Payload->issue->title ),
+				'title' => "commented on " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}**",
+				'titleEnd' => ': ' . self::Escape( $this->Payload->issue->title ),
 				'description' => self::FormatBody( $this->Payload->comment->body ),
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
@@ -916,7 +991,7 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'deleted' )
 		{
 			return [
-				'title' => "deleted comment in " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}** from **" . self::Escape( $this->Payload->comment->user->login ?? 'ghost' ) . "**",
+				'title' => "deleted comment in " . ( $IsPullRequest ? 'PR' : 'issue' ) . " **#{$this->Payload->issue->number}** from **" . ( $this->Payload->comment->user->login ?? 'ghost' ) . "**",
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -960,7 +1035,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => $State . ( $State === 'dismissed' ? ' a review on' : '' ) . " PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => $State . ( $State === 'dismissed' ? ' a review on' : '' ) . " PR **#{$this->Payload->pull_request->number}**",
+			'titleEnd' => ': ' . self::Escape( $this->Payload->pull_request->title ),
 			// The body of a dismissed review is what the reviewer wrote, not why it was dismissed
 			'description' => $State === 'dismissed' ? '' : self::FormatBody( $this->Payload->review->body ),
 			'url' => $this->Payload->review->html_url,
@@ -988,7 +1064,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "commented on the code of PR **#{$this->Payload->pull_request->number}**: " . self::Escape( $this->Payload->pull_request->title ),
+			'title' => "commented on the code of PR **#{$this->Payload->pull_request->number}**",
+			'titleEnd' => ': ' . self::Escape( $this->Payload->pull_request->title ),
 			'description' => self::FormatBody( $this->Payload->comment->body ),
 			'url' => $this->Payload->comment->html_url,
 			'color' => $this->FormatAction(),
@@ -1036,7 +1113,9 @@ class DiscordConverter extends BaseConverter
 		[ $Verb, $Suffix ] = self::ActionPhrase( $Action );
 
 		$Embed = [
-			'title' => "{$Verb} discussion **#{$this->Payload->discussion->number}**{$Suffix}: {$this->Payload->discussion->category->emoji} " . self::Escape( $this->Payload->discussion->title ),
+			'title' => "{$Verb} discussion **#{$this->Payload->discussion->number}**{$Suffix}",
+			// The emoji of a category is a shortcode, which would keep Discord from making a link of the title
+			'titleEnd' => ": {$this->Payload->discussion->category->emoji} " . self::Escape( $this->Payload->discussion->title ),
 			'url' => $Action === 'answered' ? ( $this->Payload->answer->html_url ?? $this->Payload->discussion->html_url ) : $this->Payload->discussion->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),
@@ -1070,7 +1149,8 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'created' )
 		{
 			return [
-				'title' => "commented on discussion **#{$this->Payload->discussion->number}**: " . self::Escape( $this->Payload->discussion->title ),
+				'title' => "commented on discussion **#{$this->Payload->discussion->number}**",
+				'titleEnd' => ': ' . self::Escape( $this->Payload->discussion->title ),
 				'description' => self::FormatBody( $this->Payload->comment->body ),
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
@@ -1081,7 +1161,7 @@ class DiscordConverter extends BaseConverter
 		if( $this->Payload->action === 'deleted' )
 		{
 			return [
-				'title' => "deleted comment in discussion **#{$this->Payload->discussion->number}** from **" . self::Escape( $this->Payload->comment->user->login ?? 'ghost' ) . "**",
+				'title' => "deleted comment in discussion **#{$this->Payload->discussion->number}** from **" . ( $this->Payload->comment->user->login ?? 'ghost' ) . "**",
 				'url' => $this->Payload->comment->html_url,
 				'color' => $this->FormatAction(),
 				'author' => $this->FormatAuthor(),
@@ -1118,7 +1198,8 @@ class DiscordConverter extends BaseConverter
 		$Vulnerability = $this->Payload->alert->security_vulnerability;
 
 		$Embed = $this->AlertEmbed(
-			"{$Action} Dependabot alert **#{$this->Payload->alert->number}** for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
+			"{$Action} Dependabot alert **#{$this->Payload->alert->number}**",
+			" for **" . self::Escape( $Vulnerability->package->name ) . "**: " . self::Escape( $Advisory->summary ),
 			$Action
 		);
 
@@ -1154,7 +1235,8 @@ class DiscordConverter extends BaseConverter
 		};
 
 		$Embed = $this->AlertEmbed(
-			"{$Action} Code scanning alert **#{$this->Payload->alert->number}**: " . self::Escape( $this->Payload->alert->rule->description ),
+			"{$Action} Code scanning alert **#{$this->Payload->alert->number}**",
+			': ' . self::Escape( $this->Payload->alert->rule->description ),
 			$Action
 		);
 
@@ -1195,7 +1277,8 @@ class DiscordConverter extends BaseConverter
 		$SecretType = $this->Payload->alert->secret_type_display_name ?? $this->Payload->alert->secret_type ?? 'unknown';
 
 		$Embed = $this->AlertEmbed(
-			"{$Action} Secret scanning alert **#{$this->Payload->alert->number}**: " . self::Escape( $SecretType ),
+			"{$Action} Secret scanning alert **#{$this->Payload->alert->number}**",
+			': ' . self::Escape( $SecretType ),
 			$Action
 		);
 
@@ -1224,7 +1307,8 @@ class DiscordConverter extends BaseConverter
 		{
 			// Reported advisories are private, so do not reveal what they are about
 			return [
-				'title' => "privately reported a vulnerability: **" . self::Escape( $Advisory->ghsa_id ) . "**",
+				'title' => 'privately reported a vulnerability',
+				'titleEnd' => ': **' . self::Escape( $Advisory->ghsa_id ) . '**',
 				'url' => $Advisory->html_url,
 				'color' => self::COLOR_ATTENTION,
 				'author' => $this->FormatAuthor(),
@@ -1237,7 +1321,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "published a security advisory: " . self::Escape( $Advisory->summary ),
+			'title' => 'published a security advisory',
+			'titleEnd' => ': ' . self::Escape( $Advisory->summary ),
 			'description' => self::FormatBody( $Advisory->description ),
 			'url' => $Advisory->html_url,
 			'color' => self::COLOR_ATTENTION,
@@ -1265,7 +1350,7 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} **" . self::Escape( $this->Payload->member->login ?? 'ghost' ) . "** as a collaborator",
+			'title' => "{$this->Payload->action} **" . ( $this->Payload->member->login ?? 'ghost' ) . "** as a collaborator",
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -1293,7 +1378,8 @@ class DiscordConverter extends BaseConverter
 				$URL .= '/_compare/' . $Page->sha;
 			}
 
-			$Messages[] = "[{$Page->action} " . self::Escape( $Page->title ) . "]({$URL})" . ( ( $Page->summary ?? '' ) === '' ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
+			// Nothing can be escaped in the text of a link, so the title of the page goes after it
+			$Messages[] = "[{$Page->action}]({$URL}) " . self::Escape( $Page->title ) . ( ( $Page->summary ?? '' ) === '' ? '' : ( ': ' . self::ShortMessage( $Page->summary ) ) );
 		}
 
 		$Remaining = count( $this->Payload->pages ) - self::MAX_WIKI_PAGES;
@@ -1335,7 +1421,8 @@ class DiscordConverter extends BaseConverter
 	private function FormatPublicEvent( ) : array
 	{
 		return [
-			'title' => "open sourced **" . self::Escape( $this->Payload->repository->name ) . "** — now available to everyone!",
+			'title' => 'open sourced',
+			'titleEnd' => " **" . self::Escape( $this->Payload->repository->name ) . "** — now available to everyone!",
 			'url' => $this->Payload->repository->html_url,
 			'color' => self::COLOR_DEFAULT,
 			'author' => $this->FormatAuthor(),
@@ -1366,11 +1453,11 @@ class DiscordConverter extends BaseConverter
 			throw new NotImplementedException( $this->EventType, $this->Payload->action );
 		}
 
-		$Title = "{$this->Payload->action} **" . self::Escape( $this->Payload->repository->name ) . "**";
+		$TitleEnd = " **" . self::Escape( $this->Payload->repository->name ) . "**";
 
 		if( $this->Payload->action === 'renamed' )
 		{
-			$Title .= self::FromSuffix( $this->Payload->changes->repository->name->from );
+			$TitleEnd .= self::FromSuffix( $this->Payload->changes->repository->name->from );
 		}
 		else if( $this->Payload->action === 'transferred' )
 		{
@@ -1378,12 +1465,13 @@ class DiscordConverter extends BaseConverter
 
 			if( $Owner !== null )
 			{
-				$Title .= self::FromSuffix( $Owner->login );
+				$TitleEnd .= self::FromSuffix( $Owner->login );
 			}
 		}
 
 		return [
-			'title' => $Title,
+			'title' => $this->Payload->action,
+			'titleEnd' => $TitleEnd,
 			'url' => $this->Payload->repository->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -1444,7 +1532,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} project **#{$Number}**: " . self::Escape( $Title ),
+			'title' => "{$this->Payload->action} project **#{$Number}**",
+			'titleEnd' => ': ' . self::Escape( $Title ),
 			'description' => $this->Payload->action === 'created' ? self::FormatBody( $Body ) : '',
 			'url' => $URL,
 			'color' => $this->FormatAction(),
@@ -1524,7 +1613,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "{$this->Payload->action} branch protection rule " . self::EscapeCode( $this->Payload->rule->name ),
+			'title' => "{$this->Payload->action} branch protection rule",
+			'titleEnd' => ' ' . self::EscapeCode( $this->Payload->rule->name ),
 			'url' => $this->Payload->repository->html_url . '/settings/branches',
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -1547,7 +1637,8 @@ class DiscordConverter extends BaseConverter
 
 		$Ruleset = $this->Payload->repository_ruleset;
 		$Embed = [
-			'title' => "{$this->Payload->action} ruleset: **" . self::Escape( $Ruleset->name ) . "** (" . self::Escape( $Ruleset->enforcement ) . ")",
+			'title' => "{$this->Payload->action} ruleset",
+			'titleEnd' => ": **" . self::Escape( $Ruleset->name ) . "** (" . self::Escape( $Ruleset->enforcement ) . ")",
 			// Rulesets of an organization have no page of their own
 			'url' => $Ruleset->_links->html->href ?? null,
 			'color' => $this->FormatAction(),
@@ -1579,7 +1670,8 @@ class DiscordConverter extends BaseConverter
 		$Access = $this->Payload->key->read_only ? 'read-only' : 'read-write';
 
 		return [
-			'title' => "{$this->Payload->action} deploy key: **" . self::Escape( $this->Payload->key->title ) . "** ({$Access})",
+			'title' => "{$this->Payload->action} deploy key",
+			'titleEnd' => ": **" . self::Escape( $this->Payload->key->title ) . "** ({$Access})",
 			'url' => $this->Payload->repository->html_url . '/settings/keys',
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -1706,7 +1798,7 @@ class DiscordConverter extends BaseConverter
 		$Author = $IsPublic ? $Sponsor : $Sponsorable;
 
 		return [
-			'title' => $IsPublic ? "is now sponsoring **" . self::Escape( $Sponsored ) . "**" : 'got a new private sponsor',
+			'title' => $IsPublic ? "is now sponsoring **{$Sponsored}**" : 'got a new private sponsor',
 			'url' => 'https://github.com/sponsors/' . $Sponsored,
 			'color' => self::COLOR_DEFAULT,
 			'author' => [
@@ -1759,7 +1851,8 @@ class DiscordConverter extends BaseConverter
 		}
 
 		return [
-			'title' => "broke " . self::EscapeCode( $Run->head_branch ) . " — workflow **" . self::Escape( $Name ) . "** {$Outcome}",
+			'title' => 'broke',
+			'titleEnd' => " " . self::EscapeCode( $Run->head_branch ) . " — workflow **" . self::Escape( $Name ) . "** {$Outcome}",
 			'description' => self::ShortMessage( $Run->head_commit->message ?? '' ),
 			'url' => $Run->html_url,
 			'color' => $this->FormatAction( $Outcome ),
@@ -1783,7 +1876,8 @@ class DiscordConverter extends BaseConverter
 		$Where = $this->Payload->action === 'added' ? 'to' : 'from';
 
 		return [
-			'title' => "{$this->Payload->action} **" . self::Escape( $this->Payload->member->login ?? 'ghost' ) . "** {$Where} team **" . self::Escape( $this->Payload->team->name ) . "**",
+			'title' => "{$this->Payload->action} **" . ( $this->Payload->member->login ?? 'ghost' ) . "** {$Where} team",
+			'titleEnd' => " **" . self::Escape( $this->Payload->team->name ) . "**",
 			'url' => $this->Payload->team->html_url,
 			'color' => $this->FormatAction(),
 			'author' => $this->FormatAuthor(),
@@ -1809,6 +1903,7 @@ class DiscordConverter extends BaseConverter
 
 		$From = null;
 		$Title = null;
+		$TitleEnd = null;
 
 		// An edit is worth telling when it renames a team or changes who can see it
 		if( $Action === 'edited' )
@@ -1821,7 +1916,8 @@ class DiscordConverter extends BaseConverter
 			}
 			else if( isset( $this->Payload->changes->privacy ) )
 			{
-				$Title = "changed the privacy of team **" . self::Escape( $this->Payload->team->name ) . "** to **" . self::Escape( $this->Payload->team->privacy ?? 'unknown' ) . "**";
+				$Title = 'changed the privacy of team';
+				$TitleEnd = " **" . self::Escape( $this->Payload->team->name ) . "** to **" . self::Escape( $this->Payload->team->privacy ?? 'unknown' ) . "**";
 			}
 			else
 			{
@@ -1829,15 +1925,17 @@ class DiscordConverter extends BaseConverter
 			}
 		}
 
-		$Title ??= "{$Action} team **" . self::Escape( $this->Payload->team->name ) . "**{$Where}";
+		$Title ??= "{$Action} team";
+		$TitleEnd ??= " **" . self::Escape( $this->Payload->team->name ) . "**{$Where}";
 
 		if( $From !== null )
 		{
-			$Title .= self::FromSuffix( $From );
+			$TitleEnd .= self::FromSuffix( $From );
 		}
 
 		return [
 			'title' => $Title,
+			'titleEnd' => $TitleEnd,
 			'url' => $this->Payload->team->html_url,
 			'color' => $this->FormatAction( $Action ),
 			'author' => $this->FormatAuthor(),

@@ -49,6 +49,34 @@ class EventTest extends \PHPUnit\Framework\TestCase
 	}
 
 	/**
+	 * Discord shows a backslash in the text of a link rather than escaping anything with it.
+	 * An escaped bracket starts no link, and brackets in the text of one come in pairs.
+	 */
+	#[DataProvider('eventProvider')]
+	public function testNothingIsEscapedInTheTextOfALink( string $Path, string $EventType, string $ExpectedMessage, string $Payload, string $ExpectedDiscord ) : void
+	{
+		$Hook = self::ProcessPayload( $EventType, $Payload );
+		$Discord = ( new DiscordConverter( $Hook->GetEventType(), $Hook->GetPayload() ) )->GetEmbed();
+
+		$Escaped = [];
+
+		foreach( $Discord[ 'components' ][ 0 ][ 'components' ] as $Component )
+		{
+			preg_match_all( '~(?<!\\\\)\[((?:[^[\]]|\[[^\]]*])*)]\(~', $Component[ 'content' ], $Links );
+
+			foreach( $Links[ 1 ] as $Text )
+			{
+				if( str_contains( $Text, '\\' ) )
+				{
+					$Escaped[] = $Text;
+				}
+			}
+		}
+
+		self::assertSame( [], $Escaped, $Path );
+	}
+
+	/**
 	 * Run the tests with UPDATE_FIXTURES=1 to write the current output as the expected one,
 	 * then review what changed with git.
 	 */

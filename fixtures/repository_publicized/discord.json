@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# new-repo\n### [monalisa publicized **new-repo**](https:\/\/github.com\/octo-org\/new-repo)"
+                    "content": "-# new-repo\n### [monalisa publicized](https:\/\/github.com\/octo-org\/new-repo) **new-repo**"
                 }
             ]
         }

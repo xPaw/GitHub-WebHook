@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [github created Dependabot alert **#5** for **rack**: Rack vulnerable to Denial of Service via crafted multipart requests](https:\/\/github.com\/Codertocat\/Hello-World\/security\/dependabot\/5)"
+                    "content": "-# Hello-World\n### [github created Dependabot alert **#5**](https:\/\/github.com\/Codertocat\/Hello-World\/security\/dependabot\/5) for **rack**: Rack vulnerable to Denial of Service via crafted multipart requests"
                 },
                 {
                     "type": 10,

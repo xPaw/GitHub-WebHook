@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat deleted tag `simple-tag`](https:\/\/github.com\/Codertocat\/Hello-World)"
+                    "content": "-# Hello-World\n### [Codertocat deleted tag](https:\/\/github.com\/Codertocat\/Hello-World) `simple-tag`"
                 }
             ]
         }

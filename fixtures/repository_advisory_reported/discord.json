@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat privately reported a vulnerability: **GHSA-4f7x-2q9m-8c3p**](https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p)"
+                    "content": "-# Hello-World\n### [Codertocat privately reported a vulnerability](https:\/\/github.com\/Codertocat\/Hello-World\/security\/advisories\/GHSA-4f7x-2q9m-8c3p): **GHSA-4f7x-2q9m-8c3p**"
                 }
             ]
         }

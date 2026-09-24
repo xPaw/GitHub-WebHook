@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# octo-repo\n### [Codertocat broke `master` \u2014 workflow **CI** failed](https:\/\/github.com\/octo-org\/octo-repo\/actions\/runs\/90003001)"
+                    "content": "-# octo-repo\n### [Codertocat broke](https:\/\/github.com\/octo-org\/octo-repo\/actions\/runs\/90003001) `master` \u2014 workflow **CI** failed"
                 },
                 {
                     "type": 10,

@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [Codertocat deleted branch `feature\/some_branch`](https:\/\/github.com\/Codertocat\/Hello-World)"
+                    "content": "-# Hello-World\n### [Codertocat deleted branch](https:\/\/github.com\/Codertocat\/Hello-World) `feature\/some_branch`"
                 }
             ]
         }

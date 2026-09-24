@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Hello-World\n### [github publicly leaked Secret scanning alert **#3**: GitHub Personal Access Token](https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3)"
+                    "content": "-# Hello-World\n### [github publicly leaked Secret scanning alert **#3**](https:\/\/github.com\/Codertocat\/Hello-World\/security\/secret-scanning\/3): GitHub Personal Access Token"
                 }
             ]
         }

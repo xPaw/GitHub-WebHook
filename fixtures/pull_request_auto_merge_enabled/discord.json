@@ -9,7 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# Spoon-Knife\n### [monalisa enabled auto-merge on PR **#328**: Fix a rendering glitch](https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/328)"
+                    "content": "-# Spoon-Knife\n### [monalisa enabled auto-merge on PR **#328**](https:\/\/github.com\/octo-org\/Spoon-Knife\/pull\/328): Fix a rendering glitch"
                 }
             ]
         }

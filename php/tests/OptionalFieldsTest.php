@@ -94,6 +94,10 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				'## A **bold** heading',
 				'**A bold heading**',
 			],
+			'a heading is flattened however far it is indented' => [
+				"    # Indented\n#\tTabbed\n     -# a note",
+				"**Indented**\n**Tabbed**\na note",
+			],
 			'a hash that starts no heading is left alone' => [
 				"#123 is the issue\n#!/bin/sh",
 				"#123 is the issue\n#!/bin/sh",
@@ -136,6 +140,170 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				"intro\n  ```\n# not a heading\n  ```\n**a heading**",
 			],
 		];
+	}
+
+	/**
+	 * Discord shows a backslash in the text of a link rather than escaping anything with it,
+	 * so what somebody else wrote goes after the link.
+	 */
+	public function testTitleIsKeptOutOfTheLink( ) : void
+	{
+		$Card = self::CardOf( self::MessageFor( 'issues', 'issue_opened', static function( stdClass $Payload ) : void
+		{
+			$Payload->issue->title = 'Overscaled in the skybox (HL:A)';
+		} ) );
+
+		self::assertSame( 'monalisa opened issue **#508**', $Card[ 'linked' ] );
+		self::assertSame( 'monalisa opened issue **#508**: Overscaled in the skybox \(HL:A\)', $Card[ 'title' ] );
+	}
+
+	public function testAppIsNamedInTheLinkAsItIs( ) : void
+	{
+		$Card = self::CardOf( self::MessageFor( 'issues', 'issue_opened', static function( stdClass $Payload ) : void
+		{
+			$Payload->sender->login = 'github-actions[bot]';
+		} ) );
+
+		self::assertSame( 'github-actions[bot] opened issue **#508**', $Card[ 'linked' ] );
+	}
+
+	public function testAppIsEscapedWhereTheHeadingIsNotALink( ) : void
+	{
+		$Card = self::CardOf( self::MessageFor( 'org_block', 'org_block_blocked', static function( stdClass $Payload ) : void
+		{
+			$Payload->sender->login = 'github-actions[bot]';
+		} ) );
+
+		self::assertNull( $Card[ 'url' ] );
+		self::assertStringStartsWith( 'github-actions\[bot\] blocked', $Card[ 'title' ] );
+	}
+
+	/**
+	 * Discord links a url wherever it starts, backslashes and all, so a url is left as it is.
+	 */
+	#[DataProvider('urlProvider')]
+	public function testUrlInTitle( string $Title, string $Escaped ) : void
+	{
+		$Card = self::CardOf( self::MessageFor( 'issues', 'issue_opened', static function( stdClass $Payload ) use ( $Title ) : void
+		{
+			$Payload->issue->title = $Title;
+		} ) );
+
+		self::assertSame( 'monalisa opened issue **#508**: ' . $Escaped, $Card[ 'title' ] );
+	}
+
+	/**
+	 * @return array<string, array{string, string}>
+	 */
+	public static function urlProvider( ) : array
+	{
+		return [
+			'a url is left as it is' => [ 'see https://example.com/a_b', 'see https://example.com/a_b' ],
+			'what is around a url is escaped' => [ '__init__ in https://example.com/a_b', '\_\_init\_\_ in https://example.com/a_b' ],
+			'a closing parenthesis without an opening one is left out of a url' => [ '(https://example.com/a_b)', '\(https://example.com/a_b\)' ],
+			'a pair of parentheses is kept in a url' => [ 'https://example.com/a_(b)', 'https://example.com/a_(b)' ],
+			'what only looks like the start of a url is escaped' => [ 'https:// and https://)', 'https:// and https://\)' ],
+		];
+	}
+
+	/**
+	 * Discord shows a backslash in the text of a link, formats markdown there, and does not make a link
+	 * at all of text that holds a url, an emoji, a mention or a bracket that is never closed.
+	 *
+	 * @param list<string> $Paths
+	 */
+	#[DataProvider('writtenProvider')]
+	public function testWrittenTextIsKeptOutOfTheLink( string $Event, string $Fixture, array $Paths, string $Prefix = '' ) : void
+	{
+		$Card = self::CardOf( self::MessageFor( $Event, $Fixture, static function( stdClass $Payload ) use ( $Paths, $Prefix ) : void
+		{
+			foreach( $Paths as $Path )
+			{
+				$Keys = explode( '.', $Path );
+				$Last = array_pop( $Keys );
+				$Target = $Payload;
+
+				foreach( $Keys as $Key )
+				{
+					$Target = $Target->{$Key};
+
+					assert( $Target instanceof stdClass );
+				}
+
+				$Target->{$Last} = $Prefix . 'www.example.com [x :bug: <@1> @everyone _y_';
+			}
+		} ) );
+
+		self::assertNotNull( $Card[ 'linked' ] );
+		self::assertDoesNotMatchRegularExpression( '~www|\[x|:bug:|<@1>|@everyone|_y_~', $Card[ 'linked' ] );
+		self::assertStringContainsString( 'www.example.com', $Card[ 'title' ] );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: list<string>, 3?: string}>
+	 */
+	public static function writtenProvider( ) : array
+	{
+		$Rows = [
+			[ 'issues', 'issue_opened', [ 'issue.title' ] ],
+			[ 'pull_request', 'pull_request_reopened', [ 'pull_request.title' ] ],
+			[ 'pull_request_review', 'pull_request_review_approved', [ 'pull_request.title' ] ],
+			[ 'pull_request_review_comment', 'pull_request_review_comment', [ 'pull_request.title' ] ],
+			[ 'issue_comment', 'issue_comment', [ 'issue.title' ] ],
+			[ 'discussion_comment', 'discussion_comment_created', [ 'discussion.title' ] ],
+			[ 'discussion', 'discussion_created', [ 'discussion.title' ] ],
+			[ 'discussion', 'discussion_created', [ 'discussion.category.emoji' ] ],
+			[ 'milestone', 'milestone', [ 'milestone.title' ] ],
+			[ 'release', 'release', [ 'release.name' ] ],
+			[ 'package', 'package', [ 'package.name' ] ],
+			[ 'registry_package', 'registry_package', [ 'registry_package.package_version.version' ] ],
+			[ 'dependabot_alert', 'dependabot_alert_created', [ 'alert.security_vulnerability.package.name' ] ],
+			[ 'dependabot_alert', 'dependabot_alert_created', [ 'alert.security_advisory.summary' ] ],
+			[ 'code_scanning_alert', 'code_scanning_alert_created', [ 'alert.rule.description' ] ],
+			[ 'secret_scanning_alert', 'secret_scanning_alert_created', [ 'alert.secret_type_display_name' ] ],
+			[ 'repository_advisory', 'repository_advisory_published', [ 'repository_advisory.summary' ] ],
+			[ 'repository_advisory', 'repository_advisory_reported', [ 'repository_advisory.ghsa_id' ] ],
+			[ 'public', 'public', [ 'repository.name' ] ],
+			[ 'repository', 'repository_renamed', [ 'repository.name' ] ],
+			[ 'repository', 'repository_renamed', [ 'changes.repository.name.from' ] ],
+			[ 'project', 'project', [ 'project.name' ] ],
+			[ 'projects_v2', 'projects_v2_created', [ 'projects_v2.title' ] ],
+			[ 'branch_protection_rule', 'branch_protection_rule_created', [ 'rule.name' ] ],
+			[ 'repository_ruleset', 'repository_ruleset_created', [ 'repository_ruleset.name' ] ],
+			[ 'deploy_key', 'deploy_key_created', [ 'key.title' ] ],
+			[ 'workflow_run', 'workflow_run_failed', [ 'workflow_run.name' ] ],
+			[ 'workflow_run', 'workflow_run_failed', [ 'workflow_run.head_branch', 'repository.default_branch' ] ],
+			[ 'membership', 'membership_added', [ 'team.name' ] ],
+			[ 'team', 'team_created', [ 'team.name' ] ],
+			[ 'team', 'team_edited', [ 'changes.name.from' ] ],
+			[ 'team', 'team_edited_privacy', [ 'team.name' ] ],
+			[ 'delete', 'delete_branch', [ 'ref' ] ],
+			[ 'push', 'push_other_branch', [ 'ref' ], 'refs/heads/' ],
+			[ 'push', 'push_created', [ 'ref' ], 'refs/heads/' ],
+			[ 'push', 'push_tag', [ 'ref' ], 'refs/tags/' ],
+			[ 'push', 'push_forced', [ 'ref' ], 'refs/heads/' ],
+			[ 'push', 'push_merged', [ 'base_ref' ], 'refs/heads/' ],
+			[ 'push', 'push_fast_forward', [ 'ref' ], 'refs/heads/' ],
+		];
+
+		$Provided = [];
+
+		foreach( $Rows as $Row )
+		{
+			$Provided[ "{$Row[ 1 ]} keeps " . implode( ', ', $Row[ 2 ] ) . ' out of the link' ] = $Row;
+		}
+
+		return $Provided;
+	}
+
+	public function testWikiPageTitleIsKeptOutOfItsLink( ) : void
+	{
+		$Card = self::CardOf( self::MessageFor( 'gollum', 'gollum', static function( stdClass $Payload ) : void
+		{
+			$Payload->pages[ 0 ]->title = 'Home_(draft)';
+		} ) );
+
+		self::assertMatchesRegularExpression( '~^\[edited]\(\S+\) Home\\\\_\\\\\(draft\\\\\)$~', $Card[ 'description' ] ?? '' );
 	}
 
 	/**
@@ -243,7 +411,7 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 	 *
 	 * @param array{components: list<array{components: list<array{content: string}>}>} $Message
 	 *
-	 * @return array{title: string, url: ?string, description: ?string}
+	 * @return array{title: string, linked: ?string, url: ?string, description: ?string}
 	 */
 	private static function CardOf( array $Message ) : array
 	{
@@ -253,13 +421,16 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 		$Card = [
 			// The scope is on a line of its own above the title, when the event has one
 			'title' => substr( array_pop( $Lines ), strlen( '### ' ) ),
+			'linked' => null,
 			'url' => null,
 			'description' => null,
 		];
 
-		if( preg_match( '~^\[(.*)]\((.*)\)$~s', $Card[ 'title' ], $Match ) === 1 )
+		// The text of the link is ours and has no "](" in it, and the url has no parentheses or spaces
+		if( preg_match( '~^\[(.*?)]\(([^()\s]*)\)(.*)$~s', $Card[ 'title' ], $Match ) === 1 )
 		{
-			$Card[ 'title' ] = $Match[ 1 ];
+			$Card[ 'title' ] = $Match[ 1 ] . $Match[ 3 ];
+			$Card[ 'linked' ] = $Match[ 1 ];
 			$Card[ 'url' ] = $Match[ 2 ];
 		}
 
@@ -341,12 +512,22 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 			'branch with a backtick in its name' => [
 				'delete', 'delete_branch',
 				static function( stdClass $Payload ) : void { $Payload->ref = 'weird`branch'; },
-				'title', 'Codertocat deleted branch `` weird`branch ``',
+				'title', 'Codertocat deleted branch ``weird`branch``',
 			],
 			'branch with two backticks in a row in its name' => [
 				'delete', 'delete_branch',
 				static function( stdClass $Payload ) : void { $Payload->ref = 'weird``branch'; },
-				'title', 'Codertocat deleted branch ``` weird``branch ```',
+				'title', 'Codertocat deleted branch ```weird``branch```',
+			],
+			'branch whose name starts with a backtick keeps it apart from the delimiter' => [
+				'delete', 'delete_branch',
+				static function( stdClass $Payload ) : void { $Payload->ref = '`weird'; },
+				'title', 'Codertocat deleted branch `` `weird``',
+			],
+			'branch whose name ends with a backtick keeps it apart from the delimiter' => [
+				'delete', 'delete_branch',
+				static function( stdClass $Payload ) : void { $Payload->ref = 'weird`'; },
+				'title', 'Codertocat deleted branch ``weird` ``',
 			],
 			'package without a version' => [
 				'registry_package', 'registry_package',
