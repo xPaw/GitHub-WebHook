@@ -145,10 +145,7 @@ const MAX_MESSAGE_LENGTH = 4000;
 
 interface Card {
 	scope: string | null;
-	/** The whole of the sentence, whether it is linked or not. */
 	title: string;
-	/** What of the sentence is the text of the link. */
-	linked?: string;
 	/** Every character Discord counts towards {@link MAX_MESSAGE_LENGTH}. */
 	size: number;
 	username?: string;
@@ -166,19 +163,17 @@ function embed(eventType: string, fixture: string, change: (payload: Payload) =>
 
 	const lines = heading.split('\n');
 	const titleLine = lines[lines.length - 1];
-	// The text of the link is ours and has no "](" in it, and the url has no parentheses or spaces
-	const linked = /^### \[(.*?)]\(([^()\s]*)\)(.*)$/s.exec(titleLine);
+	const linked = /^### \[(.*)]\((.*)\)$/s.exec(titleLine);
 
 	const card: Card = {
 		scope: lines.length > 1 ? lines[0].slice('-# '.length) : null,
-		title: linked ? linked[1] + linked[3] : titleLine.slice('### '.length),
+		title: linked ? linked[1] : titleLine.slice('### '.length),
 		size: [heading, ...rest].reduce((total, part) => total + [...part].length, 0),
 		username: message.username,
 		avatar: message.avatar_url,
 	};
 
 	if (linked) {
-		card.linked = linked[1];
 		card.url = linked[2];
 	}
 
@@ -551,15 +546,15 @@ describe('markdown in a title', () => {
 		});
 	}
 
-	it('keeps the title out of the link, where Discord shows a backslash rather than escaping', () => {
-		const result = issue('Overscaled in the skybox (HL:A)');
+	it('puts nothing in the link that Discord would show a backslash for', () => {
+		const result = issue('Overscaled in the skybox (HL:A) C:\\Games');
 
-		expect(result.linked).toBe('monalisa opened issue **#508**');
-		expect(result.title).toBe('monalisa opened issue **#508**: Overscaled in the skybox \\(HL:A\\)');
+		expect(result.url).toBeDefined();
+		expect(result.title).toBe('monalisa opened issue **#508**: Overscaled in the skybox (HL:A) C:\\Games');
 	});
 
 	it('names an app in the link as it is', () => {
-		expect(issue('Crash', 'github-actions[bot]').linked).toBe('github-actions[bot] opened issue **#508**');
+		expect(issue('Crash', 'github-actions[bot]').title).toBe('github-actions[bot] opened issue **#508**: Crash');
 	});
 
 	it('escapes an app where the heading is not a link', () => {
@@ -572,13 +567,61 @@ describe('markdown in a title', () => {
 	});
 
 	it.each([
-		['leaves a url as it is', 'see https://example.com/a_b', 'see https://example.com/a_b'],
-		['escapes around a url', '__init__ in https://example.com/a_b', '\\_\\_init\\_\\_ in https://example.com/a_b'],
-		['leaves a closing parenthesis without an opening one out of a url', '(https://example.com/a_b)', '\\(https://example.com/a_b\\)'],
-		['keeps a pair of parentheses in a url', 'https://example.com/a_(b)', 'https://example.com/a_(b)'],
-		['escapes what only looks like the start of a url', 'https:// and https://)', 'https:// and https://\\)'],
-	])('%s', (_, title, escaped) => {
-		expect(issue(title).title).toBe(`monalisa opened issue **#508**: ${escaped}`);
+		['bold and italics', '**bold** *italic*', '\u2217\u2217bold\u2217\u2217 \u2217italic\u2217'],
+		['underline and italics', '__init__ _italic_', '\uFF3F\uFF3Finit\uFF3F\uFF3F \uFF3Fitalic\uFF3F'],
+		['an underscore at the edge of a word', 'call_ _it', 'call\uFF3F \uFF3Fit'],
+		['code', '`code`', '\u02CBcode\u02CB'],
+		['brackets that are never closed', '[x] y]', '\uFF3Bx\uFF3D y\uFF3D'],
+		['mentions and timestamps', '<@1> <t:1>', '\u2039@1\u203A \u2039t:1\u203A'],
+		['strikethrough', '~~gone~~', '\u223C\u223Cgone\u223C\u223C'],
+		['spoilers', '||secret||', '\u2223\u2223secret\u2223\u2223'],
+		['everyone and here', '@everyone @here', '\uFF20everyone \uFF20here'],
+	])('swaps %s for lookalikes', (_, title, swapped) => {
+		const result = issue(title);
+
+		expect(result.url).toBeDefined();
+		expect(result.title).toBe(`monalisa opened issue **#508**: ${swapped}`);
+	});
+
+	it.each([
+		['an underscore inside a word', 'snake_case_name'],
+		['a lone tilde', '~/path'],
+		['a lone pipe', 'a | b'],
+		['a mention of someone else', '@octocat'],
+		['parentheses', '(HL:A)'],
+	])('leaves %s alone', (_, title) => {
+		expect(issue(title).title).toBe(`monalisa opened issue **#508**: ${title}`);
+	});
+
+	it.each([
+		['a url', 'see https://example.com/a_b *now*', 'see https://example.com/a_b \u2217now\u2217'],
+		['an address without a scheme', 'www.example.com is down', 'www.example.com is down'],
+		['an address of a lookalike slash', '\u2215\u2215example.com', '\u2215\u2215example.com'],
+	])('makes no link of a title that holds %s, which Discord would not', (_, title, swapped) => {
+		const result = issue(title);
+
+		expect(result.url).toBeUndefined();
+		expect(result.title).toBe(`monalisa opened issue **#508**: ${swapped}`);
+	});
+
+	it('links a title with slashes that make no address', () => {
+		expect(issue('a // b').url).toBeDefined();
+	});
+
+	it('swaps markdown in the title of a wiki page for lookalikes', () => {
+		const result = embed('gollum', 'gollum', (p) => {
+			p.pages[0].title = '_Home_ (draft)';
+		});
+
+		expect(result.description).toMatch(/^\[edited \uFF3FHome\uFF3F \(draft\)]\(\S+\)$/);
+	});
+
+	it('makes no link of the title of a wiki page that holds a url', () => {
+		const result = embed('gollum', 'gollum', (p) => {
+			p.pages[0].title = 'www.example.com';
+		});
+
+		expect(result.description).toBe('edited www.example.com');
 	});
 
 	/** Sets a field of a payload by the path to it, such as `issue.title`. */
@@ -594,68 +637,61 @@ describe('markdown in a title', () => {
 		target[last] = value;
 	}
 
-	// Discord shows a backslash in the text of a link, formats markdown there, and does not make a link
-	// at all of text that holds a url, an emoji, a mention or a bracket that is never closed
-	const WRITTEN = 'www.example.com [x :bug: <@1> @everyone _y_';
-
-	it.each<[event: string, fixture: string, paths: string[], prefix?: string]>([
-		['issues', 'issue_opened', ['issue.title']],
-		['pull_request', 'pull_request_reopened', ['pull_request.title']],
-		['pull_request_review', 'pull_request_review_approved', ['pull_request.title']],
-		['pull_request_review_comment', 'pull_request_review_comment', ['pull_request.title']],
-		['issue_comment', 'issue_comment', ['issue.title']],
-		['discussion_comment', 'discussion_comment_created', ['discussion.title']],
-		['discussion', 'discussion_created', ['discussion.title']],
-		['discussion', 'discussion_created', ['discussion.category.emoji']],
-		['milestone', 'milestone', ['milestone.title']],
-		['release', 'release', ['release.name']],
-		['package', 'package', ['package.name']],
-		['registry_package', 'registry_package', ['registry_package.package_version.version']],
-		['dependabot_alert', 'dependabot_alert_created', ['alert.security_vulnerability.package.name']],
-		['dependabot_alert', 'dependabot_alert_created', ['alert.security_advisory.summary']],
-		['code_scanning_alert', 'code_scanning_alert_created', ['alert.rule.description']],
-		['secret_scanning_alert', 'secret_scanning_alert_created', ['alert.secret_type_display_name']],
-		['repository_advisory', 'repository_advisory_published', ['repository_advisory.summary']],
-		['repository_advisory', 'repository_advisory_reported', ['repository_advisory.ghsa_id']],
-		['public', 'public', ['repository.name']],
-		['repository', 'repository_renamed', ['repository.name']],
-		['repository', 'repository_renamed', ['changes.repository.name.from']],
-		['project', 'project', ['project.name']],
-		['projects_v2', 'projects_v2_created', ['projects_v2.title']],
-		['branch_protection_rule', 'branch_protection_rule_created', ['rule.name']],
-		['repository_ruleset', 'repository_ruleset_created', ['repository_ruleset.name']],
-		['deploy_key', 'deploy_key_created', ['key.title']],
-		['workflow_run', 'workflow_run_failed', ['workflow_run.name']],
-		['workflow_run', 'workflow_run_failed', ['workflow_run.head_branch', 'repository.default_branch']],
-		['membership', 'membership_added', ['team.name']],
-		['team', 'team_created', ['team.name']],
-		['team', 'team_edited', ['changes.name.from']],
-		['team', 'team_edited_privacy', ['team.name']],
-		['delete', 'delete_branch', ['ref']],
-		['push', 'push_other_branch', ['ref'], 'refs/heads/'],
-		['push', 'push_created', ['ref'], 'refs/heads/'],
-		['push', 'push_tag', ['ref'], 'refs/tags/'],
-		['push', 'push_forced', ['ref'], 'refs/heads/'],
-		['push', 'push_merged', ['base_ref'], 'refs/heads/'],
-		['push', 'push_fast_forward', ['ref'], 'refs/heads/'],
-	])('%s (%s) keeps %j out of the link', (event, fixture, paths, prefix = '') => {
+	it.each<[event: string, fixture: string, path: string]>([
+		['issues', 'issue_opened', 'issue.title'],
+		['pull_request', 'pull_request_reopened', 'pull_request.title'],
+		['pull_request_review', 'pull_request_review_approved', 'pull_request.title'],
+		['pull_request_review_comment', 'pull_request_review_comment', 'pull_request.title'],
+		['issue_comment', 'issue_comment', 'issue.title'],
+		['discussion_comment', 'discussion_comment_created', 'discussion.title'],
+		['discussion', 'discussion_created', 'discussion.title'],
+		['milestone', 'milestone', 'milestone.title'],
+		['release', 'release', 'release.name'],
+		['package', 'package', 'package.name'],
+		['registry_package', 'registry_package', 'registry_package.package_version.version'],
+		['dependabot_alert', 'dependabot_alert_created', 'alert.security_vulnerability.package.name'],
+		['dependabot_alert', 'dependabot_alert_created', 'alert.security_advisory.summary'],
+		['code_scanning_alert', 'code_scanning_alert_created', 'alert.rule.description'],
+		['secret_scanning_alert', 'secret_scanning_alert_created', 'alert.secret_type_display_name'],
+		['repository_advisory', 'repository_advisory_published', 'repository_advisory.summary'],
+		['repository_advisory', 'repository_advisory_reported', 'repository_advisory.ghsa_id'],
+		['public', 'public', 'repository.name'],
+		['repository', 'repository_renamed', 'repository.name'],
+		['repository', 'repository_renamed', 'changes.repository.name.from'],
+		['project', 'project', 'project.name'],
+		['projects_v2', 'projects_v2_created', 'projects_v2.title'],
+		['repository_ruleset', 'repository_ruleset_created', 'repository_ruleset.name'],
+		['deploy_key', 'deploy_key_created', 'key.title'],
+		['workflow_run', 'workflow_run_failed', 'workflow_run.name'],
+		['membership', 'membership_added', 'team.name'],
+		['team', 'team_created', 'team.name'],
+		['team', 'team_edited', 'changes.name.from'],
+		['team', 'team_edited_privacy', 'team.name'],
+	])('%s (%s) swaps the markdown of %s for lookalikes', (event, fixture, path) => {
 		const result = embed(event, fixture, (p) => {
-			for (const path of paths) {
-				set(p, path, prefix + WRITTEN);
-			}
+			set(p, path, '[x *y* __z__ `c` <@1> @everyone ~~s~~ ||p||');
 		});
 
-		expect(result.linked).toBeDefined();
-		expect(result.linked).not.toMatch(/www|\[x|:bug:|<@1>|@everyone|_y_/);
-		expect(result.title).toContain('www.example.com');
+		expect(result.url).toBeDefined();
+		expect(result.title).toContain('\uFF3Bx \u2217y\u2217 \uFF3F\uFF3Fz\uFF3F\uFF3F \u02CBc\u02CB \u2039@1\u203A \uFF20everyone \u223C\u223Cs\u223C\u223C \u2223\u2223p\u2223\u2223');
 	});
+});
 
-	it('keeps the title of a wiki page out of its link', () => {
-		const result = embed('gollum', 'gollum', (p) => {
-			p.pages[0].title = 'Home_(draft)';
-		});
+describe('markdown in text that is not a link', () => {
+	function message(text: string): string | undefined {
+		return embed('workflow_run', 'workflow_run_failed', (p) => {
+			p.workflow_run.head_commit.message = text;
+		}).description;
+	}
 
-		expect(result.description).toMatch(/^\[edited]\(\S+\) Home\\_\\\(draft\\\)$/);
+	it.each([
+		['leaves a url as it is', 'see https://example.com/a_b', 'see https://example.com/a_b'],
+		['escapes around a url', '__init__ in https://example.com/a_b', '\\_\\_init\\_\\_ in https://example.com/a_b'],
+		['leaves a closing parenthesis without an opening one out of a url', '(https://example.com/a_b)', '\\(https://example.com/a_b\\)'],
+		['keeps a pair of parentheses in a url', 'https://example.com/a_(b)', 'https://example.com/a_(b)'],
+		['escapes what only looks like the start of a url', 'https:// and https://)', 'https:// and https://\\)'],
+	])('%s', (_, text, escaped) => {
+		expect(message(text)).toBe(escaped);
 	});
 });
 

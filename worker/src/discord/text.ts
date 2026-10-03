@@ -5,6 +5,26 @@ const BACKTICK_RUNS = /`+/g;
 // Discord only drops the space that pads a code span when there is a backtick beside it
 const LEADING_BACKTICK = /^ *`/;
 const TRAILING_BACKTICK = /` *$/;
+
+// Discord escapes nothing in the text of a link, so what would format there is swapped for a
+// lookalike instead. A lone ~ or | formats nothing, nor does a lone _ between two letters of a word,
+// and @ only mentions everyone or here.
+const LINK_SPECIAL = /[*`[\]<>]|_{2,}|(?<!\w)_|_(?!\w)|~{2,}|\|{2,}|@(?=everyone|here)/g;
+const LOOKALIKES: Record<string, string> = {
+	'*': '∗',
+	_: '＿',
+	'`': 'ˋ',
+	'[': '［',
+	']': '］',
+	'<': '‹',
+	'>': '›',
+	'~': '∼',
+	'|': '∣',
+	'@': '＠',
+};
+// Discord does not make a link of text that looks like a url, and reads these lookalikes as a slash
+const SLASH_LOOKALIKES = /[᜵⁁⁄∕╱⟋⧸Ⳇ⼃〳ノ㇓丿\u{1D23A}]/gu;
+const URL_LIKE = /(?:(?:https?:)?\/\/|www\.)(?:[^\s:@]+(?::[^\s@]*)?@)?(?:localhost|(?:\d{1,3}\.){3}\d{1,3}|(?:[a-z¡-￿0-9_-]+\.)+[a-z¡-￿]{2,})/i;
 // An unclosed comment hides the rest of the text, which is also how GitHub renders it
 const HTML_COMMENT = /<!--[\s\S]*?(?:-->|$)/g;
 // Requires a tag name, so that a lone "<" in text such as "a < b" is left alone.
@@ -33,22 +53,39 @@ const MAX_SHORT_MESSAGE = 100;
 /** Backslashes at the very end of a string, which may be half of an escaped character. */
 const TRAILING_BACKSLASHES = /\\+$/;
 
-/**
- * Escapes characters that Discord would otherwise interpret as markdown, everywhere but in a link
- * of its own. Nothing can be escaped in the text of a masked link, so none of this may end up there.
- */
+/** Escapes characters that Discord would otherwise interpret as markdown. */
 export function escape(message: string): string {
-	let escaped = '';
+	return outsideUrls(message, (text) => text.replace(MARKDOWN_SPECIAL, (character) => `\\${character}`));
+}
+
+/**
+ * Makes text safe to put in the text of a link, where Discord escapes nothing: whatever would
+ * format there is swapped for a character that looks like it.
+ */
+export function linkText(message: string): string {
+	return outsideUrls(message, (text) =>
+		text.replace(LINK_SPECIAL, (special) => [...special].map((character) => LOOKALIKES[character]).join('')),
+	);
+}
+
+/** Whether Discord would refuse to make a link of a text, because it holds what looks like a url. */
+export function looksLikeUrl(text: string): boolean {
+	return URL_LIKE.test(text.replace(SLASH_LOOKALIKES, '/'));
+}
+
+/** Changes everything in a message but its urls, which Discord links as they are. */
+function outsideUrls(message: string, change: (text: string) => string): string {
+	let changed = '';
 	let from = 0;
 
 	for (const match of message.matchAll(BARE_URL)) {
 		const url = trimParenthesis(match[0]);
 
-		escaped += message.slice(from, match.index).replace(MARKDOWN_SPECIAL, (character) => `\\${character}`) + url;
+		changed += change(message.slice(from, match.index)) + url;
 		from = match.index + url.length;
 	}
 
-	return escaped + message.slice(from).replace(MARKDOWN_SPECIAL, (character) => `\\${character}`);
+	return changed + change(message.slice(from));
 }
 
 /** Discord leaves a closing parenthesis out of a url when there is no opening one for it. */
