@@ -1,8 +1,8 @@
-import { getEmbed } from './discord/converter.js';
+import { formatEvent, layoutMessage } from './discord/converter.js';
 import { parseTarget, sendToDiscord } from './discord/webhook.js';
 import { WebhookError } from './errors.js';
 import { parseRequest, verifySignature } from './github.js';
-import { assertNotNoise } from './ignored.js';
+import { processEmbed, processPayload } from './postprocess.js';
 
 // Lowercase only, which is what GitHub sends
 const SIGNATURE = /^sha256=[0-9a-f]{64}$/;
@@ -55,11 +55,16 @@ async function handle(request: Request, secret: string): Promise<Response> {
 
 	// The Discord webhook is part of the url, which is only looked at once the request is known to be ours
 	const target = parseTarget(new URL(request.url));
-	const { eventType, repositoryName, payload } = parseRequest(request, body);
+	const webhook = parseRequest(request, body);
+	const { eventType, repositoryName, payload } = webhook;
 
-	assertNotNoise(eventType, payload);
+	processPayload(webhook);
 
-	const message = { allowed_mentions: { parse: [] }, ...getEmbed(eventType, payload) };
+	const embed = formatEvent(eventType, payload);
+
+	processEmbed(webhook, embed);
+
+	const message = { allowed_mentions: { parse: [] }, ...layoutMessage(embed, payload) };
 
 	// Awaited rather than deferred so that GitHub's delivery log shows the real outcome
 	const result = await sendToDiscord(target, message);

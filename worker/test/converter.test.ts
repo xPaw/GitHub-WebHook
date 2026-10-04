@@ -1,9 +1,10 @@
 import type {
+	APIComponentInContainer,
 	APIContainerComponent,
 	APITextDisplayComponent,
 } from 'discord-api-types/v10';
 import { describe, expect, it } from 'vitest';
-import { getEmbed } from '../src/discord/converter.js';
+import { type DiscordEmbed, type DiscordMessage, formatEvent, getEmbed, layoutMessage } from '../src/discord/converter.js';
 import { limitLength } from '../src/discord/text.js';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../src/errors.js';
 import { actionFixtures, loadPayload as payload, type Payload, withAction } from './fixtures.js';
@@ -155,11 +156,22 @@ interface Card {
 	footer?: { text: string };
 }
 
+/** Converts a payload with links added to what it was formatted into. */
+function withLinks(eventType: string, data: Payload, links?: DiscordEmbed['links']): DiscordMessage {
+	return layoutMessage({ ...formatEvent(eventType, data), links }, data);
+}
+
+/** The components inside the card of a message. */
+function inner(message: DiscordMessage): APIComponentInContainer[] {
+	return (message.components[0] as APIContainerComponent).components;
+}
+
 /** Takes a card apart again, so that a test can assert on one piece of it. */
-function embed(eventType: string, fixture: string, change: (payload: Payload) => void): Card {
-	const message = getEmbed(eventType, payload(fixture, change));
-	const container = message.components[0] as APIContainerComponent;
-	const [heading, ...rest] = container.components.map((component) => (component as APITextDisplayComponent).content);
+function embed(eventType: string, fixture: string, change: (payload: Payload) => void, links?: DiscordEmbed['links']): Card {
+	const message = withLinks(eventType, payload(fixture, change), links);
+	const [heading, ...rest] = inner(message)
+		.filter((component): component is APITextDisplayComponent => component.type === 10)
+		.map((component) => component.content);
 
 	const lines = heading.split('\n');
 	const titleLine = lines[lines.length - 1];
@@ -783,13 +795,13 @@ describe('limitLength', () => {
 	});
 });
 
-describe('the text budget of a message', () => {
-	/** A long body, and enough labels to crowd it out of the message. */
-	const crowded = (count: number) => (p: Payload) => {
-		p.issue.labels = Array.from({ length: count }, (_, index) => ({ name: `label-${index}-${'x'.repeat(40)}` }));
-		p.issue.body = 'x'.repeat(1000);
-	};
+/** A long body, and enough labels to crowd it out of the message. */
+const crowded = (count: number) => (p: Payload) => {
+	p.issue.labels = Array.from({ length: count }, (_, index) => ({ name: `label-${index}-${'x'.repeat(40)}` }));
+	p.issue.body = 'x'.repeat(1000);
+};
 
+describe('the text budget of a message', () => {
 	it('cuts the body down to what the labels leave it', () => {
 		const result = embed('issues', 'issue_opened', crowded(70));
 
@@ -810,6 +822,47 @@ describe('the text budget of a message', () => {
 
 		expect(result.size).toBeLessThan(MAX_MESSAGE_LENGTH);
 		expect(result.description?.endsWith('…')).toBe(false);
+	});
+});
+
+describe('links', () => {
+	const link = (index: number) => ({ label: `Link ${index}`, url: `https://example.com/${index}` });
+
+	it('shows them as buttons under the text', () => {
+		const components = inner(withLinks('push', payload('push'), [link(1), link(2)]));
+
+		expect(components.map((component) => component.type)).toEqual([10, 10, 1]);
+		expect(components.at(-1)).toEqual({
+			type: 1,
+			components: [
+				{ type: 2, style: 5, label: 'Link 1', url: 'https://example.com/1' },
+				{ type: 2, style: 5, label: 'Link 2', url: 'https://example.com/2' },
+			],
+		});
+	});
+
+	it('shows no more of them than fit in a row', () => {
+		const message = withLinks(
+			'push',
+			payload('push'),
+			Array.from({ length: 7 }, (_, index) => link(index)),
+		);
+
+		expect(inner(message).at(-1)).toMatchObject({ components: { length: 5 } });
+	});
+
+	it('sets their labels aside before the text takes its room', () => {
+		const full = embed('issues', 'issue_opened', crowded(100));
+		const result = embed('issues', 'issue_opened', crowded(100), [link(1)]);
+
+		expect(full.size).toBe(MAX_MESSAGE_LENGTH);
+		expect(result.size).toBe(MAX_MESSAGE_LENGTH - 'Link 1'.length);
+	});
+
+	it('leaves a message without them as text alone', () => {
+		const components = inner(withLinks('push', payload('push'), []));
+
+		expect(components.every((component) => component.type === 10)).toBe(true);
 	});
 });
 

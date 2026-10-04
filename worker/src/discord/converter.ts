@@ -1,8 +1,9 @@
 import type { operations } from '@octokit/openapi-webhooks-types';
 import type {
+	APIComponentInContainer,
 	APIContainerComponent,
 	APIMessageTopLevelComponent,
-	APITextDisplayComponent,
+	ButtonStyle,
 	ComponentType,
 	MessageFlags,
 } from 'discord-api-types/v10';
@@ -63,6 +64,8 @@ export interface DiscordEmbed {
 	color?: number;
 	author: { name: string; icon_url: string };
 	footer?: { text: string };
+	/** Shown as buttons under the text, a label is a few words of our own rather than anything from the payload. */
+	links?: { label: string; url: string }[];
 }
 
 export interface DiscordMessage {
@@ -82,13 +85,19 @@ const BLOCKED_USERNAME = /discord|clyde/i;
 
 // The enums of discord-api-types are values, and importing one would put the whole of it in the
 // bundle. Every number here is checked against the member it names, which is all they are wanted for.
+const ACTION_ROW: ComponentType.ActionRow = 1;
+const BUTTON: ComponentType.Button = 2;
 const TEXT_DISPLAY: ComponentType.TextDisplay = 10;
 const CONTAINER: ComponentType.Container = 17;
+const LINK: ButtonStyle.Link = 5;
 /** Turns the message into components, which take the place of `content` and `embeds`. */
 const IS_COMPONENTS_V2: MessageFlags.IsComponentsV2 = 32768;
 
 /** Discord turns a message down when the text of all of its components adds up to more than this. */
 const MAX_MESSAGE_LENGTH = 4000;
+
+/** An action row holds no more buttons than this. */
+const MAX_LINKS = 5;
 
 const MAX_WIKI_PAGES = 5;
 const MAX_PUSH_COMMITS = 15;
@@ -100,7 +109,11 @@ const MAX_PUSH_COMMITS = 15;
  * @throws {NotImplementedError} for events (or actions) we do not format.
  */
 export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
-	const embed = format(eventType, payload);
+	return layoutMessage(formatEvent(eventType, payload), payload);
+}
+
+/** Lays out what an event was formatted into as the components of a message. */
+export function layoutMessage(embed: DiscordEmbed, payload: unknown): DiscordMessage {
 	const scope = formatScope(payload as ScopePayload);
 
 	// The sender opens the sentence the title finishes, and the whole of it links to the event.
@@ -125,10 +138,13 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 		parts.push(embed.description);
 	}
 
+	const links = embed.links?.slice(0, MAX_LINKS) ?? [];
+
 	// Each part in turn takes what the ones before it left, so the body gives way to the heading
-	// rather than the message being turned down for the two of them together
-	let room = MAX_MESSAGE_LENGTH;
-	const components: APITextDisplayComponent[] = [];
+	// rather than the message being turned down for the two of them together. Button labels are
+	// short, and they are set aside first in case Discord counts them as text as well.
+	let room = links.reduce((left, { label }) => left - [...label].length, MAX_MESSAGE_LENGTH);
+	const components: APIComponentInContainer[] = [];
 
 	for (const part of parts) {
 		// An ellipsis of its own would say nothing, and would still be over the limit
@@ -140,6 +156,13 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 
 		room -= [...cut].length;
 		components.push({ type: TEXT_DISPLAY, content: cut });
+	}
+
+	if (links.length > 0) {
+		components.push({
+			type: ACTION_ROW,
+			components: links.map(({ label, url }) => ({ type: BUTTON, style: LINK, label, url })),
+		});
 	}
 
 	const container: APIContainerComponent = { type: CONTAINER, accent_color: embed.color, components };
@@ -155,7 +178,13 @@ export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
 	return message;
 }
 
-function format(eventType: string, payload: unknown): DiscordEmbed {
+/**
+ * Formats a GitHub webhook payload, before it is laid out.
+ *
+ * @throws {IgnoredEventError} for actions we deliberately skip.
+ * @throws {NotImplementedError} for events (or actions) we do not format.
+ */
+export function formatEvent(eventType: string, payload: unknown): DiscordEmbed {
 	switch (eventType) {
 		case 'ping':
 			return formatPing(payload as PingEvent);
