@@ -1,9 +1,22 @@
-import type { DiscordEmbed } from './discord/converter.js';
+import { type DiscordEmbed, formatAuthor } from './discord/converter.js';
+import { formatBody, linkText } from './discord/text.js';
 import { IgnoredEventError } from './errors.js';
 import type { WebhookRequest } from './github.js';
 
 const DEPENDABOT_ID = 49699333;
 const GITHUB_ACTIONS = 'github-actions[bot]';
+
+// GitHub matches the names of owners and repositories in any case
+const GAME_TRACKING = /^SteamTracking\/GameTracking-.+$/i;
+/** Each of these repositories describes itself as "📥 Game Tracker: <game>". */
+const GAME_NAME = /Game Tracker: (.+)$/;
+/** The workflow ends every summary with a notice under a rule, which the channel has no need to read every time. */
+const AI_NOTICE = /\r?\n-{3,}\r?\n<sub>[\s\S]*<\/sub>\s*$/;
+/**
+ * The summary is the whole of the card, so it is let grow far taller than the body of another one.
+ * A line at most 70 characters wide, as `formatBody` measures them, keeps it inside what a message holds.
+ */
+const MAX_SUMMARY_LINES = 45;
 
 interface Payload {
 	/** Always there for a push and a delete, which are the only events it is read for. */
@@ -11,10 +24,16 @@ interface Payload {
 	ref_type?: string;
 	action?: string;
 	pull_request?: { merged?: boolean | null };
-	sender?: { id?: number } | null;
+	sender?: { id?: number; login?: string } | null;
 	head_commit?: { message?: string; committer?: { username?: string } } | null;
 	/** Always there for a push, which is the only event it is read for. */
 	commits: { author: { username?: string } }[];
+}
+
+/** The parts of a commit comment that a summary of a build is laid out from. */
+interface CommitCommentPayload {
+	comment: { body: string; commit_id: string };
+	repository: { name: string; description: string | null; homepage: string | null; owner: { login: string; avatar_url: string } };
 }
 
 /**
@@ -34,7 +53,7 @@ const RULES: Rule[] = [
 	{ payload: ignoreMergeQueueBranches },
 	{ payload: ignoreWebFlowMerges },
 	{ payload: ignoreSchemaExplorerUpdates },
-	{ embed: linkSteamTrackingDiffs },
+	{ payload: ignoreGameTrackingComments, embed: formatGameTrackingSummaries },
 ];
 
 /**
@@ -116,19 +135,40 @@ function ignoreSchemaExplorerUpdates({ eventType, repositoryName, payload }: Web
 	event.commits = others;
 }
 
-/** These repositories are mostly huge generated diffs, which DiffsHub shows far better than GitHub does. */
-function linkSteamTrackingDiffs({ eventType, repositoryName }: WebhookRequest, embed: DiscordEmbed): void {
-	if (eventType !== 'push' || !/^SteamTracking\/(SteamTracking|GameTracking-.+)$/i.test(repositoryName)) {
+/** A workflow comments on every build with a summary of what changed in it, which is the only comment worth sending. */
+function ignoreGameTrackingComments(request: WebhookRequest): void {
+	if (isGameTrackingComment(request) && (request.payload as Payload).sender?.login !== GITHUB_ACTIONS) {
+		throw new IgnoredEventError(`${request.eventType} - not from ${GITHUB_ACTIONS}`);
+	}
+}
+
+/**
+ * A summary is all that is sent of a build, so it is laid out as the news of the game rather than as
+ * a comment: headed by the name of the game, with as much of the summary as fits.
+ */
+function formatGameTrackingSummaries(request: WebhookRequest, embed: DiscordEmbed): void {
+	if (!isGameTrackingComment(request)) {
 		return;
 	}
 
-	// The link of a push is to its commit, or to a comparison when it has several,
-	// and DiffsHub takes either at the same path
-	if (embed.url?.startsWith('https://github.com/')) {
-		const url = `https://diffshub.com/${embed.url.slice('https://github.com/'.length)}`;
+	const { comment, repository } = request.payload as CommitCommentPayload;
+	const game = GAME_NAME.exec(repository.description ?? '')?.[1] ?? repository.name;
 
-		embed.links = [{ label: 'View on DiffsHub', url }];
+	// The heading already names the game, which is all the line above it would say
+	embed.title = linkText(game);
+	embed.standalone = true;
+	delete embed.scope;
+	embed.description = formatBody(comment.body.replace(AI_NOTICE, ''), MAX_SUMMARY_LINES);
+	embed.author = formatAuthor(repository.owner);
+	embed.links = [{ label: 'View on DiffsHub', url: `https://diffshub.com/${request.repositoryName}/commit/${comment.commit_id}` }];
+
+	if (repository.homepage?.startsWith('https://steamdb.info/')) {
+		embed.links.push({ label: 'SteamDB', url: repository.homepage });
 	}
+}
+
+function isGameTrackingComment({ eventType, repositoryName }: WebhookRequest): boolean {
+	return eventType === 'commit_comment' && GAME_TRACKING.test(repositoryName);
 }
 
 /** The branch that was pushed to or deleted, null for tags and for every other event. */

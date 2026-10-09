@@ -158,7 +158,7 @@ interface Card {
 
 /** Converts a payload with links added to what it was formatted into. */
 function withLinks(eventType: string, data: Payload, links?: DiscordEmbed['links']): DiscordMessage {
-	return layoutMessage({ ...formatEvent(eventType, data), links }, data);
+	return layoutMessage({ ...formatEvent(eventType, data), links });
 }
 
 /** The components inside the card of a message. */

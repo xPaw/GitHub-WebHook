@@ -39,7 +39,7 @@ const SUBTEXT = /^ *-# +/;
 // Only a line that opens with a run of three backticks fences a block; anywhere else they are text
 const FENCE = /^ {0,3}```/;
 
-/** How many wrapped lines of a body {@link formatBody} keeps. */
+/** How many wrapped lines of a body {@link formatBody} keeps, unless it is told otherwise. */
 const MAX_BODY_LINES = 8;
 /**
  * Roughly how many characters fit on one line beside the avatar. Body text is set in a proportional
@@ -184,7 +184,7 @@ function demote(line: string): string {
  * fenced is worked out once here, because it decides all three of how wide they wrap, whether their
  * markdown is left as written, and whether a cut has left a block open.
  */
-export function formatBody(message: string | null | undefined): string {
+export function formatBody(message: string | null | undefined, maxLines = MAX_BODY_LINES): string {
 	const text = (message ?? '')
 		.replace(HTML_COMMENT, '')
 		.replace(HTML_TAG, '')
@@ -197,7 +197,7 @@ export function formatBody(message: string | null | undefined): string {
 	let fenced = false;
 
 	// A line costs at least one of the budget, so no more of them can ever be kept than it allows
-	for (const line of text.split('\n', MAX_BODY_LINES + 1)) {
+	for (const line of text.split('\n', maxLines + 1)) {
 		const fence = FENCE.test(line);
 		// Inside a block a leading # is a comment rather than a heading, and is quoted as written
 		const shown = fenced || fence ? line : demote(line);
@@ -205,8 +205,8 @@ export function formatBody(message: string | null | undefined): string {
 		const characters = [...shown];
 		const height = Math.max(1, Math.ceil(characters.length / perLine));
 
-		if (used + height > MAX_BODY_LINES) {
-			const room = (MAX_BODY_LINES - used) * perLine - 1;
+		if (used + height > maxLines) {
+			const room = (maxLines - used) * perLine - 1;
 
 			// Without room for even one character there is a line already kept to mark instead,
 			// because the budget can only be used up by one

@@ -64,7 +64,7 @@ async function handle(request: Request, secret: string): Promise<Response> {
 
 	processEmbed(webhook, embed);
 
-	const message = { allowed_mentions: { parse: [] }, ...layoutMessage(embed, payload) };
+	const message = { allowed_mentions: { parse: [] }, ...layoutMessage(embed) };
 
 	// Awaited rather than deferred so that GitHub's delivery log shows the real outcome
 	const result = await sendToDiscord(target, message);

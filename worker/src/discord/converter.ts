@@ -59,6 +59,10 @@ export interface DiscordEmbed {
 	 * passed through {@link linkText} rather than escaped. A login is put in as it is.
 	 */
 	title: string;
+	/** The title is a sentence of its own, rather than one that the sender opens. */
+	standalone?: boolean;
+	/** Says where the event happened, worked out from the payload and escaped by the layout. */
+	scope?: string;
 	description?: string;
 	url?: string;
 	color?: number;
@@ -109,25 +113,22 @@ const MAX_PUSH_COMMITS = 15;
  * @throws {NotImplementedError} for events (or actions) we do not format.
  */
 export function getEmbed(eventType: string, payload: unknown): DiscordMessage {
-	return layoutMessage(formatEvent(eventType, payload), payload);
+	return layoutMessage(formatEvent(eventType, payload));
 }
 
 /** Lays out what an event was formatted into as the components of a message. */
-export function layoutMessage(embed: DiscordEmbed, payload: unknown): DiscordMessage {
-	const scope = formatScope(payload as ScopePayload);
-
-	// The sender opens the sentence the title finishes, and the whole of it links to the event.
-	// Who did it is in the card itself, so a message that can not be sent as them still says so.
-	// A login is only letters, digits and hyphens, and the "[bot]" of an app is a pair of brackets
-	// that the text of a link may hold. Discord makes no link of text that looks like a url.
-	const linked = `${embed.author.name} ${embed.title}`;
-	const heading =
-		embed.url === undefined || looksLikeUrl(linked)
-			? `### ${escape(embed.author.name)} ${embed.title}`
-			: `### [${linked}](${embed.url})`;
+export function layoutMessage(embed: DiscordEmbed): DiscordMessage {
+	// Unless the title stands on its own, the sender opens the sentence it finishes, and the whole
+	// of it links to the event. Who did it is in the card itself, so a message that can not be sent
+	// as them still says so. A login is only letters, digits and hyphens, and the "[bot]" of an app
+	// is a pair of brackets that the text of a link may hold. Discord makes no link of text that looks like a url.
+	const [linked, shown] = embed.standalone
+		? [embed.title, embed.title]
+		: [`${embed.author.name} ${embed.title}`, `${escape(embed.author.name)} ${embed.title}`];
+	const heading = embed.url === undefined || looksLikeUrl(linked) ? `### ${shown}` : `### [${linked}](${embed.url})`;
 
 	// Several repositories usually share a webhook, so the card says where the event happened
-	const parts = [scope === null ? heading : `-# ${escape(scope)}\n${heading}`];
+	const parts = [embed.scope === undefined ? heading : `-# ${escape(embed.scope)}\n${heading}`];
 
 	if (embed.footer) {
 		// Everything the layout did not compose itself is somebody else's text in a markdown line
@@ -185,6 +186,18 @@ export function layoutMessage(embed: DiscordEmbed, payload: unknown): DiscordMes
  * @throws {NotImplementedError} for events (or actions) we do not format.
  */
 export function formatEvent(eventType: string, payload: unknown): DiscordEmbed {
+	const embed = formatPayload(eventType, payload);
+	const scope = formatScope(payload as ScopePayload);
+
+	if (scope !== null) {
+		embed.scope = scope;
+	}
+
+	return embed;
+}
+
+/** Formats what happened in an event, everything but where it happened. */
+function formatPayload(eventType: string, payload: unknown): DiscordEmbed {
 	switch (eventType) {
 		case 'ping':
 			return formatPing(payload as PingEvent);
@@ -271,7 +284,7 @@ export function formatEvent(eventType: string, payload: unknown): DiscordEmbed {
  */
 type Sender = { login: string; html_url?: string; avatar_url?: string } | null | undefined;
 
-function formatAuthor(sender: Sender): DiscordEmbed['author'] {
+export function formatAuthor(sender: Sender): DiscordEmbed['author'] {
 	if (!sender) {
 		throw new BadRequestError('Payload is missing the sender.');
 	}
