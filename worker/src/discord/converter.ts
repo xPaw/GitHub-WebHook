@@ -8,7 +8,7 @@ import type {
 	MessageFlags,
 } from 'discord-api-types/v10';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../errors.js';
-import { escape, escapeCode, formatBody, limitLength, linkText, looksLikeUrl, shortMessage } from './text.js';
+import { escape, escapeCode, formatBody, limitLength, linkText, looksLikeUrl, shortMessage, splitTrailers } from './text.js';
 
 /** Every payload of an event, the operations are keyed as `event` or `event/action`. */
 type Payload<Event extends string> =
@@ -105,6 +105,11 @@ const MAX_LINKS = 5;
 
 const MAX_WIKI_PAGES = 5;
 const MAX_PUSH_COMMITS = 15;
+
+// The name is trimmed afterwards, as blanks around a lazy name would backtrack over each other
+const CO_AUTHOR = /^co-authored-by:([^<]*)<([^<>]*)>[ \t]*$/i;
+// The noreply email that GitHub gives each account, with or without the id in front of the login
+const NOREPLY_EMAIL = /^(?:\d+\+)?([a-z\d-]+)@users\.noreply\.github\.com$/i;
 
 /**
  * Converts a GitHub webhook payload into a Discord webhook message.
@@ -530,27 +535,27 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	}
 
 	if (commits.length > 0) {
+		// Newest commits first, and never more than a handful of them
+		const shown = commits
+			.slice(-MAX_PUSH_COMMITS)
+			.reverse()
+			.map((commit) => [commit, ...splitTrailers(commit.message)] as const);
+
 		// A push of a single commit has the room to say what the commit itself says, everything past
 		// the summary that the line above it already carries
-		const message = commits.length === 1 ? commits[0].message.trim() : '';
+		const message = shown.length === 1 ? shown[0][1] : '';
 		const newline = message.indexOf('\n');
 		const body = newline === -1 ? '' : formatBody(message.slice(newline + 1));
 
-		// Newest commits first, and never more than a handful of them
-		embed.description = commits
-			.slice(-MAX_PUSH_COMMITS)
-			.reverse()
-			.map((commit) => {
+		embed.description = shown
+			.map(([commit, text, trailers]) => {
 				// Where the body follows, the summary no longer has to trail off into it
-				const summary = body === '' ? commit.message : message.slice(0, newline);
+				const summary = body === '' ? text : text.slice(0, newline);
 				let line = `[${escapeCode(shortSha(commit.id))}](${commit.url}) ${shortMessage(summary)}`;
+				const authors = commitAuthors(commit, trailers, payload.sender?.login);
 
-				if (commit.author.username) {
-					if (commit.author.username !== payload.sender?.login) {
-						line += ` - ${escape(commit.author.username)}`;
-					}
-				} else {
-					line += ` - *${escape(commit.author.name ?? 'unknown')}*`;
+				if (authors.length > 0) {
+					line += ` - ${authors.join(', ')}`;
 				}
 
 				return line;
@@ -563,6 +568,39 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	}
 
 	return embed;
+}
+
+/**
+ * Everybody who wrote a commit but the one who pushed it, who is on the card already. Co-authors
+ * are named by their account where a noreply email gives it away and by their name otherwise,
+ * never by the email itself.
+ */
+function commitAuthors(commit: PushEvent['commits'][number], trailers: string[], pusher: string | undefined): string[] {
+	const candidates: [login: string | undefined, name: string][] = [[commit.author.username, commit.author.name ?? 'unknown']];
+
+	for (const trailer of trailers) {
+		const coAuthor = CO_AUTHOR.exec(trailer);
+
+		if (coAuthor !== null) {
+			candidates.push([NOREPLY_EMAIL.exec(coAuthor[2])?.[1], coAuthor[1].trim()]);
+		}
+	}
+
+	const authors: string[] = [];
+	const seen = new Set([pusher?.toLowerCase()]);
+
+	for (const [login, name] of candidates) {
+		const key = (login || name).toLowerCase();
+
+		if (key === '' || seen.has(key)) {
+			continue;
+		}
+
+		seen.add(key);
+		authors.push(login ? escape(login) : `*${escape(name)}*`);
+	}
+
+	return authors;
 }
 
 function formatDelete(payload: DeleteEvent): DiscordEmbed {
@@ -1258,7 +1296,7 @@ function formatWorkflowRun(payload: WorkflowRunEvent): DiscordEmbed {
 
 	return {
 		title: `broke ${escapeCode(payload.repository.default_branch)} — workflow **${linkText(run.name || payload.workflow?.name || 'unknown')}** ${outcome}`,
-		description: shortMessage(run.head_commit.message),
+		description: shortMessage(splitTrailers(run.head_commit.message)[0]),
 		url: run.html_url,
 		color: actionColor(outcome),
 		author: formatAuthor(payload.sender),

@@ -39,6 +39,13 @@ const SUBTEXT = /^ *-# +/;
 // Only a line that opens with a run of three backticks fences a block; anywhere else they are text
 const FENCE = /^ {0,3}```/;
 
+const PARAGRAPH_BREAK = /\n(?:[ \t]*\n)+/g;
+// A token, a colon and a value, or the line git adds when cherry-picking. A space after the colon
+// keeps a url on a line of its own from passing for one.
+const TRAILER = /^(?:[a-z\d][a-z\d-]*:[ \t]+\S.*|\(cherry picked from commit [\da-f]+\))$/i;
+// A trailer may carry on over indented lines
+const TRAILER_CONTINUATION = /^[ \t]+\S/;
+
 /** How many wrapped lines of a body {@link formatBody} keeps, unless it is told otherwise. */
 const MAX_BODY_LINES = 8;
 /**
@@ -168,6 +175,27 @@ export function shortMessage(message: string): string {
 	}
 
 	return escape(short);
+}
+
+/**
+ * Splits the trailers (Co-authored-by, Signed-off-by…) off the end of a commit message. Like git, it
+ * only takes them from a last paragraph that is made of nothing else, and never from the subject.
+ */
+export function splitTrailers(message: string): [text: string, trailers: string[]] {
+	const text = message.replaceAll('\r', '').trim();
+	const lastBreak = [...text.matchAll(PARAGRAPH_BREAK)].at(-1);
+
+	if (lastBreak === undefined) {
+		return [text, []];
+	}
+
+	const lines = text.slice(lastBreak.index + lastBreak[0].length).split('\n');
+
+	if (!TRAILER.test(lines[0]) || !lines.every((line) => TRAILER.test(line) || TRAILER_CONTINUATION.test(line))) {
+		return [text, []];
+	}
+
+	return [text.slice(0, lastBreak.index), lines];
 }
 
 /** Nothing quoted in a card may out-shout the card itself, so a heading is only made bold. */

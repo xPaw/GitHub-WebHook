@@ -71,6 +71,17 @@ class DiscordConverter extends BaseConverter
 	// Only a line that opens with a run of three backticks fences a block; anywhere else they are text
 	private const string FENCE = '~^ {0,3}```~';
 
+	private const string PARAGRAPH_BREAK = '~\n(?:[ \t]*\n)+~';
+	// A token, a colon and a value, or the line git adds when cherry-picking. A space after the colon
+	// keeps a url on a line of its own from passing for one.
+	private const string TRAILER = '~^(?:[a-z\d][a-z\d-]*:[ \t]+\S.*|\(cherry picked from commit [\da-f]+\))$~i';
+	// A trailer may carry on over indented lines
+	private const string TRAILER_CONTINUATION = '~^[ \t]+\S~';
+	// The name is trimmed afterwards, as blanks around a lazy name would backtrack over each other
+	private const string CO_AUTHOR = '~^co-authored-by:([^<]*)<([^<>]*)>[ \t]*$~i';
+	// The noreply email that GitHub gives each account, with or without the id in front of the login
+	private const string NOREPLY_EMAIL = '~^(?:\d+\+)?([a-z\d-]+)@users\.noreply\.github\.com$~i';
+
 	// How many wrapped lines of a body are quoted as the body of a card
 	private const int MAX_BODY_LINES = 8;
 	// Roughly how many characters fit on one line beside the avatar. Body text is set in a proportional
@@ -535,6 +546,81 @@ class DiscordConverter extends BaseConverter
 		return implode( "\n", $Kept ) . ( $Fenced ? "\n```" : '' );
 	}
 
+	/**
+	 * Splits the trailers (Co-authored-by, Signed-off-by…) off the end of a commit message. Like git, it
+	 * only takes them from a last paragraph that is made of nothing else, and never from the subject.
+	 *
+	 * @return array{0: string, 1: string[]}
+	 */
+	private static function SplitTrailers( string $Message ) : array
+	{
+		$Text = self::Trim( str_replace( "\r", '', $Message ) );
+
+		if( preg_match_all( self::PARAGRAPH_BREAK, $Text, $Breaks, PREG_OFFSET_CAPTURE ) < 1 )
+		{
+			return [ $Text, [] ];
+		}
+
+		[ $Break, $Offset ] = $Breaks[ 0 ][ count( $Breaks[ 0 ] ) - 1 ];
+		$Lines = explode( "\n", substr( $Text, $Offset + strlen( $Break ) ) );
+
+		if( preg_match( self::TRAILER, $Lines[ 0 ] ) !== 1 )
+		{
+			return [ $Text, [] ];
+		}
+
+		foreach( $Lines as $Line )
+		{
+			if( preg_match( self::TRAILER, $Line ) !== 1 && preg_match( self::TRAILER_CONTINUATION, $Line ) !== 1 )
+			{
+				return [ $Text, [] ];
+			}
+		}
+
+		return [ substr( $Text, 0, $Offset ), $Lines ];
+	}
+
+	/**
+	 * Everybody who wrote a commit but the one who pushed it, who is on the card already. Co-authors
+	 * are named by their account where a noreply email gives it away and by their name otherwise,
+	 * never by the email itself.
+	 *
+	 * @param string[] $Trailers
+	 *
+	 * @return string[]
+	 */
+	private function CommitAuthors( object $Commit, array $Trailers ) : array
+	{
+		$Candidates = [ [ $Commit->author->username ?? null, $Commit->author->name ?? 'unknown' ] ];
+
+		foreach( $Trailers as $Trailer )
+		{
+			if( preg_match( self::CO_AUTHOR, $Trailer, $CoAuthor ) === 1 )
+			{
+				$Login = preg_match( self::NOREPLY_EMAIL, $CoAuthor[ 2 ], $Email ) === 1 ? $Email[ 1 ] : null;
+				$Candidates[] = [ $Login, self::Trim( $CoAuthor[ 1 ] ) ];
+			}
+		}
+
+		$Authors = [];
+		$Seen = [ mb_strtolower( $this->Payload->sender->login ) => true ];
+
+		foreach( $Candidates as [ $Login, $Name ] )
+		{
+			$Key = mb_strtolower( $Login ?? $Name );
+
+			if( $Key === '' || isset( $Seen[ $Key ] ) )
+			{
+				continue;
+			}
+
+			$Seen[ $Key ] = true;
+			$Authors[] = $Login === null ? "*" . self::Escape( $Name ) . "*" : self::Escape( $Login );
+		}
+
+		return $Authors;
+	}
+
 	private static function ShortMessage( string $Message ) : string
 	{
 		$Message = self::Trim( $Message );
@@ -654,34 +740,32 @@ class DiscordConverter extends BaseConverter
 		if( $Num > 0 )
 		{
 			$CommitMessages = [];
-			$CommitsLimit = 15;
+
+			// Newest commits first, and never more than a handful of them
+			$Shown = array_map(
+				static fn( object $Commit ) : array => [ $Commit, ...self::SplitTrailers( $Commit->message ) ],
+				array_reverse( array_slice( $DistinctCommits, -15 ) )
+			);
 
 			// A push of a single commit has the room to say what the commit itself says,
 			// everything past the summary that the line above it already carries
-			$Message = $Num === 1 ? trim( $DistinctCommits[ 0 ]->message ) : '';
+			$Message = count( $Shown ) === 1 ? $Shown[ 0 ][ 1 ] : '';
 			$Newline = strpos( $Message, "\n" );
 			$Body = $Newline === false ? '' : self::FormatBody( substr( $Message, $Newline + 1 ) );
 
-			while( --$Num >= 0 && --$CommitsLimit >= 0 )
+			foreach( $Shown as [ $DistinctCommit, $Text, $Trailers ] )
 			{
-				$DistinctCommit = $DistinctCommits[ $Num ];
-
 				// Where the body follows, the summary no longer has to trail off into it
-				$Summary = $Body === '' ? $DistinctCommit->message : substr( $Message, 0, $Newline );
+				$Summary = $Body === '' ? $Text : substr( $Text, 0, $Newline );
 
 				$Commit = "[" . self::EscapeCode( substr( $DistinctCommit->id, 0, 6 ) ) . "]({$DistinctCommit->url}) ";
 				$Commit .= self::ShortMessage( $Summary );
 
-				if( isset( $DistinctCommit->author->username ) )
+				$Authors = $this->CommitAuthors( $DistinctCommit, $Trailers );
+
+				if( $Authors !== [] )
 				{
-					if( $DistinctCommit->author->username !== $this->Payload->sender->login )
-					{
-						$Commit .= " - " . self::Escape( $DistinctCommit->author->username );
-					}
-				}
-				else
-				{
-					$Commit .= " - *" . self::Escape( $DistinctCommit->author->name ?? 'unknown' ) . "*";
+					$Commit .= " - " . implode( ', ', $Authors );
 				}
 
 				$CommitMessages[] = $Commit;
@@ -1864,7 +1948,7 @@ class DiscordConverter extends BaseConverter
 
 		return [
 			'title' => "broke " . self::EscapeCode( $Run->head_branch ) . " — workflow **" . self::LinkText( $Name ) . "** {$Outcome}",
-			'description' => self::ShortMessage( $Run->head_commit->message ?? '' ),
+			'description' => self::ShortMessage( self::SplitTrailers( $Run->head_commit->message ?? '' )[ 0 ] ),
 			'url' => $Run->html_url,
 			'color' => $this->FormatAction( $Outcome ),
 			'author' => $this->FormatAuthor(),
