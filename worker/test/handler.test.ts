@@ -40,10 +40,12 @@ async function deliver(eventType: string, name: string, change?: (payload: Paylo
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
+let consoleLog: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
 	fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
 	vi.stubGlobal('fetch', fetchMock);
+	consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -316,6 +318,31 @@ describe('worker', () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.text()).toContain('Missing repository information.');
+	});
+
+	it('logs the event, action, repository and delivery of each request', async () => {
+		const request = await buildRequest('issues', fixture('issue_opened'));
+		request.headers.set('X-GitHub-Delivery', '72d3162e-cc78-11e3-81ab-4c9367dc0958');
+
+		await worker.fetch(request, env);
+
+		expect(consoleLog).toHaveBeenCalledWith({
+			event: 'issues',
+			action: 'opened',
+			repository: 'octo-org/Spoon-Knife',
+			delivery: '72d3162e-cc78-11e3-81ab-4c9367dc0958',
+		});
+	});
+
+	it('logs no action or delivery when the request has neither', async () => {
+		await worker.fetch(await buildRequest('push', fixture('push')), env);
+
+		expect(consoleLog).toHaveBeenCalledWith({
+			event: 'push',
+			action: undefined,
+			repository: 'monalisa/Hello-World',
+			delivery: undefined,
+		});
 	});
 
 	it('returns 502 when Discord rejects the message', async () => {

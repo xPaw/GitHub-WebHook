@@ -57,6 +57,15 @@ async function handle(request: Request, secret: string): Promise<Response> {
 	const target = parseTarget(new URL(request.url));
 	const webhook = parseRequest(request, body);
 	const { eventType, repositoryName, payload } = webhook;
+	const { action } = payload as { action?: unknown };
+
+	// An object is indexed by Workers Logs, so each field can be filtered and grouped by
+	console.log({
+		event: eventType,
+		action: typeof action === 'string' ? action : undefined,
+		repository: repositoryName,
+		delivery: request.headers.get('X-GitHub-Delivery') ?? undefined,
+	});
 
 	processPayload(webhook);
 
