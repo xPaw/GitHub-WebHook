@@ -13,7 +13,7 @@
                 },
                 {
                     "type": 10,
-                    "content": "[`3c4d5e`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d) Name a co-author without an account by their name - *Hubot*\n[`2b3c4d`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c) Keep a url that ends the message\u2026\n[`1a2b3c`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b) Credit co-authors by the account in their noreply email - hacktocat, octocat"
+                    "content": "[`1a2b3c`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b) Credit co-authors by the account in their noreply email - hacktocat, octocat\n[`2b3c4d`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c) Keep a url that ends the message\u2026\n[`3c4d5e`](https:\/\/github.com\/monalisa\/Hello-World\/commit\/3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d) Name a co-author without an account by their name - *Hubot*"
                 }
             ]
         }

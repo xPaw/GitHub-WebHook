@@ -104,7 +104,8 @@ const MAX_MESSAGE_LENGTH = 4000;
 const MAX_LINKS = 5;
 
 const MAX_WIKI_PAGES = 5;
-const MAX_PUSH_COMMITS = 15;
+/** A longer push lists this many of its oldest and of its newest commits, and counts the rest between them. */
+const PUSH_COMMITS_AT_EACH_END = 7;
 
 // The name is trimmed afterwards, as blanks around a lazy name would backtrack over each other
 const CO_AUTHOR = /^co-authored-by:([^<]*)<([^<>]*)>[ \t]*$/i;
@@ -535,11 +536,12 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 	}
 
 	if (commits.length > 0) {
-		// Newest commits first, and never more than a handful of them
-		const shown = commits
-			.slice(-MAX_PUSH_COMMITS)
-			.reverse()
-			.map((commit) => [commit, ...splitTrailers(commit.message)] as const);
+		// Oldest commits first, as GitHub lists them. A long push keeps where the work started and
+		// where the branch is now, and gives up the middle. The line that counts the hidden commits
+		// takes the place of one, so it never stands in for a single commit that would have fit.
+		const hidden = commits.length > PUSH_COMMITS_AT_EACH_END * 2 + 1 ? commits.length - PUSH_COMMITS_AT_EACH_END * 2 : 0;
+		const listed = hidden > 0 ? [...commits.slice(0, PUSH_COMMITS_AT_EACH_END), ...commits.slice(-PUSH_COMMITS_AT_EACH_END)] : commits;
+		const shown = listed.map((commit) => [commit, ...splitTrailers(commit.message)] as const);
 
 		// A push of a single commit has the room to say what the commit itself says, everything past
 		// the summary that the line above it already carries
@@ -547,20 +549,24 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 		const newline = message.indexOf('\n');
 		const body = newline === -1 ? '' : formatBody(message.slice(newline + 1));
 
-		embed.description = shown
-			.map(([commit, text, trailers]) => {
-				// Where the body follows, the summary no longer has to trail off into it
-				const summary = body === '' ? text : text.slice(0, newline);
-				let line = `[${escapeCode(shortSha(commit.id))}](${commit.url}) ${shortMessage(summary)}`;
-				const authors = commitAuthors(commit, trailers, payload.sender?.login);
+		const lines = shown.map(([commit, text, trailers]) => {
+			// Where the body follows, the summary no longer has to trail off into it
+			const summary = body === '' ? text : text.slice(0, newline);
+			let line = `[${escapeCode(shortSha(commit.id))}](${commit.url}) ${shortMessage(summary)}`;
+			const authors = commitAuthors(commit, trailers, payload.sender?.login);
 
-				if (authors.length > 0) {
-					line += ` - ${authors.join(', ')}`;
-				}
+			if (authors.length > 0) {
+				line += ` - ${authors.join(', ')}`;
+			}
 
-				return line;
-			})
-			.join('\n');
+			return line;
+		});
+
+		if (hidden > 0) {
+			lines.splice(PUSH_COMMITS_AT_EACH_END, 0, `… ${hidden} more commits`);
+		}
+
+		embed.description = lines.join('\n');
 
 		if (body !== '') {
 			embed.description += `\n\n${body}`;

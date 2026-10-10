@@ -93,6 +93,9 @@ class DiscordConverter extends BaseConverter
 	// How much of the first line of a commit or wiki message is quoted
 	private const int MAX_SHORT_MESSAGE = 100;
 
+	// A longer push lists this many of its oldest and of its newest commits, and counts the rest between them
+	private const int PUSH_COMMITS_AT_EACH_END = 7;
+
 	/**
 	 * Parses GitHub's webhook payload and returns a formatted message.
 	 *
@@ -741,10 +744,24 @@ class DiscordConverter extends BaseConverter
 		{
 			$CommitMessages = [];
 
-			// Newest commits first, and never more than a handful of them
+			// Oldest commits first, as GitHub lists them. A long push keeps where the work started and
+			// where the branch is now, and gives up the middle. The line that counts the hidden commits
+			// takes the place of one, so it never stands in for a single commit that would have fit.
+			$Listed = $DistinctCommits;
+			$Hidden = 0;
+
+			if( $Num > self::PUSH_COMMITS_AT_EACH_END * 2 + 1 )
+			{
+				$Hidden = $Num - self::PUSH_COMMITS_AT_EACH_END * 2;
+				$Listed = [
+					...array_slice( $DistinctCommits, 0, self::PUSH_COMMITS_AT_EACH_END ),
+					...array_slice( $DistinctCommits, -self::PUSH_COMMITS_AT_EACH_END ),
+				];
+			}
+
 			$Shown = array_map(
 				static fn( object $Commit ) : array => [ $Commit, ...self::SplitTrailers( $Commit->message ) ],
-				array_reverse( array_slice( $DistinctCommits, -15 ) )
+				$Listed
 			);
 
 			// A push of a single commit has the room to say what the commit itself says,
@@ -769,6 +786,11 @@ class DiscordConverter extends BaseConverter
 				}
 
 				$CommitMessages[] = $Commit;
+			}
+
+			if( $Hidden > 0 )
+			{
+				array_splice( $CommitMessages, self::PUSH_COMMITS_AT_EACH_END, 0, "… {$Hidden} more commits" );
 			}
 
 			$Embed[ 'description' ] = implode( "\n", $CommitMessages );
