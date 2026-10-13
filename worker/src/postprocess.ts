@@ -33,7 +33,7 @@ interface Payload {
 /** The parts of a commit comment that a summary of a build is laid out from. */
 interface CommitCommentPayload {
 	comment: { body: string; commit_id: string };
-	repository: { name: string; description: string | null; homepage: string | null; owner: { login: string; avatar_url: string } };
+	repository: { name: string; description: string | null; owner: { login: string; avatar_url: string } };
 }
 
 /**
@@ -161,10 +161,6 @@ function formatGameTrackingSummaries(request: WebhookRequest, embed: DiscordEmbe
 	embed.description = formatBody(comment.body.replace(AI_NOTICE, ''), MAX_SUMMARY_LINES);
 	embed.author = formatAuthor(repository.owner);
 	embed.links = [{ label: 'View on DiffsHub', url: `https://diffshub.com/${request.repositoryName}/commit/${comment.commit_id}` }];
-
-	if (repository.homepage?.startsWith('https://steamdb.info/')) {
-		embed.links.push({ label: 'SteamDB', url: repository.homepage });
-	}
 }
 
 function isGameTrackingComment({ eventType, repositoryName }: WebhookRequest): boolean {

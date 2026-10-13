@@ -223,7 +223,6 @@ describe('GameTracking', () => {
 			p.repository.full_name = 'SteamTracking/GameTracking-Lorem';
 			p.repository.name = 'GameTracking-Lorem';
 			p.repository.description = '📥 Game Tracker: Lorem Ipsum';
-			p.repository.homepage = 'https://steamdb.info/app/12345/history/';
 			p.comment.body = SUMMARY;
 			change?.(p);
 		});
@@ -273,17 +272,15 @@ describe('GameTracking', () => {
 						label: 'View on DiffsHub',
 						url: 'https://diffshub.com/SteamTracking/GameTracking-Lorem/commit/daf13dcaf435472847deec105edc97a29c30465d',
 					},
-					{ type: 2, style: 5, label: 'SteamDB', url: 'https://steamdb.info/app/12345/history/' },
 				],
 			},
 		]);
 	});
 
-	it('lays out a summary in a repository without a game name or a SteamDB page', () => {
+	it('lays out a summary in a repository without a game name', () => {
 		const webhook = summary((p) => {
 			p.comment.body = 'Lorem ipsum dolor sit amet.';
 			p.repository.description = null;
-			p.repository.homepage = 'https://example.com/lorem-ipsum';
 		});
 
 		expect(process(webhook)).toEqual([
