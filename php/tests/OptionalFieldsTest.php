@@ -337,9 +337,9 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 	#[DataProvider('urlProvider')]
 	public function testUrlIsLeftAsItIs( string $Text, string $Escaped ) : void
 	{
-		$Card = self::CardOf( self::MessageFor( 'workflow_run', 'workflow_run_failed', static function( stdClass $Payload ) use ( $Text ) : void
+		$Card = self::CardOf( self::MessageFor( 'ping', 'ping', static function( stdClass $Payload ) use ( $Text ) : void
 		{
-			$Payload->workflow_run->head_commit->message = $Text;
+			$Payload->zen = $Text;
 		} ) );
 
 		self::assertSame( $Escaped, $Card[ 'description' ] );
@@ -634,20 +634,15 @@ class OptionalFieldsTest extends \PHPUnit\Framework\TestCase
 				static function( stdClass $Payload ) : void { $Payload->sponsorship->sponsor = null; },
 				'title', 'octocat got a new private sponsor',
 			],
-			'workflow run escapes the message of its commit once' => [
-				'workflow_run', 'workflow_run_failed',
-				static function( stdClass $Payload ) : void { $Payload->workflow_run->head_commit->message = 'fix_bug'; },
-				'description', 'fix\_bug',
-			],
 			'workflow run without a name is named after its workflow' => [
 				'workflow_run', 'workflow_run_failed',
 				static function( stdClass $Payload ) : void { $Payload->workflow_run->name = ''; $Payload->workflow->name = 'Tests'; },
-				'title', 'Codertocat broke `master` — workflow **Tests** failed',
+				'title', 'Workflow **Tests** #163 failed on `master`',
 			],
 			'workflow run without any name' => [
 				'workflow_run', 'workflow_run_failed',
 				static function( stdClass $Payload ) : void { $Payload->workflow_run->name = null; $Payload->workflow = null; },
-				'title', 'Codertocat broke `master` — workflow **unknown** failed',
+				'title', 'Workflow **unknown** #163 failed on `master`',
 			],
 			'project without a body' => [
 				'project', 'project',

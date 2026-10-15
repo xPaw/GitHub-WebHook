@@ -1,7 +1,7 @@
 {
     "flags": 32768,
-    "username": "Codertocat on GitHub",
-    "avatar_url": "https:\/\/avatars0.githubusercontent.com\/u\/21031067?v=4",
+    "username": "octo-org on GitHub",
+    "avatar_url": "https:\/\/avatars3.githubusercontent.com\/u\/90000012?v=4",
     "components": [
         {
             "type": 17,
@@ -9,11 +9,7 @@
             "components": [
                 {
                     "type": 10,
-                    "content": "-# octo-repo\n### [Codertocat broke `master` \u2014 workflow **CI** timed out](https:\/\/github.com\/octo-org\/octo-repo\/actions\/runs\/90003001)"
-                },
-                {
-                    "type": 10,
-                    "content": "Fix the login form validation\u2026"
+                    "content": "-# octo-repo\n### [Workflow **CI** #163 timed out on `master`](https:\/\/github.com\/octo-org\/octo-repo\/actions\/runs\/90003001)"
                 }
             ]
         }

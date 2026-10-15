@@ -162,6 +162,7 @@ class DiscordConverter extends BaseConverter
 		 *
 		 * @var array{
 		 *     title: string,
+		 *     standalone?: bool,
 		 *     url?: ?string,
 		 *     color: int,
 		 *     description?: ?string,
@@ -170,14 +171,25 @@ class DiscordConverter extends BaseConverter
 		 * } $Embed
 		 */
 
-		// The sender opens the sentence the title finishes, and the whole of it links to the event.
-		// Who did it is in the card itself, so a message that can not be sent as them still says so.
-		// A login is only letters, digits and hyphens, and the "[bot]" of an app is a pair of brackets
-		// that the text of a link may hold. Discord makes no link of text that looks like a url.
-		$Linked = $Embed[ 'author' ][ 'name' ] . ' ' . $Embed[ 'title' ];
+		// Unless the title is a sentence of its own, the sender opens the sentence it finishes, and the
+		// whole of it links to the event. Who did it is in the card itself, so a message that can not
+		// be sent as them still says so. A login is only letters, digits and hyphens, and the "[bot]"
+		// of an app is a pair of brackets that the text of a link may hold. Discord makes no link of
+		// text that looks like a url.
+		if( $Embed[ 'standalone' ] ?? false )
+		{
+			$Linked = $Embed[ 'title' ];
+			$Shown = $Embed[ 'title' ];
+		}
+		else
+		{
+			$Linked = $Embed[ 'author' ][ 'name' ] . ' ' . $Embed[ 'title' ];
+			$Shown = self::Escape( $Embed[ 'author' ][ 'name' ] ) . ' ' . $Embed[ 'title' ];
+		}
+
 		$URL = $Embed[ 'url' ] ?? null;
 		$Heading = $URL === null || self::LooksLikeUrl( $Linked )
-			? '### ' . self::Escape( $Embed[ 'author' ][ 'name' ] ) . ' ' . $Embed[ 'title' ]
+			? "### {$Shown}"
 			: "### [{$Linked}]({$URL})";
 
 		// Several repositories usually share a webhook, so the card says where the event happened
@@ -1968,12 +1980,19 @@ class DiscordConverter extends BaseConverter
 			$Name = $this->Payload->workflow->name ?? 'unknown';
 		}
 
+		$Owner = $this->Payload->repository->owner;
+
+		// Whoever pushed the commit is not to blame for every run that fails on it, so the card is sent
+		// as the owner of the repository and names the run rather than anybody
 		return [
-			'title' => "broke " . self::EscapeCode( $Run->head_branch ) . " — workflow **" . self::LinkText( $Name ) . "** {$Outcome}",
-			'description' => self::ShortMessage( self::SplitTrailers( $Run->head_commit->message ?? '' )[ 0 ] ),
+			'title' => "Workflow **" . self::LinkText( $Name ) . "** #{$Run->run_number} {$Outcome} on " . self::EscapeCode( $Run->head_branch ),
+			'standalone' => true,
 			'url' => $Run->html_url,
 			'color' => $this->FormatAction( $Outcome ),
-			'author' => $this->FormatAuthor(),
+			'author' => [
+				'name' => $Owner->login,
+				'icon_url' => $Owner->avatar_url ?? 'https://github.com/' . $Owner->login . '.png',
+			],
 		];
 	}
 

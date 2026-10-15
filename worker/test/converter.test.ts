@@ -5,7 +5,7 @@ import type {
 } from 'discord-api-types/v10';
 import { describe, expect, it } from 'vitest';
 import { type DiscordEmbed, type DiscordMessage, formatEvent, getEmbed, layoutMessage } from '../src/discord/converter.js';
-import { limitLength } from '../src/discord/text.js';
+import { limitLength, shortMessage } from '../src/discord/text.js';
 import { BadRequestError, IgnoredEventError, NotImplementedError } from '../src/errors.js';
 import { actionFixtures, loadPayload as payload, type Payload, withAction } from './fixtures.js';
 
@@ -397,23 +397,11 @@ describe('optional fields', () => {
 		expect(result.title).toBe('monalisa is now sponsoring **ghost**');
 	});
 
-	it('workflow run escapes the message of its commit once', () => {
-		const result = embed('workflow_run', 'workflow_run_failed', (p) => {
-			p.workflow_run.head_commit.message = 'fix_bug';
-		});
-
-		expect(result.description).toBe('fix\\_bug');
-	});
-
 	it('keeps a message of astral characters that fits the limit', () => {
 		// Twice as many code units as characters, which is what the limit counts
 		const message = '🎉'.repeat(60);
 
-		const result = embed('workflow_run', 'workflow_run_failed', (p) => {
-			p.workflow_run.head_commit.message = message;
-		});
-
-		expect(result.description).toBe(message);
+		expect(shortMessage(message)).toBe(message);
 	});
 
 	it('workflow run without a name is named after its workflow', () => {
@@ -422,7 +410,7 @@ describe('optional fields', () => {
 			p.workflow.name = 'Tests';
 		});
 
-		expect(result.title).toBe('Codertocat broke `master` — workflow **Tests** failed');
+		expect(result.title).toBe('Workflow **Tests** #163 failed on `master`');
 	});
 
 	it('workflow run without any name', () => {
@@ -431,7 +419,7 @@ describe('optional fields', () => {
 			p.workflow = null;
 		});
 
-		expect(result.title).toBe('Codertocat broke `master` — workflow **unknown** failed');
+		expect(result.title).toBe('Workflow **unknown** #163 failed on `master`');
 	});
 
 	it('project without a body', () => {
@@ -691,8 +679,8 @@ describe('markdown in a title', () => {
 
 describe('markdown in text that is not a link', () => {
 	function message(text: string): string | undefined {
-		return embed('workflow_run', 'workflow_run_failed', (p) => {
-			p.workflow_run.head_commit.message = text;
+		return embed('ping', 'ping', (p) => {
+			p.zen = text;
 		}).description;
 	}
 

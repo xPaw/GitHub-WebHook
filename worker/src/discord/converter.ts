@@ -1300,12 +1300,14 @@ function formatWorkflowRun(payload: WorkflowRunEvent): DiscordEmbed {
 		throw new IgnoredEventError('workflow_run - not the default branch');
 	}
 
+	// Whoever pushed the commit is not to blame for every run that fails on it, so the card is sent
+	// as the owner of the repository and names the run rather than anybody
 	return {
-		title: `broke ${escapeCode(payload.repository.default_branch)} — workflow **${linkText(run.name || payload.workflow?.name || 'unknown')}** ${outcome}`,
-		description: shortMessage(splitTrailers(run.head_commit.message)[0]),
+		title: `Workflow **${linkText(run.name || payload.workflow?.name || 'unknown')}** #${run.run_number} ${outcome} on ${escapeCode(payload.repository.default_branch)}`,
+		standalone: true,
 		url: run.html_url,
 		color: actionColor(outcome),
-		author: formatAuthor(payload.sender),
+		author: formatAuthor(payload.repository.owner),
 	};
 }
 
