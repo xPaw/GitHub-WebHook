@@ -539,13 +539,26 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 		// Oldest commits first, as GitHub lists them. A long push keeps where the work started and
 		// where the branch is now, and gives up the middle. The line that counts the hidden commits
 		// takes the place of one, so it never stands in for a single commit that would have fit.
-		const hidden = commits.length > PUSH_COMMITS_AT_EACH_END * 2 + 1 ? commits.length - PUSH_COMMITS_AT_EACH_END * 2 : 0;
-		const listed = hidden > 0 ? [...commits.slice(0, PUSH_COMMITS_AT_EACH_END), ...commits.slice(-PUSH_COMMITS_AT_EACH_END)] : commits;
+		let listed = commits;
+		let hidden = 0;
+		let hiddenAt = PUSH_COMMITS_AT_EACH_END;
+
+		if (payload.forced && !payload.created && commits.length > 1) {
+			// A rebase lists the whole branch again, and the payload can't tell rewritten commits from
+			// new ones, so a force push only lists where the branch is now
+			listed = commits.slice(-1);
+			hidden = commits.length - 1;
+			hiddenAt = 0;
+		} else if (commits.length > PUSH_COMMITS_AT_EACH_END * 2 + 1) {
+			listed = [...commits.slice(0, PUSH_COMMITS_AT_EACH_END), ...commits.slice(-PUSH_COMMITS_AT_EACH_END)];
+			hidden = commits.length - PUSH_COMMITS_AT_EACH_END * 2;
+		}
+
 		const shown = listed.map((commit) => [commit, ...splitTrailers(commit.message)] as const);
 
 		// A push of a single commit has the room to say what the commit itself says, everything past
 		// the summary that the line above it already carries
-		const message = shown.length === 1 ? shown[0][1] : '';
+		const message = commits.length === 1 ? shown[0][1] : '';
 		const newline = message.indexOf('\n');
 		const body = newline === -1 ? '' : formatBody(message.slice(newline + 1));
 
@@ -563,7 +576,7 @@ function formatPush(payload: PushEvent): DiscordEmbed {
 		});
 
 		if (hidden > 0) {
-			lines.splice(PUSH_COMMITS_AT_EACH_END, 0, `… ${hidden} more commits`);
+			lines.splice(hiddenAt, 0, `… ${hidden} more commit${hidden === 1 ? '' : 's'}`);
 		}
 
 		embed.description = lines.join('\n');

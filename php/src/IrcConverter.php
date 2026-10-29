@@ -276,9 +276,19 @@ class IrcConverter extends BaseConverter
 			$CommitMessages = '';
 			$Length = 0;
 
+			// A rebase lists the whole branch again, and the payload can't tell rewritten commits
+			// from new ones, so a force push only names where the branch is now
+			$NewestOnly = $this->Payload->forced && !$this->Payload->created;
+
 			// Only whole messages are listed, cutting the joined text could land inside of a color code
 			while( --$Num >= 0 )
 			{
+				if( $NewestOnly && $CommitMessages !== '' )
+				{
+					$CommitMessages .= sprintf( ' (+%s more)', $this->FormatNumber( (string)( $Num + 1 ) ) );
+					break;
+				}
+
 				$CommitMessage = $this->ShortMessage( $DistinctCommits[ $Num ]->message, 50 );
 				$Length += mb_strlen( $CommitMessage ) + 3;
 

@@ -350,6 +350,14 @@ describe('optional fields', () => {
 		expect(result.title).toBe('monalisa pushed 1 new commit to `master`');
 	});
 
+	it('force push of two commits counts the earlier one alone', () => {
+		const result = embed('push', 'push_forced_many', (p) => {
+			p.commits.shift();
+		});
+
+		expect(result.description).toMatch(/^… 1 more commit\n\[`8ddec6`\]/);
+	});
+
 	it('ruleset of an organization has no page of its own', () => {
 		const result = embed('repository_ruleset', 'repository_ruleset_created', (p) => {
 			p.repository_ruleset._links.html = null;

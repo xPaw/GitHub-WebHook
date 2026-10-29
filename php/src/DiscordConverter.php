@@ -761,8 +761,17 @@ class DiscordConverter extends BaseConverter
 			// takes the place of one, so it never stands in for a single commit that would have fit.
 			$Listed = $DistinctCommits;
 			$Hidden = 0;
+			$HiddenAt = self::PUSH_COMMITS_AT_EACH_END;
 
-			if( $Num > self::PUSH_COMMITS_AT_EACH_END * 2 + 1 )
+			if( $this->Payload->forced && !$this->Payload->created && $Num > 1 )
+			{
+				// A rebase lists the whole branch again, and the payload can't tell rewritten commits
+				// from new ones, so a force push only lists where the branch is now
+				$Listed = [ $DistinctCommits[ $Num - 1 ] ];
+				$Hidden = $Num - 1;
+				$HiddenAt = 0;
+			}
+			else if( $Num > self::PUSH_COMMITS_AT_EACH_END * 2 + 1 )
 			{
 				$Hidden = $Num - self::PUSH_COMMITS_AT_EACH_END * 2;
 				$Listed = [
@@ -778,7 +787,7 @@ class DiscordConverter extends BaseConverter
 
 			// A push of a single commit has the room to say what the commit itself says,
 			// everything past the summary that the line above it already carries
-			$Message = count( $Shown ) === 1 ? $Shown[ 0 ][ 1 ] : '';
+			$Message = $Num === 1 ? $Shown[ 0 ][ 1 ] : '';
 			$Newline = strpos( $Message, "\n" );
 			$Body = $Newline === false ? '' : self::FormatBody( substr( $Message, $Newline + 1 ) );
 
@@ -802,7 +811,9 @@ class DiscordConverter extends BaseConverter
 
 			if( $Hidden > 0 )
 			{
-				array_splice( $CommitMessages, self::PUSH_COMMITS_AT_EACH_END, 0, "… {$Hidden} more commits" );
+				$MoreCommits = "… {$Hidden} more commit" . ( $Hidden === 1 ? '' : 's' );
+
+				array_splice( $CommitMessages, $HiddenAt, 0, $MoreCommits );
 			}
 
 			$Embed[ 'description' ] = implode( "\n", $CommitMessages );
