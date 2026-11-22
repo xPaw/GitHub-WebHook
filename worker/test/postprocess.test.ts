@@ -308,10 +308,20 @@ describe('GameTracking', () => {
 			p.comment.body = `Lorem ipsum.\n\n${'- dolor sit amet\n'.repeat(100)}`;
 		});
 
-		const [, body] = process(webhook);
+		const [, body, buttons] = process(webhook);
 
 		// 45 lines in all: the opening one, and the last one marked as cut
 		expect('content' in body ? body.content : '').toBe(`Lorem ipsum.\n${'- dolor sit amet\n'.repeat(43)}- dolor sit amet…`);
+		expect(buttons).toMatchObject({
+			type: 1,
+			components: [
+				{
+					label: 'Continue reading',
+					url: 'https://github.com/monalisa/Hello-World/commit/daf13dcaf435472847deec105edc97a29c30465d#commitcomment-16082791',
+				},
+				{ label: 'View on DiffsHub' },
+			],
+		});
 	});
 
 	it('leaves pushes to GameTracking as they are', () => {

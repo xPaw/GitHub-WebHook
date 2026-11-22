@@ -213,6 +213,11 @@ function demote(line: string): string {
  * markdown is left as written, and whether a cut has left a block open.
  */
 export function formatBody(message: string | null | undefined, maxLines = MAX_BODY_LINES): string {
+	return cutBody(message, maxLines).text;
+}
+
+/** Formats a body as {@link formatBody} does, telling whether any of it was cut. */
+export function cutBody(message: string | null | undefined, maxLines: number): { text: string; cut: boolean } {
 	const text = (message ?? '')
 		.replace(HTML_COMMENT, '')
 		.replace(HTML_TAG, '')
@@ -223,6 +228,7 @@ export function formatBody(message: string | null | undefined, maxLines = MAX_BO
 	const kept: string[] = [];
 	let used = 0;
 	let fenced = false;
+	let cut = false;
 
 	// A line costs at least one of the budget, so no more of them can ever be kept than it allows
 	for (const line of text.split('\n', maxLines + 1)) {
@@ -244,6 +250,7 @@ export function formatBody(message: string | null | undefined, maxLines = MAX_BO
 				kept[kept.length - 1] += '…';
 			}
 
+			cut = true;
 			break;
 		}
 
@@ -255,6 +262,8 @@ export function formatBody(message: string | null | undefined, maxLines = MAX_BO
 		}
 	}
 
+	const body = kept.join('\n');
+
 	// A cut inside a block would leave it open, and an open block swallows the rest of the card
-	return fenced ? `${kept.join('\n')}\n\`\`\`` : kept.join('\n');
+	return { text: fenced ? `${body}\n\`\`\`` : body, cut };
 }

@@ -1,5 +1,5 @@
 import { type DiscordEmbed, formatAuthor } from './discord/converter.js';
-import { formatBody, linkText } from './discord/text.js';
+import { cutBody, linkText } from './discord/text.js';
 import { IgnoredEventError } from './errors.js';
 import type { WebhookRequest } from './github.js';
 
@@ -32,7 +32,7 @@ interface Payload {
 
 /** The parts of a commit comment that a summary of a build is laid out from. */
 interface CommitCommentPayload {
-	comment: { body: string; commit_id: string };
+	comment: { body: string; commit_id: string; html_url: string };
 	repository: { name: string; description: string | null; owner: { login: string; avatar_url: string } };
 }
 
@@ -158,9 +158,17 @@ function formatGameTrackingSummaries(request: WebhookRequest, embed: DiscordEmbe
 	embed.title = linkText(game);
 	embed.standalone = true;
 	delete embed.scope;
-	embed.description = formatBody(comment.body.replace(AI_NOTICE, ''), MAX_SUMMARY_LINES);
+
+	const summary = cutBody(comment.body.replace(AI_NOTICE, ''), MAX_SUMMARY_LINES);
+	embed.description = summary.text;
 	embed.author = formatAuthor(repository.owner);
-	embed.links = [{ label: 'View on DiffsHub', url: `https://diffshub.com/${request.repositoryName}/commit/${comment.commit_id}` }];
+	embed.links = [];
+
+	if (summary.cut) {
+		embed.links.push({ label: 'Continue reading', url: comment.html_url });
+	}
+
+	embed.links.push({ label: 'View on DiffsHub', url: `https://diffshub.com/${request.repositoryName}/commit/${comment.commit_id}` });
 }
 
 function isGameTrackingComment({ eventType, repositoryName }: WebhookRequest): boolean {
